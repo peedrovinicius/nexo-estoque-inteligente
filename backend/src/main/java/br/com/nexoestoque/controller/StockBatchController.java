@@ -1,6 +1,8 @@
 package br.com.nexoestoque.controller;
 
+import br.com.nexoestoque.dto.BatchAdjustmentRequest;
 import br.com.nexoestoque.dto.BatchEntryRequest;
+import br.com.nexoestoque.dto.BatchReturnRequest;
 import br.com.nexoestoque.dto.FefoExitRequest;
 import br.com.nexoestoque.model.MovementAllocation;
 import br.com.nexoestoque.model.StockBatch;
@@ -60,6 +62,53 @@ public class StockBatchController {
             return repository.exitFefo(new FefoExitRequest(
                     request.productId(),
                     request.quantity(),
+                    request.reason() == null ? "" : request.reason().trim()
+            ));
+        } catch (SQLException exception) {
+            throw translate(exception);
+        }
+    }
+
+
+    @PostMapping("/return")
+    @ResponseStatus(HttpStatus.CREATED)
+    public StockOperationResult returnToBatch(@RequestBody BatchReturnRequest request) throws SQLException {
+        validateProductAndQuantity(request.productId(), request.quantity());
+
+        if (request.batchId() == null || request.batchId() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Lote inválido");
+        }
+
+        try {
+            return repository.returnToBatch(new BatchReturnRequest(
+                    request.productId(),
+                    request.batchId(),
+                    request.quantity(),
+                    request.reason() == null ? "" : request.reason().trim()
+            ));
+        } catch (SQLException exception) {
+            throw translate(exception);
+        }
+    }
+
+    @PostMapping("/adjustment")
+    @ResponseStatus(HttpStatus.CREATED)
+    public StockOperationResult adjustBatch(@RequestBody BatchAdjustmentRequest request) throws SQLException {
+        if (request.productId() == null || request.productId() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Produto inválido");
+        }
+        if (request.batchId() == null || request.batchId() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Lote inválido");
+        }
+        if (request.quantityDelta() == null || request.quantityDelta().compareTo(BigDecimal.ZERO) == 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O ajuste deve ser diferente de zero");
+        }
+
+        try {
+            return repository.adjustBatch(new BatchAdjustmentRequest(
+                    request.productId(),
+                    request.batchId(),
+                    request.quantityDelta(),
                     request.reason() == null ? "" : request.reason().trim()
             ));
         } catch (SQLException exception) {
