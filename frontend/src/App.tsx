@@ -1051,6 +1051,156 @@ function BatchesPanel(){
 }
 
 
+
+type AdvisorMessage={
+  id:number;
+  role:'user'|'assistant';
+  text:string;
+  source?:string;
+};
+
+function AdvisorPanel(){
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const [question,setQuestion]=useState('');
+  const [loading,setLoading]=useState(false);
+  const [messages,setMessages]=useState<AdvisorMessage[]>([
+    {
+      id:1,
+      role:'assistant',
+      text:'Consulte o estoque em linguagem natural. Posso analisar saldos, itens abaixo do mínimo, lotes, validade, FEFO e inventários usando a base operacional do Nexo.',
+      source:'contexto operacional'
+    }
+  ]);
+
+  const suggestions=[
+    'Quais produtos estão abaixo do estoque mínimo?',
+    'Quais lotes vencem em até 30 dias?',
+    'Como está o inventário?',
+    'Faça um resumo do estoque.'
+  ];
+
+  async function ask(rawQuestion:string){
+    const clean=rawQuestion.trim();
+    if(!clean||loading) return;
+
+    setMessages(current=>[
+      ...current,
+      {id:Date.now(),role:'user',text:clean}
+    ]);
+    setQuestion('');
+    setLoading(true);
+
+    try{
+      const response=await fetch(API_URL+'/api/v1/advisor/chat',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({question:clean})
+      });
+      const data=await response.json().catch(()=>null);
+      if(!response.ok) throw new Error(data?.message||'Assistente indisponível');
+
+      const source=data?.source==='openai'
+        ? 'OpenAI · '+String(data?.model||'modelo configurado')
+        : data?.source==='rules'
+          ? 'motor determinístico · MySQL'
+          : 'base operacional indisponível';
+
+      setMessages(current=>[
+        ...current,
+        {
+          id:Date.now()+1,
+          role:'assistant',
+          text:String(data?.answer||'Não foi possível gerar uma resposta.'),
+          source
+        }
+      ]);
+    }catch{
+      setMessages(current=>[
+        ...current,
+        {
+          id:Date.now()+1,
+          role:'assistant',
+          text:'Não consegui consultar o contexto operacional agora. Confirme o indicador API + MySQL e tente novamente.',
+          source:'falha de conexão'
+        }
+      ]);
+    }finally{
+      setLoading(false);
+    }
+  }
+
+  function submit(e:React.FormEvent){
+    e.preventDefault();
+    void ask(question);
+  }
+
+  return <>
+    <header className="page-header advisor-page-header">
+      <div>
+        <span className="eyebrow">ASSISTÊNCIA OPERACIONAL</span>
+        <h1>Assistente Nexo</h1>
+        <p>Pergunte sobre a operação. As respostas usam o snapshot atual do estoque e não executam movimentações.</p>
+      </div>
+      <span className="audit"><ShieldCheck size={16}/> somente leitura</span>
+    </header>
+
+    <section className="advisor-workspace">
+      <aside className="advisor-context">
+        <div>
+          <BrainCircuit size={22}/>
+          <span className="eyebrow">CONTEXTO DISPONÍVEL</span>
+          <h2>O que o assistente consulta</h2>
+          <p>Produtos, saldos, estoque mínimo, lotes ativos, validade, posição FEFO e sessões de inventário.</p>
+        </div>
+        <div className="advisor-boundaries">
+          <strong>Limites operacionais</strong>
+          <span>Não cria entradas ou saídas.</span>
+          <span>Não altera quantidades.</span>
+          <span>Não inventa fornecedores ou prazos.</span>
+        </div>
+      </aside>
+
+      <div className="advisor-chat">
+        <div className="advisor-messages">
+          {messages.map(message=><article key={message.id} className={'advisor-message '+message.role}>
+            <div className="advisor-message-role">
+              {message.role==='assistant'?<BrainCircuit size={16}/>:<span>Você</span>}
+              {message.role==='assistant'&&<strong>Nexo</strong>}
+            </div>
+            <p>{message.text}</p>
+            {message.source&&<small>{message.source}</small>}
+          </article>)}
+          {loading&&<article className="advisor-message assistant loading">
+            <div className="advisor-message-role"><BrainCircuit size={16}/><strong>Nexo</strong></div>
+            <p>Consultando o estoque atual...</p>
+          </article>}
+        </div>
+
+        <div className="advisor-suggestions">
+          {suggestions.map(item=><button key={item} type="button" onClick={()=>void ask(item)} disabled={loading}>{item}</button>)}
+        </div>
+
+        <form className="advisor-composer" onSubmit={submit}>
+          <textarea
+            value={question}
+            onChange={e=>setQuestion(e.target.value)}
+            placeholder="Ex.: Qual item precisa de reposição primeiro?"
+            maxLength={600}
+            rows={3}
+            disabled={loading}
+          />
+          <div>
+            <small>{question.length}/600</small>
+            <button className="primary compact" disabled={loading||!question.trim()}>
+              {loading?'Consultando...':'Perguntar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </>;
+}
+
 function SystemReadiness(){
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [state,setState]=useState<'loading'|'ready'|'degraded'|'offline'>('loading');
@@ -1100,7 +1250,7 @@ function SystemReadiness(){
 
 function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onToggleTheme:()=>void}){
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
-  const [page,setPage]=useState<'dashboard'|'products'|'batches'|'inventory'>('dashboard');
+  const [page,setPage]=useState<'dashboard'|'products'|'batches'|'inventory'|'assistant'>('dashboard');
   const [showMovement,setShowMovement]=useState(false);
   const [movementRefresh,setMovementRefresh]=useState(0);
   const [dashboardLoading,setDashboardLoading]=useState(true);
@@ -1322,7 +1472,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
         <a className={page==='batches'?'active':''} onClick={()=>setPage('batches')}><PackageSearch size={19}/> Lotes & validade</a>
         <a className={page==='inventory'?'active':''} onClick={()=>setPage('inventory')}><ClipboardCheck size={19}/> Inventário cego</a>
         <a><TrendingUp size={19}/> Simulador</a>
-        <a><BrainCircuit size={19}/> Assistente</a>
+        <a className={page==='assistant'?'active':''} onClick={()=>setPage('assistant')}><BrainCircuit size={19}/> Assistente</a>
       </nav>
       <div className="sidebar-bottom"><ThemeToggle theme={theme} onToggle={onToggleTheme}/><button className="logout" onClick={logout}><LogOut size={18}/> Sair</button></div>
     </aside>
@@ -1334,7 +1484,9 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
           ? <BatchesPanel/>
           : page==='inventory'
             ? <BlindInventoryPanel/>
-            : <>
+            : page==='assistant'
+              ? <AdvisorPanel/>
+              : <>
           <header>
             <div>
               <span className="eyebrow">NEXO ESTOQUE</span>
