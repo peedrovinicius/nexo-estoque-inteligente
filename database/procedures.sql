@@ -14,12 +14,16 @@ CREATE PROCEDURE sp_product_create(
   OUT p_id BIGINT
 )
 BEGIN
+  IF COALESCE(p_current_stock,0) <> 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto novo deve iniciar com estoque zero; registre a entrada por lote';
+  END IF;
+
   INSERT INTO products(
     sku, barcode, name, category, cost_price, sale_price, current_stock, minimum_stock
   )
   VALUES(
     p_sku, NULLIF(p_barcode,''), p_name, p_category, p_cost_price, p_sale_price,
-    p_current_stock, p_minimum_stock
+    0, p_minimum_stock
   );
   SET p_id = LAST_INSERT_ID();
 END //
