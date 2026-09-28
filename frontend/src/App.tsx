@@ -39,9 +39,12 @@ function Login({onLogin}:{onLogin:()=>void}) {
 }
 
 function Simulator(){
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
   const [demand,setDemand]=useState(20);
   const [delay,setDelay]=useState(3);
-  const result=useMemo(()=>{
+  const [loading,setLoading]=useState(false);
+  const [source,setSource]=useState<'local'|'api'>('local');
+  const localResult=useMemo(()=>{
     const stock=120;
     const daily=14*(1+demand/100);
     const lead=5+delay;
@@ -52,17 +55,59 @@ function Simulator(){
     const value=Math.max(0,lead-coverage)*daily*6.85;
     return {coverage,recommended,stockout,value,risk:coverage<lead?'ALTO':coverage<lead+4?'MODERADO':'BAIXO'};
   },[demand,delay]);
+
+  const [result,setResult]=useState(localResult);
+
+  async function simulate(){
+    setLoading(true);
+    try{
+      const response=await fetch(API_URL+'/api/v1/simulations',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          productName:'Dipirona 500 mg',
+          currentStock:120,
+          averageDailyDemand:14,
+          supplierLeadTimeDays:5,
+          demandVariationPercent:demand,
+          supplierDelayDays:delay,
+          plannedPurchase:0,
+          unitCost:6.85
+        })
+      });
+      if(!response.ok) throw new Error('API indisponível');
+      const data=await response.json();
+      setResult({
+        coverage:data.coverageDays,
+        recommended:Number(data.recommendedPurchase),
+        stockout:data.estimatedStockoutDate
+          ? new Date(data.estimatedStockoutDate+'T12:00:00').toLocaleDateString('pt-BR')
+          : 'Sem previsão',
+        value:Number(data.estimatedValueAtRisk),
+        risk:data.riskLevel
+      });
+      setSource('api');
+    }catch{
+      setResult(localResult);
+      setSource('local');
+    }finally{
+      setLoading(false);
+    }
+  }
+
   return <section className="simulator">
     <div className="section-head"><div><span className="eyebrow">LABORATÓRIO DE DECISÃO</span><h2>E se o cenário mudar?</h2></div><span className="audit"><ShieldCheck size={16}/> cálculo reproduzível</span></div>
     <div className="sim-grid">
       <div className="controls">
         <div className="selected"><div><small>Produto simulado</small><strong>Dipirona 500 mg</strong></div><ScanLine size={22}/></div>
-        <label>Demanda aumenta <b>{demand}%</b><input type="range" min="0" max="80" value={demand} onChange={e=>setDemand(+e.target.value)}/></label>
-        <label>Atraso do fornecedor <b>{delay} dias</b><input type="range" min="0" max="14" value={delay} onChange={e=>setDelay(+e.target.value)}/></label>
+        <label>Demanda aumenta <b>{demand}%</b><input type="range" min="0" max="80" value={demand} onChange={e=>{setDemand(+e.target.value);setSource('local')}}/></label>
+        <label>Atraso do fornecedor <b>{delay} dias</b><input type="range" min="0" max="14" value={delay} onChange={e=>{setDelay(+e.target.value);setSource('local')}}/></label>
+        <button className="simulate-btn" onClick={simulate} disabled={loading}>{loading?'Calculando...':'Simular com a API Java'}</button>
         <div className="note"><Sparkles size={18}/><p>A IA explica o cenário; as quantidades continuam sendo calculadas por regras auditáveis.</p></div>
       </div>
       <div className="result">
-        <div className="risk-line"><span>Risco projetado</span><strong className={'risk '+result.risk.toLowerCase()}>{result.risk}</strong></div>
+        <div className="risk-line"><span>Risco projetado</span><strong className={'risk '+String(result.risk).toLowerCase()}>{result.risk}</strong></div>
+        <div className="api-status"><span className={'status-dot '+source}></span>{source==='api'?'Resultado calculado pelo Spring Boot':'Prévia local — execute a API para validar'}</div>
         <div className="coverage">{result.coverage}<small> dias de cobertura</small></div>
         <div className="result-grid">
           <div><span>Ruptura estimada</span><b>{result.stockout}</b></div>
