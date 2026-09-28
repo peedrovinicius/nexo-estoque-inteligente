@@ -43,7 +43,11 @@ function Simulator(){
   const [demand,setDemand]=useState(20);
   const [delay,setDelay]=useState(3);
   const [loading,setLoading]=useState(false);
+  const [advisorLoading,setAdvisorLoading]=useState(false);
+  const [explanation,setExplanation]=useState('');
+  const [advisorSource,setAdvisorSource]=useState('');
   const [source,setSource]=useState<'local'|'api'>('local');
+
   const localResult=useMemo(()=>{
     const stock=120;
     const daily=14*(1+demand/100);
@@ -60,6 +64,7 @@ function Simulator(){
 
   async function simulate(){
     setLoading(true);
+    setExplanation('');
     try{
       const response=await fetch(API_URL+'/api/v1/simulations',{
         method:'POST',
@@ -95,13 +100,42 @@ function Simulator(){
     }
   }
 
+  async function explain(){
+    setAdvisorLoading(true);
+    setExplanation('');
+    try{
+      const response=await fetch(API_URL+'/api/v1/advisor/explain',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          productName:'Dipirona 500 mg',
+          riskLevel:String(result.risk),
+          coverageDays:result.coverage,
+          recommendedPurchase:result.recommended,
+          estimatedValueAtRisk:Number(result.value.toFixed(2)),
+          supplierLeadTimeDays:5,
+          supplierDelayDays:delay
+        })
+      });
+      if(!response.ok) throw new Error('Assistente indisponível');
+      const data=await response.json();
+      setExplanation(data.explanation);
+      setAdvisorSource(data.source==='openai'?'OpenAI '+data.model:'explicação determinística');
+    }catch{
+      setExplanation('O assistente está temporariamente indisponível. Os números acima continuam válidos porque são calculados pelo motor determinístico.');
+      setAdvisorSource('fallback local');
+    }finally{
+      setAdvisorLoading(false);
+    }
+  }
+
   return <section className="simulator">
     <div className="section-head"><div><span className="eyebrow">LABORATÓRIO DE DECISÃO</span><h2>E se o cenário mudar?</h2></div><span className="audit"><ShieldCheck size={16}/> cálculo reproduzível</span></div>
     <div className="sim-grid">
       <div className="controls">
         <div className="selected"><div><small>Produto simulado</small><strong>Dipirona 500 mg</strong></div><ScanLine size={22}/></div>
-        <label>Demanda aumenta <b>{demand}%</b><input type="range" min="0" max="80" value={demand} onChange={e=>{setDemand(+e.target.value);setSource('local')}}/></label>
-        <label>Atraso do fornecedor <b>{delay} dias</b><input type="range" min="0" max="14" value={delay} onChange={e=>{setDelay(+e.target.value);setSource('local')}}/></label>
+        <label>Demanda aumenta <b>{demand}%</b><input type="range" min="0" max="80" value={demand} onChange={e=>{setDemand(+e.target.value);setSource('local');setExplanation('')}}/></label>
+        <label>Atraso do fornecedor <b>{delay} dias</b><input type="range" min="0" max="14" value={delay} onChange={e=>{setDelay(+e.target.value);setSource('local');setExplanation('')}}/></label>
         <button className="simulate-btn" onClick={simulate} disabled={loading}>{loading?'Calculando...':'Simular com a API Java'}</button>
         <div className="note"><Sparkles size={18}/><p>A IA explica o cenário; as quantidades continuam sendo calculadas por regras auditáveis.</p></div>
       </div>
@@ -114,7 +148,8 @@ function Simulator(){
           <div><span>Compra sugerida</span><b>{result.recommended} un.</b></div>
           <div><span>Valor em risco</span><b>R$ {result.value.toFixed(2).replace('.',',')}</b></div>
         </div>
-        <button className="ghost"><BrainCircuit size={18}/> Explicar esta decisão</button>
+        <button className="ghost" onClick={explain} disabled={advisorLoading}><BrainCircuit size={18}/>{advisorLoading?'Analisando...':'Explicar esta decisão'}</button>
+        {explanation&&<div className="advisor-box"><div><BrainCircuit size={17}/><strong>Assistente Nexo</strong><span>{advisorSource}</span></div><p>{explanation}</p></div>}
       </div>
     </div>
   </section>;
