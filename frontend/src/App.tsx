@@ -1050,6 +1050,54 @@ function BatchesPanel(){
   </>;
 }
 
+
+function SystemReadiness(){
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
+  const [state,setState]=useState<'loading'|'ready'|'degraded'|'offline'>('loading');
+  const [latency,setLatency]=useState<number|null>(null);
+
+  useEffect(()=>{
+    let active=true;
+
+    async function check(){
+      try{
+        const response=await fetch(API_URL+'/api/v1/system/readiness');
+        if(!response.ok) throw new Error();
+        const data=await response.json();
+        if(!active) return;
+        setState(data.database==='ready'?'ready':'degraded');
+        setLatency(Number.isFinite(Number(data.databaseLatencyMs))?Number(data.databaseLatencyMs):null);
+      }catch{
+        if(active){
+          setState('offline');
+          setLatency(null);
+        }
+      }
+    }
+
+    void check();
+    const timer=window.setInterval(check,30000);
+    return ()=>{
+      active=false;
+      window.clearInterval(timer);
+    };
+  },[]);
+
+  const text=state==='ready'
+    ? 'API + MySQL operacionais'
+    : state==='degraded'
+      ? 'API online · MySQL desconectado'
+      : state==='offline'
+        ? 'API indisponível'
+        : 'Verificando infraestrutura...';
+
+  return <div className={'system-readiness '+state}>
+    <span className="readiness-dot"/>
+    <strong>{text}</strong>
+    {latency!==null&&state==='ready'&&<small>{latency} ms</small>}
+  </div>;
+}
+
 function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onToggleTheme:()=>void}){
   const [page,setPage]=useState<'dashboard'|'products'|'batches'|'inventory'>('dashboard');
   const [showMovement,setShowMovement]=useState(false);
@@ -1078,6 +1126,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
       <div className="sidebar-bottom"><ThemeToggle theme={theme} onToggle={onToggleTheme}/><button className="logout" onClick={logout}><LogOut size={18}/> Sair</button></div>
     </aside>
     <main className="workspace">
+      <SystemReadiness/>
       {page==='products'
         ? <ProductsPanel/>
         : page==='batches'
