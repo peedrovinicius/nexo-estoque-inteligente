@@ -20,6 +20,9 @@ management:
         include: health
 
 nexo:
+  db:
+    bootstrap: ${NEXO_DB_BOOTSTRAP:true}
+    demo-seed: ${NEXO_DEMO_SEED:false}
   ai:
     api-key: ${OPENAI_API_KEY:}
     model: ${OPENAI_MODEL:gpt-5.6-luna}
