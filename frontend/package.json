@@ -17,6 +17,6 @@
     "lucide-react": "latest"
   },
   "devDependencies": {
-    "sharp": "^0.34.4"
+    "pngjs": "^7.0.0"
   }
 }
