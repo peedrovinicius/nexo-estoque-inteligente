@@ -203,7 +203,10 @@ BEGIN
     s.started_at,
     s.closed_at,
     COUNT(c.id) AS counted_items,
-    SUM(CASE WHEN c.difference_quantity <> 0 THEN 1 ELSE 0 END) AS divergent_items
+    CASE
+      WHEN s.status = 'CLOSED' THEN SUM(CASE WHEN c.difference_quantity <> 0 THEN 1 ELSE 0 END)
+      ELSE 0
+    END AS divergent_items
   FROM blind_inventory_sessions s
   LEFT JOIN blind_inventory_counts c ON c.session_id = s.id
   GROUP BY s.id, s.name, s.status, s.started_at, s.closed_at
