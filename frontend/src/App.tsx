@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertTriangle, Boxes, BrainCircuit, ChevronRight, ClipboardCheck, LayoutDashboard, LogOut, Moon, PackageSearch, ScanLine, ShieldCheck, Sparkles, Sun, TrendingUp } from 'lucide-react';
 
 const DEMO_USER='admin';
@@ -78,67 +78,149 @@ function Login({onLogin,theme,onToggleTheme}:{onLogin:()=>void;theme:Theme;onTog
 
 function Simulator(){
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const [products,setProducts]=useState<Array<{
+    id:number;
+    sku:string;
+    name:string;
+    currentStock:number;
+    costPrice:number;
+  }>>([]);
+  const [selectedId,setSelectedId]=useState('');
+  const [averageDailyDemand,setAverageDailyDemand]=useState('14');
+  const [supplierLeadTimeDays,setSupplierLeadTimeDays]=useState('5');
+  const [plannedPurchase,setPlannedPurchase]=useState('0');
   const [demand,setDemand]=useState(20);
   const [delay,setDelay]=useState(3);
   const [loading,setLoading]=useState(false);
+  const [productsLoading,setProductsLoading]=useState(true);
   const [advisorLoading,setAdvisorLoading]=useState(false);
   const [explanation,setExplanation]=useState('');
   const [advisorSource,setAdvisorSource]=useState('');
-  const [source,setSource]=useState<'local'|'api'>('local');
+  const [error,setError]=useState('');
+  const [source,setSource]=useState<'idle'|'api'|'offline'>('idle');
+  const [result,setResult]=useState<{
+    coverage:number;
+    recommended:number;
+    stockout:string;
+    value:number;
+    risk:string;
+  }|null>(null);
 
-  const localResult=useMemo(()=>{
-    const stock=120;
-    const daily=14*(1+demand/100);
-    const lead=5+delay;
-    const coverage=Math.floor(stock/daily);
-    const safety=Math.max(2,Math.ceil(lead*.35));
-    const recommended=Math.max(0,Math.ceil(daily*(lead+safety)-stock));
-    const stockout=new Date(Date.now()+coverage*86400000).toLocaleDateString('pt-BR');
-    const value=Math.max(0,lead-coverage)*daily*6.85;
-    return {coverage,recommended,stockout,value,risk:coverage<lead?'ALTO':coverage<lead+4?'MODERADO':'BAIXO'};
-  },[demand,delay]);
+  const selected=products.find(product=>String(product.id)===selectedId)||null;
 
-  const [result,setResult]=useState(localResult);
+  useEffect(()=>{
+    let active=true;
+
+    (async()=>{
+      try{
+        const response=await fetch(API_URL+'/api/v1/products');
+        if(!response.ok) throw new Error();
+        const data=await response.json();
+        if(!active) return;
+
+        const rows=(Array.isArray(data)?data:[])
+          .filter((item:any)=>item.active!==false)
+          .map((item:any)=>({
+            id:Number(item.id),
+            sku:String(item.sku||''),
+            name:String(item.name||'Produto'),
+            currentStock:Number(item.currentStock||0),
+            costPrice:Number(item.costPrice||0)
+          }));
+
+        setProducts(rows);
+        if(rows.length) setSelectedId(String(rows[0].id));
+        setSource('idle');
+      }catch{
+        if(active){
+          setProducts([]);
+          setSelectedId('');
+          setSource('offline');
+          setError('Não foi possível carregar os produtos reais para simulação.');
+        }
+      }finally{
+        if(active) setProductsLoading(false);
+      }
+    })();
+
+    return ()=>{active=false};
+  },[]);
+
+  function invalidate(){
+    setResult(null);
+    setExplanation('');
+    setAdvisorSource('');
+    if(source!=='offline') setSource('idle');
+  }
 
   async function simulate(){
-    setLoading(true);
+    setError('');
     setExplanation('');
+
+    if(!selected){
+      setError('Selecione um produto real da base.');
+      return;
+    }
+
+    const daily=Number(averageDailyDemand);
+    const lead=Number(supplierLeadTimeDays);
+    const planned=Number(plannedPurchase||0);
+
+    if(!Number.isFinite(daily)||daily<=0){
+      setError('Informe uma demanda média diária maior que zero.');
+      return;
+    }
+    if(!Number.isFinite(lead)||lead<0){
+      setError('Informe um lead time válido.');
+      return;
+    }
+    if(!Number.isFinite(planned)||planned<0){
+      setError('A compra planejada não pode ser negativa.');
+      return;
+    }
+
+    setLoading(true);
     try{
       const response=await fetch(API_URL+'/api/v1/simulations',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
-          productName:'Dipirona 500 mg',
-          currentStock:120,
-          averageDailyDemand:14,
-          supplierLeadTimeDays:5,
+          productName:selected.name,
+          currentStock:selected.currentStock,
+          averageDailyDemand:daily,
+          supplierLeadTimeDays:Math.floor(lead),
           demandVariationPercent:demand,
           supplierDelayDays:delay,
-          plannedPurchase:0,
-          unitCost:6.85
+          plannedPurchase:planned,
+          unitCost:selected.costPrice
         })
       });
-      if(!response.ok) throw new Error('API indisponível');
-      const data=await response.json();
+
+      const data=await response.json().catch(()=>null);
+      if(!response.ok) throw new Error(data?.detail||data?.message||'API de simulação indisponível');
+
       setResult({
-        coverage:data.coverageDays,
+        coverage:Number(data.coverageDays),
         recommended:Number(data.recommendedPurchase),
         stockout:data.estimatedStockoutDate
           ? new Date(data.estimatedStockoutDate+'T12:00:00').toLocaleDateString('pt-BR')
           : 'Sem previsão',
         value:Number(data.estimatedValueAtRisk),
-        risk:data.riskLevel
+        risk:String(data.riskLevel)
       });
       setSource('api');
-    }catch{
-      setResult(localResult);
-      setSource('local');
+    }catch(err){
+      setResult(null);
+      setSource('offline');
+      setError(err instanceof Error?err.message:'API de simulação indisponível.');
     }finally{
       setLoading(false);
     }
   }
 
   async function explain(){
+    if(!result||!selected) return;
+
     setAdvisorLoading(true);
     setExplanation('');
     try{
@@ -146,51 +228,112 @@ function Simulator(){
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
-          productName:'Dipirona 500 mg',
+          productName:selected.name,
           riskLevel:String(result.risk),
           coverageDays:result.coverage,
           recommendedPurchase:result.recommended,
           estimatedValueAtRisk:Number(result.value.toFixed(2)),
-          supplierLeadTimeDays:5,
+          supplierLeadTimeDays:Number(supplierLeadTimeDays||0),
           supplierDelayDays:delay
         })
       });
-      if(!response.ok) throw new Error('Assistente indisponível');
-      const data=await response.json();
-      setExplanation(data.explanation);
+      const data=await response.json().catch(()=>null);
+      if(!response.ok) throw new Error(data?.detail||data?.message||'Assistente indisponível');
+      setExplanation(String(data.explanation||''));
       setAdvisorSource(data.source==='openai'?'OpenAI '+data.model:'explicação determinística');
     }catch{
-      setExplanation('O assistente está temporariamente indisponível. Os números acima continuam válidos porque são calculados pelo motor determinístico.');
-      setAdvisorSource('fallback local');
+      setExplanation('O assistente está temporariamente indisponível. A simulação acima continua válida porque foi calculada pelo backend.');
+      setAdvisorSource('assistente indisponível');
     }finally{
       setAdvisorLoading(false);
     }
   }
 
-  return <section className="simulator">
-    <div className="section-head"><div><span className="eyebrow">LABORATÓRIO DE DECISÃO</span><h2>E se o cenário mudar?</h2></div><span className="audit"><ShieldCheck size={16}/> cálculo reproduzível</span></div>
-    <div className="sim-grid">
-      <div className="controls">
-        <div className="selected"><div><small>Produto simulado</small><strong>Dipirona 500 mg</strong></div><ScanLine size={22}/></div>
-        <label>Demanda aumenta <b>{demand}%</b><input type="range" min="0" max="80" value={demand} onChange={e=>{setDemand(+e.target.value);setSource('local');setExplanation('')}}/></label>
-        <label>Atraso do fornecedor <b>{delay} dias</b><input type="range" min="0" max="14" value={delay} onChange={e=>{setDelay(+e.target.value);setSource('local');setExplanation('')}}/></label>
-        <button className="simulate-btn" onClick={simulate} disabled={loading}>{loading?'Calculando...':'Simular com a API Java'}</button>
-        <div className="note"><Sparkles size={18}/><p>A IA explica o cenário; as quantidades continuam sendo calculadas por regras auditáveis.</p></div>
+  return <>
+    <header className="page-header">
+      <div>
+        <span className="eyebrow">LABORATÓRIO DE DECISÃO</span>
+        <h1>Simulador de cenários</h1>
+        <p>Use o saldo e o custo reais do estoque para testar demanda, atraso do fornecedor e compra planejada.</p>
       </div>
-      <div className="result">
-        <div className="risk-line"><span>Risco projetado</span><strong className={'risk '+String(result.risk).toLowerCase()}>{result.risk}</strong></div>
-        <div className="api-status"><span className={'status-dot '+source}></span>{source==='api'?'Resultado calculado pelo Spring Boot':'Prévia local — execute a API para validar'}</div>
-        <div className="coverage">{result.coverage}<small> dias de cobertura</small></div>
-        <div className="result-grid">
-          <div><span>Ruptura estimada</span><b>{result.stockout}</b></div>
-          <div><span>Compra sugerida</span><b>{result.recommended} un.</b></div>
-          <div><span>Valor em risco</span><b>R$ {result.value.toFixed(2).replace('.',',')}</b></div>
+      <span className="audit"><ShieldCheck size={16}/> cálculo reproduzível</span>
+    </header>
+
+    <section className="simulator simulator-page">
+      <div className="sim-grid">
+        <div className="controls">
+          <div className="selected simulator-product">
+            <div>
+              <small>Produto real</small>
+              <select
+                value={selectedId}
+                onChange={e=>{setSelectedId(e.target.value);invalidate()}}
+                disabled={productsLoading||!products.length}
+              >
+                <option value="">{productsLoading?'Carregando produtos...':'Selecione um produto'}</option>
+                {products.map(product=><option key={product.id} value={product.id}>
+                  {product.name} · {product.sku}
+                </option>)}
+              </select>
+            </div>
+            <ScanLine size={22}/>
+          </div>
+
+          {selected&&<div className="sim-real-baseline">
+            <div><span>Saldo atual</span><strong>{selected.currentStock}</strong></div>
+            <div><span>Custo unitário</span><strong>R$ {selected.costPrice.toFixed(2).replace('.',',')}</strong></div>
+          </div>}
+
+          <div className="sim-input-grid">
+            <label>Demanda média/dia
+              <input type="number" min="0.01" step="0.01" value={averageDailyDemand} onChange={e=>{setAverageDailyDemand(e.target.value);invalidate()}}/>
+            </label>
+            <label>Lead time normal
+              <input type="number" min="0" step="1" value={supplierLeadTimeDays} onChange={e=>{setSupplierLeadTimeDays(e.target.value);invalidate()}}/>
+            </label>
+            <label>Compra planejada
+              <input type="number" min="0" step="0.001" value={plannedPurchase} onChange={e=>{setPlannedPurchase(e.target.value);invalidate()}}/>
+            </label>
+          </div>
+
+          <label>Demanda aumenta <b>{demand}%</b><input type="range" min="0" max="80" value={demand} onChange={e=>{setDemand(+e.target.value);invalidate()}}/></label>
+          <label>Atraso do fornecedor <b>{delay} dias</b><input type="range" min="0" max="14" value={delay} onChange={e=>{setDelay(+e.target.value);invalidate()}}/></label>
+
+          <button className="simulate-btn" onClick={simulate} disabled={loading||productsLoading||!selected}>
+            {loading?'Calculando...':'Simular cenário'}
+          </button>
+          <div className="note"><Sparkles size={18}/><p>Saldo e custo vêm do MySQL. Demanda e prazo são premissas do cenário. A IA apenas explica o resultado.</p></div>
         </div>
-        <button className="ghost" onClick={explain} disabled={advisorLoading}><BrainCircuit size={18}/>{advisorLoading?'Analisando...':'Explicar esta decisão'}</button>
-        {explanation&&<div className="advisor-box"><div><BrainCircuit size={17}/><strong>Assistente Nexo</strong><span>{advisorSource}</span></div><p>{explanation}</p></div>}
+
+        <div className="result">
+          {result
+            ? <>
+                <div className="risk-line"><span>Risco projetado</span><strong className={'risk '+String(result.risk).toLowerCase()}>{result.risk}</strong></div>
+                <div className="api-status"><span className="status-dot api"></span>Resultado calculado pelo Spring Boot</div>
+                <div className="coverage">{result.coverage}<small> dias de cobertura</small></div>
+                <div className="result-grid">
+                  <div><span>Ruptura estimada</span><b>{result.stockout}</b></div>
+                  <div><span>Compra sugerida</span><b>{result.recommended} un.</b></div>
+                  <div><span>Valor em risco</span><b>R$ {result.value.toFixed(2).replace('.',',')}</b></div>
+                </div>
+                <button className="ghost" onClick={explain} disabled={advisorLoading}>
+                  <BrainCircuit size={18}/>{advisorLoading?'Analisando...':'Explicar esta decisão'}
+                </button>
+                {explanation&&<div className="advisor-box"><div><BrainCircuit size={17}/><strong>Assistente Nexo</strong><span>{advisorSource}</span></div><p>{explanation}</p></div>}
+              </>
+            : <div className="sim-empty-state">
+                <TrendingUp size={28}/>
+                <strong>{source==='offline'?'Simulação indisponível':'Configure o cenário'}</strong>
+                <p>{source==='offline'
+                  ? 'A API não respondeu. Nenhum cálculo local foi usado como substituto.'
+                  : 'Selecione o produto, informe as premissas e execute a simulação.'}</p>
+              </div>}
+
+          {error&&<div className="error">{error}</div>}
+        </div>
       </div>
-    </div>
-  </section>;
+    </section>
+  </>;
 }
 
 type ProductView={
@@ -1325,7 +1468,7 @@ function SystemReadiness(){
 
 function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onToggleTheme:()=>void}){
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
-  const [page,setPage]=useState<'dashboard'|'products'|'batches'|'inventory'|'assistant'>('dashboard');
+  const [page,setPage]=useState<'dashboard'|'products'|'batches'|'inventory'|'simulator'|'assistant'>('dashboard');
   const [showMovement,setShowMovement]=useState(false);
   const [movementRefresh,setMovementRefresh]=useState(0);
   const [dashboardLoading,setDashboardLoading]=useState(true);
@@ -1546,7 +1689,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
         <a className={page==='products'?'active':''} onClick={()=>setPage('products')}><Boxes size={19}/> Produtos</a>
         <a className={page==='batches'?'active':''} onClick={()=>setPage('batches')}><PackageSearch size={19}/> Lotes & validade</a>
         <a className={page==='inventory'?'active':''} onClick={()=>setPage('inventory')}><ClipboardCheck size={19}/> Inventário cego</a>
-        <a><TrendingUp size={19}/> Simulador</a>
+        <a className={page==='simulator'?'active':''} onClick={()=>setPage('simulator')}><TrendingUp size={19}/> Simulador</a>
         <a className={page==='assistant'?'active':''} onClick={()=>setPage('assistant')}><BrainCircuit size={19}/> Assistente</a>
       </nav>
       <div className="sidebar-bottom"><ThemeToggle theme={theme} onToggle={onToggleTheme}/><button className="logout" onClick={logout}><LogOut size={18}/> Sair</button></div>
@@ -1559,9 +1702,11 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
           ? <BatchesPanel/>
           : page==='inventory'
             ? <BlindInventoryPanel/>
-            : page==='assistant'
-              ? <AdvisorPanel/>
-              : <>
+            : page==='simulator'
+              ? <Simulator/>
+              : page==='assistant'
+                ? <AdvisorPanel/>
+                : <>
           <header>
             <div>
               <span className="eyebrow">NEXO ESTOQUE</span>
@@ -1599,7 +1744,6 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
           </section>
 
           <RecentMovements refreshKey={movementRefresh}/>
-          <Simulator/>
           {showMovement&&<StockMovementModal
             onClose={()=>setShowMovement(false)}
             onSaved={()=>setMovementRefresh(value=>value+1)}
