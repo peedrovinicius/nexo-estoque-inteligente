@@ -637,3 +637,6 @@ html[data-theme="dark"] .system-readiness{background:#121b24;border-color:#27343
 html[data-theme="dark"] .system-readiness.ready{background:#173328;border-color:#28503f;color:#9ddaba}
 html[data-theme="dark"] .system-readiness.degraded{background:#382f1e;border-color:#594825;color:#e9c77e}
 html[data-theme="dark"] .system-readiness.offline{background:#472522;border-color:#633430;color:#f0aaa3}
+
+.dashboard-empty{margin-top:14px;padding:22px;border:1px dashed #d9dfe4;border-radius:14px;background:#fff;color:#7a858f;font-size:12px;text-align:center}
+html[data-theme="dark"] .dashboard-empty{background:#121b24;border-color:#2a3742;color:#96a3af}
