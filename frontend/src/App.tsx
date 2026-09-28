@@ -579,8 +579,298 @@ function RecentMovements({refreshKey}:{refreshKey:number}){
   </section>;
 }
 
+
+type InventorySessionView={
+  id:number;
+  name:string;
+  status:'OPEN'|'CLOSED'|'CANCELLED';
+  startedAt?:string;
+  closedAt?:string;
+  countedItems:number;
+  divergentItems:number;
+};
+
+type InventoryItemView={
+  productId:number;
+  sku:string;
+  productName:string;
+  countedQuantity:number|null;
+  systemQuantitySnapshot:number|null;
+  differenceQuantity:number|null;
+  countedAt?:string;
+  revealed:boolean;
+};
+
+function BlindInventoryPanel(){
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
+  const [sessions,setSessions]=useState<InventorySessionView[]>([]);
+  const [selectedId,setSelectedId]=useState<number|null>(null);
+  const [items,setItems]=useState<InventoryItemView[]>([]);
+  const [drafts,setDrafts]=useState<Record<number,string>>({});
+  const [newName,setNewName]=useState('');
+  const [loading,setLoading]=useState(true);
+  const [savingId,setSavingId]=useState<number|null>(null);
+  const [creating,setCreating]=useState(false);
+  const [closing,setClosing]=useState(false);
+  const [error,setError]=useState('');
+  const [feedback,setFeedback]=useState('');
+
+  const selected=sessions.find(session=>session.id===selectedId)??null;
+  const counted=items.filter(item=>item.countedQuantity!==null).length;
+  const complete=items.length>0&&counted===items.length;
+
+  async function readError(response:Response,fallback:string){
+    const payload=await response.json().catch(()=>null);
+    return payload?.detail||payload?.message||fallback;
+  }
+
+  async function loadSessions(preferredId?:number){
+    const response=await fetch(API_URL+'/api/v1/inventory/blind');
+    if(!response.ok) throw new Error(await readError(response,'Não foi possível carregar os inventários.'));
+    const data=await response.json();
+    const rows:InventorySessionView[]=(Array.isArray(data)?data:[]).map((session:any)=>({
+      id:Number(session.id),
+      name:String(session.name||'Inventário'),
+      status:session.status,
+      startedAt:session.startedAt||'',
+      closedAt:session.closedAt||'',
+      countedItems:Number(session.countedItems||0),
+      divergentItems:Number(session.divergentItems||0)
+    }));
+    setSessions(rows);
+    const desired=preferredId??selectedId??rows.find(row=>row.status==='OPEN')?.id??rows[0]?.id??null;
+    if(desired!==null&&rows.some(row=>row.id===desired)) setSelectedId(desired);
+    else setSelectedId(rows[0]?.id??null);
+    return desired;
+  }
+
+  async function loadItems(sessionId:number){
+    const response=await fetch(API_URL+`/api/v1/inventory/blind/${sessionId}/items`);
+    if(!response.ok) throw new Error(await readError(response,'Não foi possível carregar os itens do inventário.'));
+    const data=await response.json();
+    const rows:InventoryItemView[]=(Array.isArray(data)?data:[]).map((item:any)=>({
+      productId:Number(item.productId),
+      sku:String(item.sku||''),
+      productName:String(item.productName||'Produto'),
+      countedQuantity:item.countedQuantity===null||item.countedQuantity===undefined?null:Number(item.countedQuantity),
+      systemQuantitySnapshot:item.systemQuantitySnapshot===null||item.systemQuantitySnapshot===undefined?null:Number(item.systemQuantitySnapshot),
+      differenceQuantity:item.differenceQuantity===null||item.differenceQuantity===undefined?null:Number(item.differenceQuantity),
+      countedAt:item.countedAt||'',
+      revealed:Boolean(item.revealed)
+    }));
+    setItems(rows);
+    const next:Record<number,string>={};
+    rows.forEach(item=>{next[item.productId]=item.countedQuantity===null?'':String(item.countedQuantity)});
+    setDrafts(next);
+  }
+
+  useEffect(()=>{
+    (async()=>{
+      setLoading(true);
+      setError('');
+      try{
+        const desired=await loadSessions();
+        if(desired) await loadItems(desired);
+      }catch(err){
+        setError(err instanceof Error?err.message:'A API de inventário está indisponível.');
+      }finally{
+        setLoading(false);
+      }
+    })();
+  },[]);
+
+  useEffect(()=>{
+    if(selectedId===null) {
+      setItems([]);
+      return;
+    }
+    (async()=>{
+      setLoading(true);
+      setError('');
+      try{await loadItems(selectedId)}
+      catch(err){setError(err instanceof Error?err.message:'Não foi possível abrir o inventário.')}
+      finally{setLoading(false)}
+    })();
+  },[selectedId]);
+
+  async function createSession(e:React.FormEvent){
+    e.preventDefault();
+    if(!newName.trim()) return;
+    setCreating(true);
+    setError('');
+    setFeedback('');
+    try{
+      const response=await fetch(API_URL+'/api/v1/inventory/blind',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name:newName.trim()})
+      });
+      if(!response.ok) throw new Error(await readError(response,'Não foi possível criar o inventário.'));
+      const created=await response.json();
+      setNewName('');
+      await loadSessions(Number(created.id));
+      setSelectedId(Number(created.id));
+      setFeedback('Inventário aberto. O saldo do sistema ficará oculto até o fechamento.');
+    }catch(err){
+      setError(err instanceof Error?err.message:'Não foi possível criar o inventário.');
+    }finally{
+      setCreating(false);
+    }
+  }
+
+  async function saveCount(productId:number){
+    const raw=drafts[productId];
+    const quantity=Number(raw);
+    if(raw===''||!Number.isFinite(quantity)||quantity<0){
+      setError('Informe uma contagem válida, igual ou maior que zero.');
+      return;
+    }
+    if(!selectedId) return;
+
+    setSavingId(productId);
+    setError('');
+    setFeedback('');
+    try{
+      const response=await fetch(API_URL+`/api/v1/inventory/blind/${selectedId}/counts`,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({productId,countedQuantity:quantity})
+      });
+      if(!response.ok) throw new Error(await readError(response,'Não foi possível salvar a contagem.'));
+      await Promise.all([loadItems(selectedId),loadSessions(selectedId)]);
+      setFeedback('Contagem salva sem revelar o saldo do sistema.');
+    }catch(err){
+      setError(err instanceof Error?err.message:'Não foi possível salvar a contagem.');
+    }finally{
+      setSavingId(null);
+    }
+  }
+
+  async function closeSession(){
+    if(!selectedId||!complete) return;
+    setClosing(true);
+    setError('');
+    setFeedback('');
+    try{
+      const response=await fetch(API_URL+`/api/v1/inventory/blind/${selectedId}/close`,{method:'POST'});
+      if(!response.ok) throw new Error(await readError(response,'Não foi possível fechar o inventário.'));
+      await loadSessions(selectedId);
+      await loadItems(selectedId);
+      setFeedback('Inventário fechado. As divergências foram reveladas para conferência.');
+    }catch(err){
+      setError(err instanceof Error?err.message:'Não foi possível fechar o inventário.');
+    }finally{
+      setClosing(false);
+    }
+  }
+
+  return <>
+    <header className="page-header">
+      <div>
+        <span className="eyebrow">CONFERÊNCIA SEM VIÉS</span>
+        <h1>Inventário cego</h1>
+        <p>Conte fisicamente sem visualizar o saldo esperado. A comparação aparece somente depois do fechamento.</p>
+      </div>
+    </header>
+
+    <section className="blind-create">
+      <form onSubmit={createSession}>
+        <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="Nome do inventário, ex.: Contagem semanal · Corredor A"/>
+        <button className="primary compact" disabled={creating||!newName.trim()}>{creating?'Abrindo...':'+ Abrir inventário'}</button>
+      </form>
+      <div className="blind-shield"><ShieldCheck size={17}/><span>Durante a contagem, o Nexo não envia o saldo do sistema para a tela.</span></div>
+    </section>
+
+    {error&&<div className="product-feedback warning">{error}</div>}
+    {feedback&&<div className="product-feedback success">{feedback}</div>}
+
+    <section className="blind-layout">
+      <aside className="inventory-sessions">
+        <div className="inventory-side-head"><strong>Sessões</strong><span>{sessions.length}</span></div>
+        {sessions.map(session=><button
+          type="button"
+          key={session.id}
+          className={session.id===selectedId?'inventory-session active':'inventory-session'}
+          onClick={()=>setSelectedId(session.id)}
+        >
+          <div><strong>{session.name}</strong><small>{session.startedAt?new Date(session.startedAt).toLocaleString('pt-BR'):'—'}</small></div>
+          <span className={'inventory-status '+session.status.toLowerCase()}>{session.status==='OPEN'?'Aberto':session.status==='CLOSED'?'Fechado':'Cancelado'}</span>
+        </button>)}
+        {!sessions.length&&!loading&&<div className="inventory-empty-small">Nenhum inventário criado.</div>}
+      </aside>
+
+      <div className="inventory-work">
+        {selected
+          ? <>
+              <div className="inventory-work-head">
+                <div>
+                  <span className="eyebrow">{selected.status==='OPEN'?'CONTAGEM EM ANDAMENTO':'RESULTADO AUDITÁVEL'}</span>
+                  <h2>{selected.name}</h2>
+                  <p>{selected.status==='OPEN'
+                    ? `${counted} de ${items.length} produtos contados`
+                    : `${selected.countedItems} itens conferidos · ${selected.divergentItems} divergências`}</p>
+                </div>
+                {selected.status==='OPEN'&&<button className="close-inventory" disabled={!complete||closing} onClick={closeSession}>
+                  {closing?'Fechando...':'Fechar e revelar diferenças'}
+                </button>}
+              </div>
+
+              {selected.status==='OPEN'&&<div className="inventory-progress"><span style={{width:(items.length?counted/items.length*100:0)+'%'}}/></div>}
+
+              <div className="blind-table-wrap">
+                <table className="blind-table">
+                  <thead>
+                    <tr>
+                      <th>Produto</th>
+                      <th>Contado</th>
+                      {selected.status==='CLOSED'&&<><th>Sistema</th><th>Diferença</th></>}
+                      {selected.status==='OPEN'&&<th>Ação</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map(item=><tr key={item.productId}>
+                      <td><strong>{item.productName}</strong><small>{item.sku}</small></td>
+                      <td>
+                        {selected.status==='OPEN'
+                          ? <input
+                              type="number"
+                              min="0"
+                              step="0.001"
+                              value={drafts[item.productId]??''}
+                              onChange={e=>setDrafts(current=>({...current,[item.productId]:e.target.value}))}
+                              placeholder="Quantidade física"
+                            />
+                          : <b>{item.countedQuantity??'—'}</b>}
+                      </td>
+                      {selected.status==='CLOSED'&&<>
+                        <td><b>{item.systemQuantitySnapshot??'—'}</b></td>
+                        <td><span className={'difference '+((item.differenceQuantity??0)===0?'zero':(item.differenceQuantity??0)>0?'positive':'negative')}>
+                          {(item.differenceQuantity??0)>0?'+':''}{item.differenceQuantity??'—'}
+                        </span></td>
+                      </>}
+                      {selected.status==='OPEN'&&<td>
+                        <button className="count-save" disabled={savingId===item.productId} onClick={()=>saveCount(item.productId)}>
+                          {savingId===item.productId?'Salvando...':item.countedQuantity===null?'Salvar':'Atualizar'}
+                        </button>
+                      </td>}
+                    </tr>)}
+                    {!items.length&&!loading&&<tr><td colSpan={selected.status==='CLOSED'?4:3} className="empty-state">Nenhum produto ativo para contar.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          : <div className="inventory-empty">
+              <ClipboardCheck size={30}/>
+              <strong>Abra um inventário para iniciar a contagem</strong>
+              <span>O saldo esperado continuará oculto até o encerramento.</span>
+            </div>}
+      </div>
+    </section>
+  </>;
+}
+
 function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onToggleTheme:()=>void}){
-  const [page,setPage]=useState<'dashboard'|'products'>('dashboard');
+  const [page,setPage]=useState<'dashboard'|'products'|'inventory'>('dashboard');
   const [showMovement,setShowMovement]=useState(false);
   const [movementRefresh,setMovementRefresh]=useState(0);
   const cards=[
@@ -599,7 +889,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
       <nav>
         <a className={page==='dashboard'?'active':''} onClick={()=>setPage('dashboard')}><LayoutDashboard size={19}/> Visão geral</a>
         <a className={page==='products'?'active':''} onClick={()=>setPage('products')}><Boxes size={19}/> Produtos</a>
-        <a><ClipboardCheck size={19}/> Inventário cego</a>
+        <a className={page==='inventory'?'active':''} onClick={()=>setPage('inventory')}><ClipboardCheck size={19}/> Inventário cego</a>
         <a><TrendingUp size={19}/> Simulador</a>
         <a><BrainCircuit size={19}/> Assistente</a>
       </nav>
@@ -608,7 +898,9 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
     <main className="workspace">
       {page==='products'
         ? <ProductsPanel/>
-        : <>
+        : page==='inventory'
+          ? <BlindInventoryPanel/>
+          : <>
           <header><div><span className="eyebrow">NEXO ESTOQUE</span><h1>Boa tarde, administrador.</h1><p>O estoque está estável, mas há 8 itens que merecem ação hoje.</p></div><button className="new-action" onClick={()=>setShowMovement(true)}>+ Nova movimentação</button></header>
           <section className="cards">
             {cards.map(([title,value,Icon,detail])=><article className="metric" key={title}><div className="metric-top"><span>{title}</span><Icon size={20}/></div><strong>{value}</strong><small>{detail}</small></article>)}
