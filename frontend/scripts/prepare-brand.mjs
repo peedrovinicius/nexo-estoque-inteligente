@@ -1,17 +1,21 @@
 import fs from 'node:fs';
-import pngjs from 'pngjs';
+import UPNG from 'upng-js';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
-const { PNG }=pngjs;
 const here=dirname(fileURLToPath(import.meta.url));
 const sourcePath=resolve(here,'../public/nexo-logo.png');
 const outputPath=resolve(here,'../public/nexo-logo-hd.png');
 
-const source=PNG.sync.read(fs.readFileSync(sourcePath));
-const innerWidth=2046;
+const file=fs.readFileSync(sourcePath);
+const inputBuffer=file.buffer.slice(file.byteOffset,file.byteOffset+file.byteLength);
+const decoded=UPNG.decode(inputBuffer);
+const sourceData=new Uint8Array(UPNG.toRGBA8(decoded)[0]);
+
+const source={width:decoded.width,height:decoded.height,data:sourceData};
 const targetWidth=2048;
 const targetHeight=682;
+const innerWidth=2046;
 const horizontal=new Float32Array(innerWidth*source.height*4);
 
 function sinc(x){
@@ -25,18 +29,21 @@ function lanczos(x,a=3){
 }
 function contributors(inputSize,outputSize){
   const scale=outputSize/inputSize;
-  const result=[];
+  const result=new Array(outputSize);
   for(let o=0;o<outputSize;o++){
     const center=(o+0.5)/scale-0.5;
-    const left=Math.floor(center)-2;
+    const first=Math.floor(center)-2;
     const items=[];
     let total=0;
-    for(let i=left;i<=left+5;i++){
+    for(let i=first;i<=first+5;i++){
       const clamped=Math.max(0,Math.min(inputSize-1,i));
-      const w=lanczos(center-i,3);
-      if(w!==0){items.push([clamped,w]);total+=w;}
+      const weight=lanczos(center-i,3);
+      if(weight!==0){
+        items.push([clamped,weight]);
+        total+=weight;
+      }
     }
-    result.push(items.map(([i,w])=>[i,w/total]));
+    result[o]=items.map(([index,weight])=>[index,weight/total]);
   }
   return result;
 }
@@ -61,8 +68,7 @@ for(let y=0;y<source.height;y++){
   }
 }
 
-const output=new PNG({width:targetWidth,height:targetHeight,colorType:6});
-output.data.fill(0);
+const output=new Uint8Array(targetWidth*targetHeight*4);
 const yContrib=contributors(source.height,targetHeight);
 
 for(let y=0;y<targetHeight;y++){
@@ -75,17 +81,17 @@ for(let y=0;y<targetHeight;y++){
       b+=horizontal[si+2]*w;
       a+=horizontal[si+3]*w;
     }
-    const dx=x+1;
-    const di=(y*targetWidth+dx)*4;
     const alpha=Math.max(0,Math.min(1,a));
-    output.data[di+3]=Math.round(alpha*255);
+    const di=(y*targetWidth+x+1)*4;
+    output[di+3]=Math.round(alpha*255);
     if(alpha>1e-6){
-      output.data[di]=Math.max(0,Math.min(255,Math.round(r/alpha)));
-      output.data[di+1]=Math.max(0,Math.min(255,Math.round(g/alpha)));
-      output.data[di+2]=Math.max(0,Math.min(255,Math.round(b/alpha)));
+      output[di]=Math.max(0,Math.min(255,Math.round(r/alpha)));
+      output[di+1]=Math.max(0,Math.min(255,Math.round(g/alpha)));
+      output[di+2]=Math.max(0,Math.min(255,Math.round(b/alpha)));
     }
   }
 }
 
-fs.writeFileSync(outputPath,PNG.sync.write(output,{colorType:6,inputColorType:6}));
-console.log(`Nexo brand asset prepared: ${targetWidth}x${targetHeight}`);
+const encoded=UPNG.encode([output.buffer],targetWidth,targetHeight,0);
+fs.writeFileSync(outputPath,Buffer.from(encoded));
+console.log(`Nexo brand asset prepared: ${targetWidth}x${targetHeight} from ${source.width}x${source.height}`);
