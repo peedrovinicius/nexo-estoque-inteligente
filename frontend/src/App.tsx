@@ -356,7 +356,7 @@ function ProductsPanel(){
   const [source,setSource]=useState<'loading'|'api'|'offline'>('loading');
   const [saving,setSaving]=useState(false);
   const [feedback,setFeedback]=useState('');
-  const [form,setForm]=useState({sku:'',name:'',category:'',stock:'',min:''});
+  const [form,setForm]=useState({sku:'',name:'',category:'',min:''});
 
   function normalizeProduct(product:any):ProductView{
     return {
@@ -406,7 +406,7 @@ function ProductsPanel(){
       sku:form.sku.trim().toUpperCase(),
       name:form.name.trim(),
       category:form.category.trim(),
-      stock:Number(form.stock||0),
+      stock:0,
       min:Number(form.min||0),
       lot:'—',
       expiry:'—'
@@ -431,7 +431,7 @@ function ProductsPanel(){
       });
       if(!response.ok) throw new Error('Não foi possível persistir o produto');
 
-      setForm({sku:'',name:'',category:'',stock:'',min:''});
+      setForm({sku:'',name:'',category:'',min:''});
       setShowForm(false);
       await loadProducts();
       setFeedback('Produto salvo na base MySQL.');
@@ -467,11 +467,10 @@ function ProductsPanel(){
         <label>SKU<input value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="Ex.: MED-102"/></label>
         <label>Nome<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Nome do produto"/></label>
         <label>Categoria<input value={form.category} onChange={e=>setForm({...form,category:e.target.value})} placeholder="Categoria"/></label>
-        <label>Estoque inicial<input type="number" min="0" step="0.001" value={form.stock} onChange={e=>setForm({...form,stock:e.target.value})}/></label>
         <label>Estoque mínimo<input type="number" min="0" step="0.001" value={form.min} onChange={e=>setForm({...form,min:e.target.value})}/></label>
       </div>
       <div className="form-actions">
-        <span>{source==='api'?'Cadastro será persistido pela Procedure MySQL.':'Aguarde a API voltar para salvar dados reais.'}</span>
+        <span>{source==='api'?'O produto inicia com saldo zero. Depois, registre a entrada por lote.':'Aguarde a API voltar para salvar dados reais.'}</span>
         <button className="primary compact" disabled={saving}>{saving?'Salvando...':'Salvar produto'}</button>
       </div>
     </form>}
