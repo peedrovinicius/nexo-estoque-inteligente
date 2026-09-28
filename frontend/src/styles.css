@@ -5,3 +5,10 @@
 .api-status{display:flex;align-items:center;gap:7px;margin-top:14px;color:#8f9aa4;font-size:11px}
 .status-dot{width:7px;height:7px;border-radius:50%;background:#7b8791;box-shadow:0 0 0 3px rgba(123,135,145,.12)}
 .status-dot.api{background:#62c692;box-shadow:0 0 0 3px rgba(98,198,146,.12)}
+
+.advisor-box{margin-top:13px;padding:14px;border:1px solid #34414c;border-radius:10px;background:#121b22}
+.advisor-box>div{display:flex;align-items:center;gap:7px}
+.advisor-box strong{font-size:12px}
+.advisor-box span{margin-left:auto;font-size:10px;color:#85919b}
+.advisor-box p{margin:10px 0 0;color:#bac3ca;font-size:12px;line-height:1.55}
+.ghost:disabled{opacity:.6;cursor:wait}
