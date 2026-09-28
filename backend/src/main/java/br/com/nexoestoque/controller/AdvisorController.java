@@ -1,5 +1,7 @@
 package br.com.nexoestoque.controller;
 
+import br.com.nexoestoque.dto.AdvisorChatRequest;
+import br.com.nexoestoque.dto.AdvisorChatResponse;
 import br.com.nexoestoque.dto.AdvisorRequest;
 import br.com.nexoestoque.dto.AdvisorResponse;
 import br.com.nexoestoque.service.AdvisorService;
@@ -19,5 +21,10 @@ public class AdvisorController {
     @PostMapping("/explain")
     public AdvisorResponse explain(@Valid @RequestBody AdvisorRequest request) {
         return advisorService.explain(request);
+    }
+
+    @PostMapping("/chat")
+    public AdvisorChatResponse chat(@Valid @RequestBody AdvisorChatRequest request) {
+        return advisorService.chat(request.question());
     }
 }
