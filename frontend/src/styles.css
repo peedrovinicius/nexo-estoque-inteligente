@@ -40,3 +40,29 @@
   .sidebar-brand{padding:2px 0 18px!important}
   .sidebar-brand img{width:46px;height:46px;object-fit:cover;object-position:left center;border-radius:10px}
 }
+
+
+/* Nexo brand */
+.nexo-logo{display:flex;align-items:center;gap:11px;min-width:0}
+.nexo-symbol{width:42px;height:42px;flex:0 0 42px;filter:drop-shadow(0 8px 18px rgba(20,119,255,.18))}
+.nexo-wordmark{display:flex;flex-direction:column;min-width:0}
+.nexo-wordmark strong{font:700 24px/1 Manrope,'DM Sans',sans-serif;letter-spacing:-.045em;color:#0d2350}
+.nexo-wordmark span{margin-top:5px;font-size:9.5px;line-height:1.2;white-space:nowrap;color:#64748b;letter-spacing:.015em}
+.nexo-logo.compact .nexo-symbol{width:38px;height:38px;flex-basis:38px}
+.login-copy>.nexo-logo{position:absolute;top:38px;left:7vw}
+.login-title .nexo-logo{flex:0 0 auto}
+
+/* Light navigation — aligned with the Nexo visual identity */
+aside{background:#ffffff;color:#172033;border-right:1px solid #e6edf5;box-shadow:8px 0 28px rgba(15,35,70,.035)}
+aside .nexo-logo{padding:0 8px 23px;border-bottom:1px solid #e8edf3}
+aside .nexo-wordmark strong{font-size:21px;color:#0d2350}
+aside .nexo-symbol{width:35px;height:35px;flex-basis:35px}
+nav a,.logout{color:#687386}
+nav a:hover{background:#f4f8ff;color:#1265e8}
+nav a.active{background:linear-gradient(135deg,#eef6ff,#e9f2ff);color:#1265e8;box-shadow:inset 3px 0 0 #1476ff}
+.logout:hover{background:#f7f9fc;color:#172033}
+
+@media(max-width:1000px){
+  aside .nexo-wordmark{display:none}
+  aside .nexo-logo{justify-content:center;padding-left:0;padding-right:0}
+}
