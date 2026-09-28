@@ -559,3 +559,64 @@ html[data-theme="dark"] .difference.negative{background:#472522;color:#f0aaa3}
   .blind-create .primary.compact,.close-inventory{width:100%}
   .blind-shield{align-items:flex-start}
 }
+
+
+/* FEFO batches and validity */
+.movement-hint.fefo{background:#eef6ff;color:#315f94;border:1px solid #d9e9fb}
+.batch-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:28px}
+.batch-kpis article{background:#fff;border:1px solid #e5e8eb;border-radius:15px;padding:18px}
+.batch-kpis span{display:block;color:#747d86;font-size:12px}
+.batch-kpis strong{display:block;margin:10px 0 4px;font:700 27px Manrope;color:#1f252b}
+.batch-kpis small{color:#8b949d;font-size:10px}
+.batch-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding:13px;background:#fff;border:1px solid #e5e8eb;border-radius:14px}
+.batch-toolbar input,.batch-toolbar select{border:1px solid #dce1e5;border-radius:9px;padding:10px 12px;background:#fff;color:#263039;outline:none}
+.batch-toolbar input{width:min(520px,100%)}
+.batch-toolbar select{min-width:190px}
+.batch-toolbar input:focus,.batch-toolbar select:focus{border-color:#1476ff;box-shadow:0 0 0 3px rgba(20,118,255,.09)}
+.batch-table-wrap{margin-top:14px;overflow:auto;background:#fff;border:1px solid #e5e8eb;border-radius:15px}
+.batch-table{width:100%;border-collapse:collapse;min-width:960px}
+.batch-table th{text-align:left;padding:12px 14px;background:#fafbfb;border-bottom:1px solid #e7eaed;color:#7c858e;font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.batch-table td{padding:14px;border-bottom:1px solid #eef0f2;color:#4c555e;font-size:12px;vertical-align:middle}
+.batch-table tr:last-child td{border-bottom:0}
+.batch-table td:first-child strong,.batch-table td:first-child small,.batch-table td:nth-child(3) strong,.batch-table td:nth-child(3) small{display:block}
+.batch-table td:first-child strong,.batch-table td:nth-child(3) strong{color:#20252a}
+.batch-table td:first-child small,.batch-table td:nth-child(3) small{margin-top:3px;color:#929ba3}
+.fefo-next{display:inline-flex;border-radius:999px;padding:5px 8px;background:#eef4ff;color:#2f67b1;font-size:10px;font-weight:800}
+.expiry-pill{display:inline-flex;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:800}
+.expiry-pill.ok{background:#e9f7ef;color:#25734b}
+.expiry-pill.attention{background:#fff7e6;color:#986400}
+.expiry-pill.critical{background:#fff0df;color:#a95b00}
+.expiry-pill.expired{background:#fff0ef;color:#a94339}
+.expiry-pill.no_expiry{background:#eef1f4;color:#626b74}
+
+html[data-theme="dark"] .movement-hint.fefo{background:#15283b;color:#8fbeef;border-color:#20456a}
+html[data-theme="dark"] .batch-kpis article,
+html[data-theme="dark"] .batch-toolbar,
+html[data-theme="dark"] .batch-table-wrap{background:#121b24;border-color:#25313d}
+html[data-theme="dark"] .batch-kpis strong,
+html[data-theme="dark"] .batch-table td:first-child strong,
+html[data-theme="dark"] .batch-table td:nth-child(3) strong{color:#edf2f7}
+html[data-theme="dark"] .batch-kpis span,
+html[data-theme="dark"] .batch-kpis small,
+html[data-theme="dark"] .batch-table td,
+html[data-theme="dark"] .batch-table td:first-child small,
+html[data-theme="dark"] .batch-table td:nth-child(3) small{color:#96a3af}
+html[data-theme="dark"] .batch-toolbar input,
+html[data-theme="dark"] .batch-toolbar select{background:#0e161e;border-color:#2a3845;color:#edf2f7}
+html[data-theme="dark"] .batch-table th{background:#0f1820;border-bottom-color:#27343f;color:#8f9daa}
+html[data-theme="dark"] .batch-table td{border-bottom-color:#202d37}
+html[data-theme="dark"] .fefo-next{background:#172c48;color:#8ebfff}
+html[data-theme="dark"] .expiry-pill.ok{background:#18392d;color:#8fdbb8}
+html[data-theme="dark"] .expiry-pill.attention{background:#3c311b;color:#e9c77e}
+html[data-theme="dark"] .expiry-pill.critical{background:#432d17;color:#efb66e}
+html[data-theme="dark"] .expiry-pill.expired{background:#472522;color:#f0aaa3}
+html[data-theme="dark"] .expiry-pill.no_expiry{background:#202c36;color:#aeb9c3}
+
+@media(max-width:1000px){
+  .batch-kpis{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:700px){
+  .batch-kpis{grid-template-columns:1fr}
+  .batch-toolbar{align-items:stretch;flex-direction:column}
+  .batch-toolbar input,.batch-toolbar select{width:100%;min-width:0}
+}
