@@ -640,3 +640,79 @@ html[data-theme="dark"] .system-readiness.offline{background:#472522;border-colo
 
 .dashboard-empty{margin-top:14px;padding:22px;border:1px dashed #d9dfe4;border-radius:14px;background:#fff;color:#7a858f;font-size:12px;text-align:center}
 html[data-theme="dark"] .dashboard-empty{background:#121b24;border-color:#2a3742;color:#96a3af}
+
+
+/* Contextual operational assistant */
+.advisor-page-header{align-items:center}
+.advisor-workspace{display:grid;grid-template-columns:320px minmax(0,1fr);gap:18px;margin-top:26px}
+.advisor-context{align-self:start;background:#fff;border:1px solid #e5e8eb;border-radius:16px;padding:20px}
+.advisor-context>div:first-child{display:flex;flex-direction:column;align-items:flex-start}
+.advisor-context svg{color:#1476ff;margin-bottom:14px}
+.advisor-context h2{font:700 19px Manrope;margin:6px 0 10px}
+.advisor-context p{margin:0;color:#747e88;font-size:12px;line-height:1.6}
+.advisor-boundaries{display:grid;gap:8px;margin-top:20px;padding-top:18px;border-top:1px solid #edf0f2}
+.advisor-boundaries strong{font-size:12px;color:#303840}
+.advisor-boundaries span{font-size:11px;color:#7d8790;padding-left:14px;position:relative}
+.advisor-boundaries span:before{content:'';position:absolute;left:0;top:6px;width:5px;height:5px;border-radius:50%;background:#9ca6af}
+
+.advisor-chat{min-width:0;background:#fff;border:1px solid #e5e8eb;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;min-height:620px}
+.advisor-messages{padding:22px;display:flex;flex-direction:column;gap:12px;flex:1;max-height:620px;overflow:auto;background:linear-gradient(180deg,#fbfcfd,#f7f9fa)}
+.advisor-message{max-width:min(760px,88%);padding:13px 15px;border-radius:14px;border:1px solid #e4e8eb;background:#fff}
+.advisor-message.user{align-self:flex-end;background:#111820;color:#fff;border-color:#111820}
+.advisor-message.assistant{align-self:flex-start}
+.advisor-message-role{display:flex;align-items:center;gap:7px;margin-bottom:7px;font-size:11px}
+.advisor-message-role strong{font-size:11px}
+.advisor-message.user .advisor-message-role{justify-content:flex-end;color:#cfd7dd}
+.advisor-message.assistant .advisor-message-role{color:#56616a}
+.advisor-message p{white-space:pre-wrap;margin:0;font-size:13px;line-height:1.58}
+.advisor-message small{display:block;margin-top:8px;color:#9099a2;font-size:10px}
+.advisor-message.user small{color:#bac3ca}
+.advisor-message.loading{opacity:.72}
+
+.advisor-suggestions{display:flex;gap:8px;flex-wrap:wrap;padding:14px 18px;border-top:1px solid #edf0f2;background:#fff}
+.advisor-suggestions button{border:1px solid #dfe4e8;background:#f8fafb;color:#4d5861;padding:8px 10px;border-radius:999px;font-size:11px;cursor:pointer}
+.advisor-suggestions button:hover{border-color:#b9c7d3;background:#f2f6fa;color:#1265e8}
+.advisor-suggestions button:disabled{opacity:.5;cursor:wait}
+
+.advisor-composer{padding:16px 18px 18px;border-top:1px solid #edf0f2;background:#fff}
+.advisor-composer textarea{width:100%;resize:vertical;min-height:78px;max-height:180px;padding:12px 13px;border:1px solid #dce2e7;border-radius:11px;background:#fff;color:#20272d;outline:none;font:inherit;font-size:13px;line-height:1.5}
+.advisor-composer textarea:focus{border-color:#1476ff;box-shadow:0 0 0 3px rgba(20,118,255,.08)}
+.advisor-composer>div{display:flex;justify-content:space-between;align-items:center;margin-top:9px}
+.advisor-composer small{color:#929ba3;font-size:10px}
+.advisor-composer .primary{min-width:105px}
+
+html[data-theme="dark"] .advisor-context,
+html[data-theme="dark"] .advisor-chat,
+html[data-theme="dark"] .advisor-suggestions,
+html[data-theme="dark"] .advisor-composer{background:#121b24;border-color:#27343f}
+html[data-theme="dark"] .advisor-context h2,
+html[data-theme="dark"] .advisor-boundaries strong{color:#eef3f7}
+html[data-theme="dark"] .advisor-context p,
+html[data-theme="dark"] .advisor-boundaries span{color:#97a4af}
+html[data-theme="dark"] .advisor-boundaries{border-top-color:#25313b}
+html[data-theme="dark"] .advisor-messages{background:linear-gradient(180deg,#0e161e,#101821)}
+html[data-theme="dark"] .advisor-message.assistant{background:#17212a;border-color:#2b3945;color:#e6edf3}
+html[data-theme="dark"] .advisor-message.user{background:#e7edf3;border-color:#e7edf3;color:#10161c}
+html[data-theme="dark"] .advisor-message.user .advisor-message-role{color:#59636b}
+html[data-theme="dark"] .advisor-message.assistant .advisor-message-role{color:#9eabb5}
+html[data-theme="dark"] .advisor-suggestions,
+html[data-theme="dark"] .advisor-composer{border-top-color:#27343f}
+html[data-theme="dark"] .advisor-suggestions button{background:#17212a;border-color:#2c3945;color:#aeb9c2}
+html[data-theme="dark"] .advisor-suggestions button:hover{background:#1c2b39;border-color:#37536d;color:#93c2f6}
+html[data-theme="dark"] .advisor-composer textarea{background:#0e161e;border-color:#2c3945;color:#edf2f7}
+
+@media(max-width:1000px){
+  .advisor-workspace{grid-template-columns:1fr}
+  .advisor-context{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .advisor-boundaries{margin:0;padding:0 0 0 18px;border-top:0;border-left:1px solid #edf0f2}
+  html[data-theme="dark"] .advisor-boundaries{border-left-color:#25313b}
+}
+@media(max-width:700px){
+  .advisor-context{grid-template-columns:1fr}
+  .advisor-boundaries{margin-top:18px;padding:18px 0 0;border-left:0;border-top:1px solid #edf0f2}
+  html[data-theme="dark"] .advisor-boundaries{border-top-color:#25313b}
+  .advisor-chat{min-height:560px}
+  .advisor-message{max-width:94%}
+  .advisor-suggestions{flex-direction:column}
+  .advisor-suggestions button{text-align:left;border-radius:10px}
+}
