@@ -55,7 +55,12 @@ public class StockMovementController {
                 !ALLOWED_TYPES.contains(request.movementType().toUpperCase(Locale.ROOT))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tipo de movimentação inválido");
         }
-        if (request.quantity() == null || request.quantity().compareTo(BigDecimal.ZERO) <= 0) {
+        if (request.quantity() == null || request.quantity().compareTo(BigDecimal.ZERO) == 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A quantidade não pode ser zero");
+        }
+
+        String type = request.movementType().toUpperCase(Locale.ROOT);
+        if (!"ADJUSTMENT".equals(type) && request.quantity().compareTo(BigDecimal.ZERO) < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A quantidade deve ser maior que zero");
         }
     }
