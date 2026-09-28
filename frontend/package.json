@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/prepare-brand.mjs && vite build",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -16,7 +16,5 @@
     "react-dom": "latest",
     "lucide-react": "latest"
   },
-  "devDependencies": {
-    "upng-js": "^2.1.0"
-  }
+  "devDependencies": {}
 }
