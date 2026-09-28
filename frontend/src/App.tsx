@@ -4,6 +4,23 @@ import { AlertTriangle, Boxes, BrainCircuit, ChevronRight, ClipboardCheck, Layou
 const DEMO_USER='admin';
 const DEMO_PASSWORD='Nexo@2026';
 
+function NexoLogo({compact=false,tagline=false}:{compact?:boolean;tagline?:boolean}){
+  return <div className={'nexo-logo '+(compact?'compact':'')}>
+    <svg className="nexo-symbol" viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <linearGradient id="nexoGradient" x1="8" y1="4" x2="54" y2="60" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#20e6b2"/>
+          <stop offset=".48" stopColor="#08aaf2"/>
+          <stop offset="1" stopColor="#2449ff"/>
+        </linearGradient>
+      </defs>
+      <path fill="url(#nexoGradient)" d="M31.8 3.7 56 17.5v28L32 60 8 46.1V19.2l9.8-5.8 9.6 5.5-9.1 5.3v16.4L32 48.4l13.8-8V24.1L32 16.2l-5.5 3.2 17 9.8v10.6L32 46.4 20.4 39.7V28.8L32 35.5l3.4-2-17-9.8V12.5L31.8 3.7Z"/>
+    </svg>
+    {!compact&&<div className="nexo-wordmark"><strong>Nexo</strong>{tagline&&<span>Sistema inteligente de gestão de estoque</span>}</div>}
+  </div>;
+}
+
+
 function Login({onLogin}:{onLogin:()=>void}) {
   const [user,setUser]=useState('');
   const [password,setPassword]=useState('');
