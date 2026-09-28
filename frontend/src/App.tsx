@@ -52,9 +52,15 @@ function Login({onLogin,theme,onToggleTheme}:{onLogin:()=>void;theme:Theme;onTog
     </div>
       <div className="hero">
         <span className="eyebrow">GESTÃO QUE ANTECIPA</span>
-        <h1>Seu estoque deixa de ser um número e passa a ser uma decisão.</h1>
-        <p>Controle lotes, validade e movimentações. Simule demanda, atraso de fornecedor e risco de ruptura antes que o problema aconteça.</p>
-        <div className="trust"><span><ShieldCheck size={18}/> decisões auditáveis</span><span><BrainCircuit size={18}/> assistência inteligente</span></div>
+        <h1>Controle hoje.<br/><span>Cresça sempre.</span></h1>
+        <p>Gestão de estoque com rastreabilidade, validade, FEFO, simulação de cenários e assistência inteligente sobre dados reais.</p>
+        <div className="hero-feature-grid">
+          <div><Boxes size={19}/><span>Estoque em tempo real</span></div>
+          <div><AlertTriangle size={19}/><span>Alertas operacionais</span></div>
+          <div><PackageSearch size={19}/><span>FEFO e validade</span></div>
+          <div><BrainCircuit size={19}/><span>Assistência inteligente</span></div>
+        </div>
+        <div className="trust"><span><ShieldCheck size={18}/> decisões auditáveis</span><span><ScanLine size={18}/> rastreabilidade por lote</span></div>
       </div>
     </section>
     <section className="login-side">
