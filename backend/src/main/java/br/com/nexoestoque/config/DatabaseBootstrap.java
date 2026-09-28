@@ -40,13 +40,38 @@ public class DatabaseBootstrap implements ApplicationRunner {
             return;
         }
 
-        try (Connection connection = dataSource.getConnection()) {
-            executeScript(connection, Path.of("/app/database/schema.sql"));
-            executeScript(connection, Path.of("/app/database/procedures.sql"));
-            log.info("Database schema and procedures synchronized");
-        } catch (Exception exception) {
-            log.warn("Database bootstrap skipped: {}", exception.getMessage());
+        Exception lastError = null;
+
+        for (int attempt = 1; attempt <= 8; attempt++) {
+            try (Connection connection = dataSource.getConnection()) {
+                executeScript(connection, Path.of("/app/database/schema.sql"));
+                executeScript(connection, Path.of("/app/database/procedures.sql"));
+                log.info("Database schema and procedures synchronized on attempt {}", attempt);
+                return;
+            } catch (Exception exception) {
+                lastError = exception;
+                log.warn(
+                        "Database bootstrap attempt {}/8 failed: {}",
+                        attempt,
+                        exception.getMessage()
+                );
+
+                if (attempt < 8) {
+                    try {
+                        Thread.sleep(Math.min(1000L * attempt, 5000L));
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        log.warn("Database bootstrap interrupted");
+                        return;
+                    }
+                }
+            }
         }
+
+        log.error(
+                "Database bootstrap could not synchronize after retries: {}",
+                lastError == null ? "unknown error" : lastError.getMessage()
+        );
     }
 
     private void executeScript(Connection connection, Path path) throws IOException, SQLException {
