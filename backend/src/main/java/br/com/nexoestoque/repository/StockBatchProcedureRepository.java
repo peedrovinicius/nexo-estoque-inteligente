@@ -1,6 +1,8 @@
 package br.com.nexoestoque.repository;
 
+import br.com.nexoestoque.dto.BatchAdjustmentRequest;
 import br.com.nexoestoque.dto.BatchEntryRequest;
+import br.com.nexoestoque.dto.BatchReturnRequest;
 import br.com.nexoestoque.dto.FefoExitRequest;
 import br.com.nexoestoque.model.MovementAllocation;
 import br.com.nexoestoque.model.StockBatch;
@@ -66,6 +68,53 @@ public class StockBatchProcedureRepository {
                     null,
                     statement.getBigDecimal(5),
                     statement.getBigDecimal(6),
+                    findAllocations(connection, movementId)
+            );
+        }
+    }
+
+
+    public StockOperationResult returnToBatch(BatchReturnRequest request) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall("{call sp_stock_batch_return(?,?,?,?,?,?,?)}")) {
+            statement.setLong(1, request.productId());
+            statement.setLong(2, request.batchId());
+            statement.setBigDecimal(3, request.quantity());
+            statement.setString(4, request.reason());
+            statement.registerOutParameter(5, Types.BIGINT);
+            statement.registerOutParameter(6, Types.DECIMAL);
+            statement.registerOutParameter(7, Types.DECIMAL);
+            statement.execute();
+
+            long movementId = statement.getLong(5);
+            return new StockOperationResult(
+                    movementId,
+                    request.batchId(),
+                    statement.getBigDecimal(6),
+                    statement.getBigDecimal(7),
+                    findAllocations(connection, movementId)
+            );
+        }
+    }
+
+    public StockOperationResult adjustBatch(BatchAdjustmentRequest request) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall("{call sp_stock_batch_adjustment(?,?,?,?,?,?,?)}")) {
+            statement.setLong(1, request.productId());
+            statement.setLong(2, request.batchId());
+            statement.setBigDecimal(3, request.quantityDelta());
+            statement.setString(4, request.reason());
+            statement.registerOutParameter(5, Types.BIGINT);
+            statement.registerOutParameter(6, Types.DECIMAL);
+            statement.registerOutParameter(7, Types.DECIMAL);
+            statement.execute();
+
+            long movementId = statement.getLong(5);
+            return new StockOperationResult(
+                    movementId,
+                    request.batchId(),
+                    statement.getBigDecimal(6),
+                    statement.getBigDecimal(7),
                     findAllocations(connection, movementId)
             );
         }
