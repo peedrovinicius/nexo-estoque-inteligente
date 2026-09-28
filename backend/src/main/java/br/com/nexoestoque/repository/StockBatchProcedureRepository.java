@@ -51,12 +51,13 @@ public class StockBatchProcedureRepository {
 
     public StockOperationResult exitFefo(FefoExitRequest request) throws SQLException {
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall("{call sp_stock_exit_fefo(?,?,?,?,?)}")) {
+             CallableStatement statement = connection.prepareCall("{call sp_stock_exit_fefo(?,?,?,?,?,?)}")) {
             statement.setLong(1, request.productId());
             statement.setBigDecimal(2, request.quantity());
             statement.setString(3, request.reason());
             statement.registerOutParameter(4, Types.BIGINT);
             statement.registerOutParameter(5, Types.DECIMAL);
+            statement.registerOutParameter(6, Types.DECIMAL);
             statement.execute();
 
             long movementId = statement.getLong(4);
@@ -64,7 +65,7 @@ public class StockBatchProcedureRepository {
                     movementId,
                     null,
                     statement.getBigDecimal(5),
-                    findBalanceAfter(connection, movementId),
+                    statement.getBigDecimal(6),
                     findAllocations(connection, movementId)
             );
         }
@@ -128,16 +129,5 @@ public class StockBatchProcedureRepository {
             }
         }
         return allocations;
-    }
-
-    private java.math.BigDecimal findBalanceAfter(Connection connection, long movementId) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT balance_after FROM stock_movements WHERE id = ?")) {
-            statement.setLong(1, movementId);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) return rs.getBigDecimal("balance_after");
-            }
-        }
-        return null;
     }
 }
