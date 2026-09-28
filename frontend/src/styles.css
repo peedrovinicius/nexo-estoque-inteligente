@@ -1355,3 +1355,67 @@ html[data-theme="dark"] .login-access-copy small{
     border-bottom-color:#2a3845;
   }
 }
+
+
+/* Original Nexo artwork: preserve proportions and native sharpness */
+.official-brand{
+  width:min(320px,100%);
+  padding:0;
+  background:transparent;
+  box-shadow:none;
+}
+.brand-logo-full,
+.login-logo,
+.sidebar-logo-full{
+  display:block;
+  height:auto;
+  object-fit:contain;
+  object-position:left center;
+  image-rendering:auto;
+}
+.brand-logo-full{
+  width:100%;
+  max-width:320px;
+}
+.login-logo{
+  width:170px;
+  max-width:45%;
+}
+.sidebar-logo-full{
+  width:168px;
+  max-width:100%;
+}
+.login-title{
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.login-access-copy{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+}
+.sidebar-brand{
+  min-height:70px;
+  display:flex;
+  align-items:center;
+}
+html[data-theme="light"] .brand-logo-full,
+html[data-theme="light"] .login-logo,
+html[data-theme="light"] .sidebar-logo-full{
+  filter:none;
+}
+html[data-theme="dark"] .brand-logo-full,
+html[data-theme="dark"] .login-logo,
+html[data-theme="dark"] .sidebar-logo-full{
+  filter:none;
+}
+@media(max-width:1000px){
+  .brand-logo-full{max-width:250px}
+  .login-logo{width:145px}
+}
+@media(max-width:700px){
+  .login-title{align-items:flex-start;flex-direction:column}
+  .login-logo{width:160px;max-width:100%}
+}
