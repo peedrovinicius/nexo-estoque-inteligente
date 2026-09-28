@@ -204,20 +204,13 @@ type ProductView={
   expiry:string;
 };
 
-const DEMO_PRODUCTS:ProductView[]=[
-  {sku:'MED-001',name:'Dipirona 500 mg',category:'Medicamentos',stock:120,min:60,lot:'DIP2609A',expiry:'18/12/2026'},
-  {sku:'MED-014',name:'Amoxicilina 500 mg',category:'Medicamentos',stock:42,min:80,lot:'AMX2608C',expiry:'10/02/2027'},
-  {sku:'MER-031',name:'Arroz tipo 1 1 kg',category:'Mercearia',stock:248,min:90,lot:'ARZ0926',expiry:'14/08/2027'},
-  {sku:'REF-008',name:'Iogurte natural 170 g',category:'Refrigerados',stock:48,min:24,lot:'IOG2809',expiry:'07/10/2026'},
-  {sku:'HIG-022',name:'Detergente neutro 500 ml',category:'Higiene e limpeza',stock:76,min:30,lot:'DET26091',expiry:'—'}
-];
 
 function ProductsPanel(){
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [query,setQuery]=useState('');
   const [showForm,setShowForm]=useState(false);
-  const [products,setProducts]=useState<ProductView[]>(DEMO_PRODUCTS);
-  const [source,setSource]=useState<'loading'|'api'|'demo'>('loading');
+  const [products,setProducts]=useState<ProductView[]>([]);
+  const [source,setSource]=useState<'loading'|'api'|'offline'>('loading');
   const [saving,setSaving]=useState(false);
   const [feedback,setFeedback]=useState('');
   const [form,setForm]=useState({sku:'',name:'',category:'',stock:'',min:''});
@@ -245,8 +238,9 @@ function ProductsPanel(){
       setSource('api');
       setFeedback('');
     }catch{
-      setProducts(DEMO_PRODUCTS);
-      setSource('demo');
+      setProducts([]);
+      setSource('offline');
+      setFeedback('API/MySQL indisponível. Nenhum dado local foi usado como substituto.');
     }
   }
 
@@ -299,11 +293,8 @@ function ProductsPanel(){
       await loadProducts();
       setFeedback('Produto salvo na base MySQL.');
     }catch{
-      setProducts(current=>[draft,...current]);
-      setSource('demo');
-      setForm({sku:'',name:'',category:'',stock:'',min:''});
-      setShowForm(false);
-      setFeedback('API/MySQL indisponível. Produto mantido apenas nesta sessão de demonstração.');
+      setSource('offline');
+      setFeedback('API/MySQL indisponível. O produto não foi salvo.');
     }finally{
       setSaving(false);
     }
@@ -320,7 +311,7 @@ function ProductsPanel(){
       <div>
         <span>{filtered.length} produtos exibidos</span>
         <span className={'data-source '+source}>
-          {source==='loading'?'conectando...':source==='api'?'API + MySQL':'modo demonstração'}
+          {source==='loading'?'conectando...':source==='api'?'API + MySQL':'API indisponível'}
         </span>
       </div>
     </section>
@@ -337,7 +328,7 @@ function ProductsPanel(){
         <label>Estoque mínimo<input type="number" min="0" step="0.001" value={form.min} onChange={e=>setForm({...form,min:e.target.value})}/></label>
       </div>
       <div className="form-actions">
-        <span>{source==='api'?'Cadastro será persistido pela Procedure MySQL.':'A API será usada automaticamente quando a base estiver disponível.'}</span>
+        <span>{source==='api'?'Cadastro será persistido pela Procedure MySQL.':'Aguarde a API voltar para salvar dados reais.'}</span>
         <button className="primary compact" disabled={saving}>{saving?'Salvando...':'Salvar produto'}</button>
       </div>
     </form>}
