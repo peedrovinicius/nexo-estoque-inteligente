@@ -17,6 +17,6 @@
     "lucide-react": "latest"
   },
   "devDependencies": {
-    "pngjs": "^7.0.0"
+    "upng-js": "^2.1.0"
   }
 }
