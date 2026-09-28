@@ -6,12 +6,25 @@ const DEMO_PASSWORD='Nexo@2026';
 
 type Theme='light'|'dark';
 
-function BrandImage({theme,className,alt}:{theme:Theme;className:string;alt:string}){
-  return <img
-    src={theme==='light'?'/nexo-logo-light.png':'/nexo-logo.png'}
-    alt={alt}
-    className={className}
-  />;
+function BrandLockup({
+  className='',
+  compact=false,
+  tagline=false
+}:{className?:string;compact?:boolean;tagline?:boolean}){
+  return <div className={'nexo-lockup '+className+(compact?' compact':'')}>
+    <img
+      src="/nexo-symbol.png"
+      alt=""
+      aria-hidden="true"
+      className="nexo-lockup-symbol"
+      draggable={false}
+      decoding="async"
+    />
+    <div className="nexo-lockup-copy">
+      <strong>Nexo</strong>
+      {tagline&&<small>Sistema inteligente de gestão de estoque</small>}
+    </div>
+  </div>;
 }
 
 function ThemeToggle({theme,onToggle,compact=false}:{theme:Theme;onToggle:()=>void;compact?:boolean}){
@@ -43,13 +56,7 @@ function Login({onLogin,theme,onToggleTheme}:{onLogin:()=>void;theme:Theme;onTog
   return <main className="login-shell">
     <div className="login-theme-toggle"><ThemeToggle theme={theme} onToggle={onToggleTheme} compact /></div>
     <section className="login-copy">
-      <div className="brand official-brand">
-      <BrandImage
-        theme={theme}
-        alt="Nexo — Sistema inteligente de gestão de estoque"
-        className="brand-logo-full"
-      />
-    </div>
+      <BrandLockup className="official-brand" tagline />
       <div className="hero">
         <span className="eyebrow">GESTÃO QUE ANTECIPA</span>
         <h1>Controle hoje.<br/><span>Cresça sempre.</span></h1>
@@ -66,8 +73,8 @@ function Login({onLogin,theme,onToggleTheme}:{onLogin:()=>void;theme:Theme;onTog
     <section className="login-side">
       <form className="login-card" onSubmit={submit}>
         <div className="login-title">
-          <BrandImage theme={theme} className="login-logo" alt="Nexo" />
-          <div>
+          <BrandLockup className="login-brand" compact />
+          <div className="login-access-copy">
             <strong>Acesso administrativo</strong>
             <small>Ambiente demonstrativo</small>
           </div>
@@ -1801,8 +1808,8 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
   return <div className="app-shell">
     <aside>
       <div className="brand sidebar-brand">
-        <BrandImage theme={theme} className="sidebar-logo-full" alt="Nexo" />
-        <img src="/nexo-symbol.png" alt="Nexo" className="sidebar-logo-symbol" />
+        <BrandLockup className="sidebar-logo-full" compact />
+        <img src="/nexo-symbol.png" alt="Nexo" className="sidebar-logo-symbol" draggable={false} />
       </div>
       <nav>
         <a className={page==='dashboard'?'active':''} onClick={()=>setPage('dashboard')}><LayoutDashboard size={19}/> Visão geral</a>
