@@ -525,6 +525,21 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
     quantity:number;
   }>>([]);
   const [loadingBatches,setLoadingBatches]=useState(false);
+  const [previewLoading,setPreviewLoading]=useState(false);
+  const [fefoPreview,setFefoPreview]=useState<{
+    requestedQuantity:number;
+    availableQuantity:number;
+    sufficient:boolean;
+    allocations:Array<{
+      batchId:number;
+      lotCode:string;
+      expiresAt:string|null;
+      availableQuantity:number;
+      allocatedQuantity:number;
+      fefoPosition:number;
+    }>;
+  }|null>(null);
+  const [previewError,setPreviewError]=useState('');
   const [form,setForm]=useState({
     productId:'',
     movementType:'ENTRY',
@@ -596,6 +611,70 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
     return ()=>{active=false};
   },[form.productId,form.movementType]);
 
+  useEffect(()=>{
+    if(form.movementType!=='EXIT'||!form.productId){
+      setFefoPreview(null);
+      setPreviewError('');
+      return;
+    }
+
+    const quantity=Number(form.quantity);
+    if(!Number.isFinite(quantity)||quantity<=0){
+      setFefoPreview(null);
+      setPreviewError('');
+      return;
+    }
+
+    let active=true;
+    const timer=window.setTimeout(()=>{
+      setPreviewLoading(true);
+      setPreviewError('');
+
+      (async()=>{
+        try{
+          const response=await fetch(API_URL+'/api/v1/stock/batches/exit-fefo/preview',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+              productId:Number(form.productId),
+              quantity,
+              reason:''
+            })
+          });
+          const data=await response.json().catch(()=>null);
+          if(!response.ok) throw new Error(data?.detail||data?.message||'Não foi possível calcular a prévia FEFO.');
+          if(!active) return;
+
+          setFefoPreview({
+            requestedQuantity:Number(data.requestedQuantity||quantity),
+            availableQuantity:Number(data.availableQuantity||0),
+            sufficient:Boolean(data.sufficient),
+            allocations:(Array.isArray(data.allocations)?data.allocations:[]).map((item:any)=>({
+              batchId:Number(item.batchId),
+              lotCode:String(item.lotCode||''),
+              expiresAt:item.expiresAt||null,
+              availableQuantity:Number(item.availableQuantity||0),
+              allocatedQuantity:Number(item.allocatedQuantity||0),
+              fefoPosition:Number(item.fefoPosition||0)
+            }))
+          });
+        }catch(err){
+          if(active){
+            setFefoPreview(null);
+            setPreviewError(err instanceof Error?err.message:'Prévia FEFO indisponível.');
+          }
+        }finally{
+          if(active) setPreviewLoading(false);
+        }
+      })();
+    },250);
+
+    return ()=>{
+      active=false;
+      window.clearTimeout(timer);
+    };
+  },[form.productId,form.quantity,form.movementType]);
+
   async function submit(e:React.FormEvent){
     e.preventDefault();
     setError('');
@@ -618,6 +697,11 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
 
     if((form.movementType==='RETURN'||form.movementType==='ADJUSTMENT')&&!form.batchId){
       setError('Selecione o lote da movimentação.');
+      return;
+    }
+
+    if(form.movementType==='EXIT'&&fefoPreview&&!fefoPreview.sufficient){
+      setError('A quantidade solicitada é maior que o saldo disponível por lote.');
       return;
     }
 
@@ -740,9 +824,36 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
           <div className="movement-hint fefo">A entrada atualiza o lote existente ou cria um novo lote, preservando validade, custo e rastreabilidade.</div>
         </>}
 
-        {form.movementType==='EXIT'&&<div className="movement-hint fefo">
-          O Nexo aplicará FEFO automaticamente: primeiro os lotes com validade mais próxima; lotes sem validade ficam por último.
-        </div>}
+        {form.movementType==='EXIT'&&<>
+          <div className="movement-hint fefo">
+            O Nexo aplicará FEFO automaticamente: primeiro os lotes com validade mais próxima; lotes sem validade ficam por último.
+          </div>
+
+          {(previewLoading||fefoPreview||previewError)&&<div className={'fefo-preview '+(fefoPreview&&!fefoPreview.sufficient?'insufficient':'')}>
+            <div className="fefo-preview-head">
+              <div>
+                <span>PRÉVIA DA SAÍDA</span>
+                <strong>{previewLoading?'Calculando ordem FEFO...':fefoPreview
+                  ? fefoPreview.sufficient?'Lotes que serão consumidos':'Saldo por lote insuficiente'
+                  :'Prévia indisponível'}</strong>
+              </div>
+              {fefoPreview&&<b>{fefoPreview.availableQuantity} un. disponíveis</b>}
+            </div>
+
+            {fefoPreview&&<div className="fefo-preview-list">
+              {fefoPreview.allocations.map(item=><div key={item.batchId} className="fefo-preview-row">
+                <span>#{item.fefoPosition}</span>
+                <div>
+                  <strong>{item.lotCode}</strong>
+                  <small>{item.expiresAt?new Date(item.expiresAt+'T12:00:00').toLocaleDateString('pt-BR'):'sem validade'}</small>
+                </div>
+                <b>{item.allocatedQuantity} un.</b>
+              </div>)}
+            </div>}
+
+            {previewError&&<small className="fefo-preview-error">{previewError}</small>}
+          </div>}
+        </>}
 
         {(form.movementType==='RETURN'||form.movementType==='ADJUSTMENT')&&<>
           <label>Lote
@@ -777,7 +888,7 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
 
         <div className="modal-actions">
           <button type="button" className="secondary-action" onClick={onClose}>Cancelar</button>
-          <button className="primary compact" disabled={saving||loading}>{saving?'Registrando...':'Registrar movimentação'}</button>
+          <button className="primary compact" disabled={saving||loading||previewLoading||(form.movementType==='EXIT'&&!!fefoPreview&&!fefoPreview.sufficient)}>{saving?'Registrando...':'Registrar movimentação'}</button>
         </div>
       </form>
     </section>
