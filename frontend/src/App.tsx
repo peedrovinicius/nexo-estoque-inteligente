@@ -12,7 +12,7 @@ function BrandImage({
   alt
 }:{theme:Theme;className:string;alt:string}){
   return <img
-    src={theme==='light'?'/nexo-logo-light.png':'/nexo-logo.png'}
+    src="/nexo-logo-hd.png?v=20260928-2"
     alt={alt}
     className={className}
     draggable={false}
