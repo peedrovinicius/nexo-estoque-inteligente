@@ -1263,14 +1263,13 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
     return ()=>{active=false};
   },[page,movementRefresh]);
 
-  const formatQuantity=(value:number)=>new Intl.NumberFormat('pt-BR',{
-    maximumFractionDigits:3
-  }).format(value);
+  function formatQuantity(value:number){
+    return new Intl.NumberFormat('pt-BR',{maximumFractionDigits:3}).format(value);
+  }
 
-  const formatMoney=(value:number)=>new Intl.NumberFormat('pt-BR',{
-    style:'currency',
-    currency:'BRL'
-  }).format(value);
+  function formatMoney(value:number){
+    return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value);
+  }
 
   const actionCount=dashboard
     ? dashboard.criticalProducts+dashboard.expiryRiskBatches+dashboard.attention.filter(item=>item.icon==='inventory').length
