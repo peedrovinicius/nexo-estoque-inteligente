@@ -77,7 +77,7 @@ function Login({onLogin,theme,onToggleTheme}:{onLogin:()=>void;theme:Theme;onTog
 }
 
 function Simulator(){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [demand,setDemand]=useState(20);
   const [delay,setDelay]=useState(3);
   const [loading,setLoading]=useState(false);
@@ -213,7 +213,7 @@ const DEMO_PRODUCTS:ProductView[]=[
 ];
 
 function ProductsPanel(){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [query,setQuery]=useState('');
   const [showForm,setShowForm]=useState(false);
   const [products,setProducts]=useState<ProductView[]>(DEMO_PRODUCTS);
@@ -379,7 +379,7 @@ type MovementView={
 };
 
 function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void}){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [products,setProducts]=useState<ProductView[]>([]);
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState(false);
@@ -567,7 +567,7 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
 }
 
 function RecentMovements({refreshKey}:{refreshKey:number}){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [items,setItems]=useState<MovementView[]>([]);
   const [source,setSource]=useState<'loading'|'api'|'empty'|'offline'>('loading');
 
@@ -657,7 +657,7 @@ type InventoryItemView={
 };
 
 function BlindInventoryPanel(){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [sessions,setSessions]=useState<InventorySessionView[]>([]);
   const [selectedId,setSelectedId]=useState<number|null>(null);
   const [items,setItems]=useState<InventoryItemView[]>([]);
@@ -941,7 +941,7 @@ type BatchView={
 };
 
 function BatchesPanel(){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [items,setItems]=useState<BatchView[]>([]);
   const [query,setQuery]=useState('');
   const [status,setStatus]=useState<'all'|BatchView['expiryStatus']>('all');
@@ -1052,7 +1052,7 @@ function BatchesPanel(){
 
 
 function SystemReadiness(){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [state,setState]=useState<'loading'|'ready'|'degraded'|'offline'>('loading');
   const [latency,setLatency]=useState<number|null>(null);
 
@@ -1099,15 +1099,217 @@ function SystemReadiness(){
 }
 
 function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onToggleTheme:()=>void}){
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [page,setPage]=useState<'dashboard'|'products'|'batches'|'inventory'>('dashboard');
   const [showMovement,setShowMovement]=useState(false);
   const [movementRefresh,setMovementRefresh]=useState(0);
+  const [dashboardLoading,setDashboardLoading]=useState(true);
+  const [dashboardError,setDashboardError]=useState('');
+  const [dashboard,setDashboard]=useState<{
+    totalStock:number;
+    activeProducts:number;
+    criticalProducts:number;
+    outOfStockProducts:number;
+    expiryRiskBatches:number;
+    expiryRiskValue:number;
+    inventoryAccuracy:number|null;
+    inventoryDivergences:number|null;
+    attention:Array<{
+      key:string;
+      kind:'danger'|'warning'|'neutral';
+      icon:'stock'|'expiry'|'inventory';
+      title:string;
+      description:string;
+      value:string;
+    }>;
+  }|null>(null);
+
+  useEffect(()=>{
+    if(page!=='dashboard') return;
+
+    let active=true;
+
+    async function loadDashboard(){
+      setDashboardLoading(true);
+      setDashboardError('');
+
+      try{
+        const [productsResponse,batchesResponse,inventoryResponse]=await Promise.all([
+          fetch(API_URL+'/api/v1/products'),
+          fetch(API_URL+'/api/v1/stock/batches'),
+          fetch(API_URL+'/api/v1/inventory/blind')
+        ]);
+
+        if(!productsResponse.ok||!batchesResponse.ok||!inventoryResponse.ok){
+          throw new Error('Não foi possível carregar os indicadores operacionais.');
+        }
+
+        const [productsRaw,batchesRaw,sessionsRaw]=await Promise.all([
+          productsResponse.json(),
+          batchesResponse.json(),
+          inventoryResponse.json()
+        ]);
+
+        const products=(Array.isArray(productsRaw)?productsRaw:[]).filter((item:any)=>item.active!==false);
+        const batches=(Array.isArray(batchesRaw)?batchesRaw:[]).filter((item:any)=>Number(item.quantity||0)>0);
+        const sessions=Array.isArray(sessionsRaw)?sessionsRaw:[];
+
+        const totalStock=products.reduce((sum:number,item:any)=>sum+Number(item.currentStock||0),0);
+        const critical=products
+          .filter((item:any)=>Number(item.currentStock||0)<Number(item.minimumStock||0))
+          .sort((a:any,b:any)=>{
+            const deficitA=Number(a.minimumStock||0)-Number(a.currentStock||0);
+            const deficitB=Number(b.minimumStock||0)-Number(b.currentStock||0);
+            return deficitB-deficitA;
+          });
+        const outOfStock=products.filter((item:any)=>Number(item.currentStock||0)<=0);
+
+        const expiryRisk=batches
+          .filter((item:any)=>item.expiresAt&&Number(item.daysToExpiry)<=30)
+          .sort((a:any,b:any)=>Number(a.daysToExpiry)-Number(b.daysToExpiry));
+        const expiryRiskValue=expiryRisk.reduce(
+          (sum:number,item:any)=>sum+(Number(item.quantity||0)*Number(item.unitCost||0)),
+          0
+        );
+
+        const latestClosed=sessions
+          .filter((item:any)=>item.status==='CLOSED')
+          .sort((a:any,b:any)=>new Date(b.closedAt||b.startedAt||0).getTime()-new Date(a.closedAt||a.startedAt||0).getTime())[0];
+
+        const countedItems=Number(latestClosed?.countedItems||0);
+        const divergentItems=Number(latestClosed?.divergentItems||0);
+        const inventoryAccuracy=countedItems>0
+          ? Math.max(0,((countedItems-divergentItems)/countedItems)*100)
+          : null;
+
+        const openInventory=sessions
+          .filter((item:any)=>item.status==='OPEN')
+          .sort((a:any,b:any)=>new Date(a.startedAt||0).getTime()-new Date(b.startedAt||0).getTime())[0];
+
+        const attention:Array<{
+          key:string;
+          kind:'danger'|'warning'|'neutral';
+          icon:'stock'|'expiry'|'inventory';
+          title:string;
+          description:string;
+          value:string;
+        }>=[];
+
+        if(critical[0]){
+          const product=critical[0];
+          const stock=Number(product.currentStock||0);
+          const minimum=Number(product.minimumStock||0);
+          const deficit=Math.max(0,minimum-stock);
+          attention.push({
+            key:'stock-'+product.id,
+            kind:'danger',
+            icon:'stock',
+            title:String(product.name||'Produto crítico'),
+            description:`Saldo ${formatQuantity(stock)} · mínimo ${formatQuantity(minimum)}`,
+            value:stock<=0?'sem estoque':`${formatQuantity(deficit)} abaixo`
+          });
+        }
+
+        if(expiryRisk[0]){
+          const batch=expiryRisk[0];
+          const days=Number(batch.daysToExpiry);
+          attention.push({
+            key:'expiry-'+batch.id,
+            kind:days<0?'danger':'warning',
+            icon:'expiry',
+            title:String(batch.productName||'Lote em risco'),
+            description:`Lote ${batch.lotCode||'—'} · ${formatQuantity(Number(batch.quantity||0))} un.`,
+            value:days<0?`${Math.abs(days)} d vencido`:days===0?'vence hoje':`${days} dias`
+          });
+        }
+
+        if(openInventory){
+          const counted=Number(openInventory.countedItems||0);
+          const pending=Math.max(0,products.length-counted);
+          attention.push({
+            key:'inventory-'+openInventory.id,
+            kind:'neutral',
+            icon:'inventory',
+            title:String(openInventory.name||'Inventário aberto'),
+            description:`${counted} de ${products.length} produtos contados`,
+            value:`${pending} pendentes`
+          });
+        }
+
+        if(active){
+          setDashboard({
+            totalStock,
+            activeProducts:products.length,
+            criticalProducts:critical.length,
+            outOfStockProducts:outOfStock.length,
+            expiryRiskBatches:expiryRisk.length,
+            expiryRiskValue,
+            inventoryAccuracy,
+            inventoryDivergences:latestClosed?divergentItems:null,
+            attention
+          });
+        }
+      }catch(err){
+        if(active){
+          setDashboard(null);
+          setDashboardError(err instanceof Error?err.message:'Indicadores indisponíveis.');
+        }
+      }finally{
+        if(active) setDashboardLoading(false);
+      }
+    }
+
+    void loadDashboard();
+    return ()=>{active=false};
+  },[page,movementRefresh]);
+
+  const formatQuantity=(value:number)=>new Intl.NumberFormat('pt-BR',{
+    maximumFractionDigits:3
+  }).format(value);
+
+  const formatMoney=(value:number)=>new Intl.NumberFormat('pt-BR',{
+    style:'currency',
+    currency:'BRL'
+  }).format(value);
+
+  const actionCount=dashboard
+    ? dashboard.criticalProducts+dashboard.expiryRiskBatches+dashboard.attention.filter(item=>item.icon==='inventory').length
+    : 0;
+
   const cards=[
-    ['Itens em estoque','18.421',Boxes,'+3,8%'],
-    ['Estoque crítico','27',AlertTriangle,'8 urgentes'],
-    ['Risco de validade','14',PackageSearch,'R$ 1.840'],
-    ['Precisão inventário','98,7%',ClipboardCheck,'+1,2 p.p.']
-  ] as const;
+    {
+      title:'Unidades em estoque',
+      value:dashboard?formatQuantity(dashboard.totalStock):'—',
+      Icon:Boxes,
+      detail:dashboard?`${dashboard.activeProducts} produtos ativos`:(dashboardLoading?'carregando...':'indisponível')
+    },
+    {
+      title:'Estoque crítico',
+      value:dashboard?String(dashboard.criticalProducts):'—',
+      Icon:AlertTriangle,
+      detail:dashboard?`${dashboard.outOfStockProducts} sem estoque`:(dashboardLoading?'carregando...':'indisponível')
+    },
+    {
+      title:'Risco de validade',
+      value:dashboard?String(dashboard.expiryRiskBatches):'—',
+      Icon:PackageSearch,
+      detail:dashboard?formatMoney(dashboard.expiryRiskValue):(dashboardLoading?'carregando...':'indisponível')
+    },
+    {
+      title:'Precisão inventário',
+      value:dashboard?.inventoryAccuracy!=null?`${dashboard.inventoryAccuracy.toFixed(1).replace('.',',')}%`:'—',
+      Icon:ClipboardCheck,
+      detail:dashboard?.inventoryAccuracy!=null
+        ? `${dashboard.inventoryDivergences||0} divergências no último inventário`
+        : (dashboardLoading?'carregando...':'sem inventário fechado')
+    }
+  ];
+
+  const attentionIcon=(icon:'stock'|'expiry'|'inventory')=>{
+    if(icon==='stock') return <AlertTriangle/>;
+    if(icon==='expiry') return <PackageSearch/>;
+    return <ClipboardCheck/>;
+  };
 
   return <div className="app-shell">
     <aside>
@@ -1134,18 +1336,42 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
           : page==='inventory'
             ? <BlindInventoryPanel/>
             : <>
-          <header><div><span className="eyebrow">NEXO ESTOQUE</span><h1>Boa tarde, administrador.</h1><p>O estoque está estável, mas há 8 itens que merecem ação hoje.</p></div><button className="new-action" onClick={()=>setShowMovement(true)}>+ Nova movimentação</button></header>
+          <header>
+            <div>
+              <span className="eyebrow">NEXO ESTOQUE</span>
+              <h1>Boa tarde, administrador.</h1>
+              <p>{dashboard
+                ? actionCount>0
+                  ? `Há ${actionCount} alertas operacionais calculados com dados atuais do estoque.`
+                  : 'Nenhum alerta operacional exige ação imediata neste momento.'
+                : dashboardLoading
+                  ? 'Carregando a situação real do estoque...'
+                  : 'Os indicadores operacionais estão temporariamente indisponíveis.'}</p>
+            </div>
+            <button className="new-action" onClick={()=>setShowMovement(true)}>+ Nova movimentação</button>
+          </header>
+
+          {dashboardError&&<div className="product-feedback warning">{dashboardError}</div>}
+
           <section className="cards">
-            {cards.map(([title,value,Icon,detail])=><article className="metric" key={title}><div className="metric-top"><span>{title}</span><Icon size={20}/></div><strong>{value}</strong><small>{detail}</small></article>)}
+            {cards.map(({title,value,Icon,detail})=><article className="metric" key={title}><div className="metric-top"><span>{title}</span><Icon size={20}/></div><strong>{value}</strong><small>{detail}</small></article>)}
           </section>
+
           <section className="attention">
             <div className="section-head"><div><span className="eyebrow">PRIORIDADE DO DIA</span><h2>O que precisa da sua atenção</h2></div></div>
-            <div className="attention-grid">
-              <article className="action-card danger"><div className="icon"><AlertTriangle/></div><div><strong>Amoxicilina 500 mg</strong><span>Ruptura prevista antes da próxima entrega</span></div><b>6 dias</b></article>
-              <article className="action-card warning"><div className="icon"><PackageSearch/></div><div><strong>Iogurte natural 170 g</strong><span>17 unidades podem vencer sem saída</span></div><b>9 dias</b></article>
-              <article className="action-card"><div className="icon"><ClipboardCheck/></div><div><strong>Inventário corredor B</strong><span>Contagem cega pendente desde ontem</span></div><b>42 itens</b></article>
-            </div>
+            {dashboard?.attention.length
+              ? <div className="attention-grid">
+                  {dashboard.attention.map(item=><article className={'action-card '+(item.kind==='danger'?'danger':item.kind==='warning'?'warning':'')} key={item.key}>
+                    <div className="icon">{attentionIcon(item.icon)}</div>
+                    <div><strong>{item.title}</strong><span>{item.description}</span></div>
+                    <b>{item.value}</b>
+                  </article>)}
+                </div>
+              : <div className="dashboard-empty">
+                  {dashboardLoading?'Calculando prioridades...':'Nenhuma prioridade crítica encontrada com os dados atuais.'}
+                </div>}
           </section>
+
           <RecentMovements refreshKey={movementRefresh}/>
           <Simulator/>
           {showMovement&&<StockMovementModal
