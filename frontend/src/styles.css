@@ -1476,3 +1476,30 @@ html[data-theme="dark"] .sidebar-brand{
   .official-brand{width:min(300px,100%)!important}
   .login-title .login-logo{width:176px!important;max-width:100%!important}
 }
+
+
+/* Stable official brand sizing: never upscale the source artwork */
+.official-brand{
+  width:auto!important;
+  max-width:276px!important;
+}
+.official-brand .brand-logo-full{
+  width:240px!important;
+  max-width:100%!important;
+  height:auto!important;
+}
+.login-title .login-logo{
+  width:180px!important;
+  max-width:46%!important;
+  height:auto!important;
+}
+.sidebar-brand .sidebar-logo-full{
+  width:168px!important;
+  max-width:100%!important;
+  height:auto!important;
+}
+@media(max-width:700px){
+  .official-brand{max-width:256px!important}
+  .official-brand .brand-logo-full{width:220px!important}
+  .login-title .login-logo{width:168px!important;max-width:100%!important}
+}
