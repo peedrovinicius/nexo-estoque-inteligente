@@ -375,12 +375,20 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState(false);
   const [error,setError]=useState('');
+  const [batchOptions,setBatchOptions]=useState<Array<{
+    id:number;
+    lotCode:string;
+    expiresAt:string|null;
+    quantity:number;
+  }>>([]);
+  const [loadingBatches,setLoadingBatches]=useState(false);
   const [form,setForm]=useState({
     productId:'',
     movementType:'ENTRY',
     quantity:'',
     reason:'',
     lotCode:'',
+    batchId:'',
     expiresAt:'',
     unitCost:''
   });
@@ -409,6 +417,42 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
     })();
   },[]);
 
+  useEffect(()=>{
+    const needsBatch=form.movementType==='RETURN'||form.movementType==='ADJUSTMENT';
+
+    if(!needsBatch||!form.productId){
+      setBatchOptions([]);
+      return;
+    }
+
+    let active=true;
+    setLoadingBatches(true);
+
+    (async()=>{
+      try{
+        const response=await fetch(API_URL+'/api/v1/stock/batches?productId='+encodeURIComponent(form.productId));
+        if(!response.ok) throw new Error();
+        const data=await response.json();
+        if(!active) return;
+        setBatchOptions((Array.isArray(data)?data:[]).map((item:any)=>({
+          id:Number(item.id),
+          lotCode:String(item.lotCode||''),
+          expiresAt:item.expiresAt||null,
+          quantity:Number(item.quantity||0)
+        })));
+      }catch{
+        if(active){
+          setBatchOptions([]);
+          setError('Não foi possível carregar os lotes deste produto.');
+        }
+      }finally{
+        if(active) setLoadingBatches(false);
+      }
+    })();
+
+    return ()=>{active=false};
+  },[form.productId,form.movementType]);
+
   async function submit(e:React.FormEvent){
     e.preventDefault();
     setError('');
@@ -426,6 +470,11 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
 
     if(form.movementType==='ENTRY'&&!form.lotCode.trim()){
       setError('Informe o lote para registrar a entrada.');
+      return;
+    }
+
+    if((form.movementType==='RETURN'||form.movementType==='ADJUSTMENT')&&!form.batchId){
+      setError('Selecione o lote da movimentação.');
       return;
     }
 
@@ -456,6 +505,22 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
       payload={
         productId:Number(form.productId),
         quantity:Math.abs(rawQuantity),
+        reason:form.reason.trim()
+      };
+    }else if(form.movementType==='RETURN'){
+      endpoint=API_URL+'/api/v1/stock/batches/return';
+      payload={
+        productId:Number(form.productId),
+        batchId:Number(form.batchId),
+        quantity:Math.abs(rawQuantity),
+        reason:form.reason.trim()
+      };
+    }else if(form.movementType==='ADJUSTMENT'){
+      endpoint=API_URL+'/api/v1/stock/batches/adjustment';
+      payload={
+        productId:Number(form.productId),
+        batchId:Number(form.batchId),
+        quantityDelta:rawQuantity,
         reason:form.reason.trim()
       };
     }
@@ -490,7 +555,7 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
 
       <form onSubmit={submit}>
         <label>Produto
-          <select value={form.productId} onChange={e=>setForm({...form,productId:e.target.value})} disabled={loading}>
+          <select value={form.productId} onChange={e=>setForm({...form,productId:e.target.value,batchId:''})} disabled={loading}>
             <option value="">{loading?'Carregando produtos...':'Selecione um produto'}</option>
             {products.map(p=><option key={p.id??p.sku} value={p.id}>{p.name} · {p.sku} · saldo {p.stock}</option>)}
           </select>
@@ -498,7 +563,7 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
 
         <div className="movement-grid">
           <label>Tipo
-            <select value={form.movementType} onChange={e=>setForm({...form,movementType:e.target.value})}>
+            <select value={form.movementType} onChange={e=>setForm({...form,movementType:e.target.value,batchId:''})}>
               <option value="ENTRY">Entrada por lote</option>
               <option value="EXIT">Saída FEFO</option>
               <option value="RETURN">Devolução</option>
@@ -536,6 +601,26 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
           O Nexo aplicará FEFO automaticamente: primeiro os lotes com validade mais próxima; lotes sem validade ficam por último.
         </div>}
 
+        {(form.movementType==='RETURN'||form.movementType==='ADJUSTMENT')&&<>
+          <label>Lote
+            <select
+              value={form.batchId}
+              onChange={e=>setForm({...form,batchId:e.target.value})}
+              disabled={!form.productId||loadingBatches}
+            >
+              <option value="">{loadingBatches?'Carregando lotes...':'Selecione o lote'}</option>
+              {batchOptions.map(batch=><option key={batch.id} value={batch.id}>
+                {batch.lotCode} · saldo {batch.quantity} · {batch.expiresAt?new Date(batch.expiresAt+'T12:00:00').toLocaleDateString('pt-BR'):'sem validade'}
+              </option>)}
+            </select>
+          </label>
+          <div className="movement-hint fefo">
+            {form.movementType==='RETURN'
+              ? 'A devolução retorna a quantidade ao lote selecionado e atualiza o saldo total na mesma transação.'
+              : 'O ajuste altera o lote e o saldo total juntos. Valores negativos reduzem; positivos aumentam.'}
+          </div>
+        </>}
+
         <label>Motivo
           <textarea
             value={form.reason}
@@ -545,7 +630,6 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
           />
         </label>
 
-        {form.movementType==='ADJUSTMENT'&&<div className="movement-hint">No ajuste, use valor positivo para aumentar o saldo e negativo para reduzir.</div>}
         {error&&<div className="error">{error}</div>}
 
         <div className="modal-actions">
