@@ -393,3 +393,303 @@ BEGIN
   COMMIT;
 END //
 DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS sp_stock_batch_entry;
+DELIMITER //
+CREATE PROCEDURE sp_stock_batch_entry(
+  IN p_product_id BIGINT,
+  IN p_lot_code VARCHAR(80),
+  IN p_expires_at DATE,
+  IN p_quantity DECIMAL(12,3),
+  IN p_unit_cost DECIMAL(12,2),
+  IN p_reason VARCHAR(255),
+  OUT p_movement_id BIGINT,
+  OUT p_batch_id BIGINT,
+  OUT p_balance_before DECIMAL(12,3),
+  OUT p_balance_after DECIMAL(12,3)
+)
+BEGIN
+  DECLARE v_existing_batch BIGINT;
+
+  IF p_quantity IS NULL OR p_quantity <= 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A quantidade da entrada deve ser maior que zero';
+  END IF;
+
+  IF p_lot_code IS NULL OR CHAR_LENGTH(TRIM(p_lot_code)) = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Informe o lote da entrada';
+  END IF;
+
+  IF p_expires_at IS NOT NULL AND p_expires_at < CURDATE() THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Não é permitido receber lote já vencido';
+  END IF;
+
+  START TRANSACTION;
+
+  SET p_balance_before = NULL;
+  SELECT current_stock
+    INTO p_balance_before
+    FROM products
+   WHERE id = p_product_id
+     AND active = TRUE
+   FOR UPDATE;
+
+  IF p_balance_before IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado ou inativo';
+  END IF;
+
+  SELECT MAX(id)
+    INTO v_existing_batch
+    FROM stock_batches
+   WHERE product_id = p_product_id
+     AND lot_code = TRIM(p_lot_code);
+
+  IF v_existing_batch IS NULL THEN
+    INSERT INTO stock_batches(
+      product_id, lot_code, expires_at, quantity, unit_cost
+    )
+    VALUES(
+      p_product_id,
+      TRIM(p_lot_code),
+      p_expires_at,
+      p_quantity,
+      COALESCE(p_unit_cost,0)
+    );
+    SET p_batch_id = LAST_INSERT_ID();
+  ELSE
+    UPDATE stock_batches
+       SET quantity = quantity + p_quantity,
+           expires_at = COALESCE(p_expires_at, expires_at),
+           unit_cost = CASE
+             WHEN p_unit_cost IS NULL OR p_unit_cost = 0 THEN unit_cost
+             ELSE p_unit_cost
+           END
+     WHERE id = v_existing_batch;
+    SET p_batch_id = v_existing_batch;
+  END IF;
+
+  SET p_balance_after = p_balance_before + p_quantity;
+
+  UPDATE products
+     SET current_stock = p_balance_after
+   WHERE id = p_product_id;
+
+  INSERT INTO stock_movements(
+    product_id, batch_id, movement_type, quantity, balance_before, balance_after, reason
+  )
+  VALUES(
+    p_product_id,
+    p_batch_id,
+    'ENTRY',
+    p_quantity,
+    p_balance_before,
+    p_balance_after,
+    NULLIF(TRIM(p_reason),'')
+  );
+
+  SET p_movement_id = LAST_INSERT_ID();
+
+  INSERT INTO stock_movement_allocations(
+    movement_id, batch_id, quantity
+  )
+  VALUES(
+    p_movement_id, p_batch_id, p_quantity
+  );
+
+  COMMIT;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sp_stock_exit_fefo;
+DELIMITER //
+CREATE PROCEDURE sp_stock_exit_fefo(
+  IN p_product_id BIGINT,
+  IN p_quantity DECIMAL(12,3),
+  IN p_reason VARCHAR(255),
+  OUT p_movement_id BIGINT,
+  OUT p_balance_before DECIMAL(12,3),
+  OUT p_balance_after DECIMAL(12,3)
+)
+BEGIN
+  DECLARE v_batch_total DECIMAL(12,3) DEFAULT 0;
+  DECLARE v_legacy_gap DECIMAL(12,3) DEFAULT 0;
+  DECLARE v_remaining DECIMAL(12,3) DEFAULT 0;
+  DECLARE v_batch_id BIGINT;
+  DECLARE v_batch_quantity DECIMAL(12,3);
+  DECLARE v_take DECIMAL(12,3);
+
+  IF p_quantity IS NULL OR p_quantity <= 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A quantidade da saída deve ser maior que zero';
+  END IF;
+
+  START TRANSACTION;
+
+  SET p_balance_before = NULL;
+  SELECT current_stock
+    INTO p_balance_before
+    FROM products
+   WHERE id = p_product_id
+     AND active = TRUE
+   FOR UPDATE;
+
+  IF p_balance_before IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado ou inativo';
+  END IF;
+
+  IF p_balance_before < p_quantity THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Estoque insuficiente para a saída';
+  END IF;
+
+  SELECT COALESCE(SUM(quantity),0)
+    INTO v_batch_total
+    FROM stock_batches
+   WHERE product_id = p_product_id;
+
+  SET v_legacy_gap = p_balance_before - v_batch_total;
+
+  IF v_legacy_gap > 0 THEN
+    INSERT INTO stock_batches(
+      product_id, lot_code, expires_at, quantity, unit_cost
+    )
+    VALUES(
+      p_product_id, 'SALDO-LEGADO', NULL, v_legacy_gap, 0
+    )
+    ON DUPLICATE KEY UPDATE
+      quantity = quantity + VALUES(quantity);
+  END IF;
+
+  SET p_balance_after = p_balance_before - p_quantity;
+
+  UPDATE products
+     SET current_stock = p_balance_after
+   WHERE id = p_product_id;
+
+  INSERT INTO stock_movements(
+    product_id, batch_id, movement_type, quantity, balance_before, balance_after, reason
+  )
+  VALUES(
+    p_product_id,
+    NULL,
+    'EXIT',
+    p_quantity,
+    p_balance_before,
+    p_balance_after,
+    NULLIF(TRIM(p_reason),'')
+  );
+
+  SET p_movement_id = LAST_INSERT_ID();
+  SET v_remaining = p_quantity;
+
+  WHILE v_remaining > 0 DO
+    SET v_batch_id = NULL;
+    SET v_batch_quantity = NULL;
+
+    SELECT id, quantity
+      INTO v_batch_id, v_batch_quantity
+      FROM stock_batches
+     WHERE product_id = p_product_id
+       AND quantity > 0
+     ORDER BY
+       CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END ASC,
+       expires_at ASC,
+       received_at ASC,
+       id ASC
+     LIMIT 1
+     FOR UPDATE;
+
+    IF v_batch_id IS NULL OR v_batch_quantity IS NULL THEN
+      ROLLBACK;
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Saldo por lote insuficiente para concluir FEFO';
+    END IF;
+
+    SET v_take = LEAST(v_remaining, v_batch_quantity);
+
+    UPDATE stock_batches
+       SET quantity = quantity - v_take
+     WHERE id = v_batch_id;
+
+    INSERT INTO stock_movement_allocations(
+      movement_id, batch_id, quantity
+    )
+    VALUES(
+      p_movement_id, v_batch_id, v_take
+    );
+
+    SET v_remaining = v_remaining - v_take;
+  END WHILE;
+
+  COMMIT;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sp_stock_batch_list;
+DELIMITER //
+CREATE PROCEDURE sp_stock_batch_list(
+  IN p_product_id BIGINT
+)
+BEGIN
+  SELECT
+    b.id,
+    b.product_id,
+    p.sku,
+    p.name AS product_name,
+    b.lot_code,
+    b.expires_at,
+    b.quantity,
+    b.unit_cost,
+    b.received_at,
+    DATEDIFF(b.expires_at, CURDATE()) AS days_to_expiry,
+    CASE
+      WHEN b.expires_at IS NULL THEN 'NO_EXPIRY'
+      WHEN b.expires_at < CURDATE() THEN 'EXPIRED'
+      WHEN DATEDIFF(b.expires_at, CURDATE()) <= 30 THEN 'CRITICAL'
+      WHEN DATEDIFF(b.expires_at, CURDATE()) <= 90 THEN 'ATTENTION'
+      ELSE 'OK'
+    END AS expiry_status,
+    ROW_NUMBER() OVER(
+      PARTITION BY b.product_id
+      ORDER BY
+        CASE WHEN b.expires_at IS NULL THEN 1 ELSE 0 END ASC,
+        b.expires_at ASC,
+        b.received_at ASC,
+        b.id ASC
+    ) AS fefo_position
+  FROM stock_batches b
+  JOIN products p ON p.id = b.product_id
+  WHERE b.quantity > 0
+    AND (p_product_id IS NULL OR b.product_id = p_product_id)
+  ORDER BY
+    p.name ASC,
+    CASE WHEN b.expires_at IS NULL THEN 1 ELSE 0 END ASC,
+    b.expires_at ASC,
+    b.received_at ASC,
+    b.id ASC;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sp_stock_movement_allocations;
+DELIMITER //
+CREATE PROCEDURE sp_stock_movement_allocations(
+  IN p_movement_id BIGINT
+)
+BEGIN
+  SELECT
+    a.id,
+    a.movement_id,
+    a.batch_id,
+    b.lot_code,
+    b.expires_at,
+    a.quantity
+  FROM stock_movement_allocations a
+  JOIN stock_batches b ON b.id = a.batch_id
+  WHERE a.movement_id = p_movement_id
+  ORDER BY
+    CASE WHEN b.expires_at IS NULL THEN 1 ELSE 0 END ASC,
+    b.expires_at ASC,
+    b.received_at ASC,
+    b.id ASC;
+END //
+DELIMITER ;
