@@ -4,6 +4,7 @@ import br.com.nexoestoque.dto.BatchAdjustmentRequest;
 import br.com.nexoestoque.dto.BatchEntryRequest;
 import br.com.nexoestoque.dto.BatchReturnRequest;
 import br.com.nexoestoque.dto.FefoExitRequest;
+import br.com.nexoestoque.dto.FefoPreviewResponse;
 import br.com.nexoestoque.model.MovementAllocation;
 import br.com.nexoestoque.model.StockBatch;
 import br.com.nexoestoque.model.StockOperationResult;
@@ -48,6 +49,17 @@ public class StockBatchController {
                     request.unitCost() == null ? BigDecimal.ZERO : request.unitCost(),
                     request.reason() == null ? "" : request.reason().trim()
             ));
+        } catch (SQLException exception) {
+            throw translate(exception);
+        }
+    }
+
+    @PostMapping("/exit-fefo/preview")
+    public FefoPreviewResponse previewExit(@RequestBody FefoExitRequest request) throws SQLException {
+        validateProductAndQuantity(request.productId(), request.quantity());
+
+        try {
+            return repository.previewExit(request.productId(), request.quantity());
         } catch (SQLException exception) {
             throw translate(exception);
         }
