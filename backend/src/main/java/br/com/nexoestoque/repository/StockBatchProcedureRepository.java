@@ -4,12 +4,15 @@ import br.com.nexoestoque.dto.BatchAdjustmentRequest;
 import br.com.nexoestoque.dto.BatchEntryRequest;
 import br.com.nexoestoque.dto.BatchReturnRequest;
 import br.com.nexoestoque.dto.FefoExitRequest;
+import br.com.nexoestoque.dto.FefoPreviewAllocation;
+import br.com.nexoestoque.dto.FefoPreviewResponse;
 import br.com.nexoestoque.model.MovementAllocation;
 import br.com.nexoestoque.model.StockBatch;
 import br.com.nexoestoque.model.StockOperationResult;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -118,6 +121,43 @@ public class StockBatchProcedureRepository {
                     findAllocations(connection, movementId)
             );
         }
+    }
+
+    public FefoPreviewResponse previewExit(long productId, BigDecimal quantity) throws SQLException {
+        List<StockBatch> batches = findBatches(productId);
+        BigDecimal available = batches.stream()
+                .map(StockBatch::quantity)
+                .filter(value -> value != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal remaining = quantity;
+        List<FefoPreviewAllocation> allocations = new ArrayList<>();
+
+        for (StockBatch batch : batches) {
+            if (remaining.signum() <= 0) break;
+
+            BigDecimal batchQuantity = batch.quantity() == null ? BigDecimal.ZERO : batch.quantity();
+            if (batchQuantity.signum() <= 0) continue;
+
+            BigDecimal allocated = remaining.min(batchQuantity);
+            allocations.add(new FefoPreviewAllocation(
+                    batch.id(),
+                    batch.lotCode(),
+                    batch.expiresAt(),
+                    batchQuantity,
+                    allocated,
+                    batch.fefoPosition()
+            ));
+            remaining = remaining.subtract(allocated);
+        }
+
+        return new FefoPreviewResponse(
+                productId,
+                quantity,
+                available,
+                available.compareTo(quantity) >= 0,
+                allocations
+        );
     }
 
     public List<StockBatch> findBatches(Long productId) throws SQLException {
