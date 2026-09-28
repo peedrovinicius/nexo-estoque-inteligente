@@ -155,19 +155,96 @@ function Simulator(){
   </section>;
 }
 
+function ProductsPanel(){
+  const [query,setQuery]=useState('');
+  const [showForm,setShowForm]=useState(false);
+  const [products,setProducts]=useState([
+    {sku:'MED-001',name:'Dipirona 500 mg',category:'Medicamentos',stock:120,min:60,lot:'DIP2609A',expiry:'18/12/2026'},
+    {sku:'MED-014',name:'Amoxicilina 500 mg',category:'Medicamentos',stock:42,min:80,lot:'AMX2608C',expiry:'10/02/2027'},
+    {sku:'MER-031',name:'Arroz tipo 1 1 kg',category:'Mercearia',stock:248,min:90,lot:'ARZ0926',expiry:'14/08/2027'},
+    {sku:'REF-008',name:'Iogurte natural 170 g',category:'Refrigerados',stock:48,min:24,lot:'IOG2809',expiry:'07/10/2026'},
+    {sku:'HIG-022',name:'Detergente neutro 500 ml',category:'Higiene e limpeza',stock:76,min:30,lot:'DET26091',expiry:'—'}
+  ]);
+  const [form,setForm]=useState({sku:'',name:'',category:'',stock:'',min:''});
+  const filtered=products.filter(p=>(p.name+' '+p.sku+' '+p.category).toLowerCase().includes(query.toLowerCase()));
+
+  function addProduct(e:React.FormEvent){
+    e.preventDefault();
+    if(!form.sku||!form.name||!form.category) return;
+    setProducts(current=>[{
+      sku:form.sku.toUpperCase(),
+      name:form.name,
+      category:form.category,
+      stock:Number(form.stock||0),
+      min:Number(form.min||0),
+      lot:'—',
+      expiry:'—'
+    },...current]);
+    setForm({sku:'',name:'',category:'',stock:'',min:''});
+    setShowForm(false);
+  }
+
+  return <>
+    <header className="page-header">
+      <div><span className="eyebrow">CATÁLOGO E SALDOS</span><h1>Produtos</h1><p>Consulte estoque, lote e validade em uma única visão operacional.</p></div>
+      <button className="new-action" onClick={()=>setShowForm(true)}>+ Novo produto</button>
+    </header>
+
+    <section className="product-toolbar">
+      <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar por produto, SKU ou categoria"/>
+      <div><span>{filtered.length} produtos exibidos</span><span className="demo-badge">dados de demonstração</span></div>
+    </section>
+
+    {showForm&&<form className="product-form" onSubmit={addProduct}>
+      <div className="form-title"><div><span className="eyebrow">CADASTRO RÁPIDO</span><h2>Novo produto</h2></div><button type="button" onClick={()=>setShowForm(false)}>Fechar</button></div>
+      <div className="form-grid">
+        <label>SKU<input value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="Ex.: MED-102"/></label>
+        <label>Nome<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Nome do produto"/></label>
+        <label>Categoria<input value={form.category} onChange={e=>setForm({...form,category:e.target.value})} placeholder="Categoria"/></label>
+        <label>Estoque inicial<input type="number" min="0" value={form.stock} onChange={e=>setForm({...form,stock:e.target.value})}/></label>
+        <label>Estoque mínimo<input type="number" min="0" value={form.min} onChange={e=>setForm({...form,min:e.target.value})}/></label>
+      </div>
+      <div className="form-actions"><span>A persistência definitiva será feita pela Procedure MySQL.</span><button className="primary compact">Adicionar à demonstração</button></div>
+    </form>}
+
+    <section className="product-table-wrap">
+      <table className="product-table">
+        <thead><tr><th>Produto</th><th>Categoria</th><th>Estoque</th><th>Mínimo</th><th>Lote</th><th>Validade</th><th>Situação</th></tr></thead>
+        <tbody>
+          {filtered.map(p=>{
+            const critical=p.stock<p.min;
+            return <tr key={p.sku}>
+              <td><strong>{p.name}</strong><small>{p.sku}</small></td>
+              <td>{p.category}</td>
+              <td><b>{p.stock}</b></td>
+              <td>{p.min}</td>
+              <td>{p.lot}</td>
+              <td>{p.expiry}</td>
+              <td><span className={'stock-pill '+(critical?'critical':'healthy')}>{critical?'Crítico':'Saudável'}</span></td>
+            </tr>;
+          })}
+        </tbody>
+      </table>
+    </section>
+  </>;
+}
+
+
 function Dashboard({logout}:{logout:()=>void}){
+  const [page,setPage]=useState<'dashboard'|'products'>('dashboard');
   const cards=[
     ['Itens em estoque','18.421',Boxes,'+3,8%'],
     ['Estoque crítico','27',AlertTriangle,'8 urgentes'],
     ['Risco de validade','14',PackageSearch,'R$ 1.840'],
     ['Precisão inventário','98,7%',ClipboardCheck,'+1,2 p.p.']
   ] as const;
+
   return <div className="app-shell">
     <aside>
       <div className="brand"><span className="brand-mark light">N</span><span>Nexo</span></div>
       <nav>
-        <a className="active"><LayoutDashboard size={19}/> Visão geral</a>
-        <a><Boxes size={19}/> Produtos</a>
+        <a className={page==='dashboard'?'active':''} onClick={()=>setPage('dashboard')}><LayoutDashboard size={19}/> Visão geral</a>
+        <a className={page==='products'?'active':''} onClick={()=>setPage('products')}><Boxes size={19}/> Produtos</a>
         <a><ClipboardCheck size={19}/> Inventário cego</a>
         <a><TrendingUp size={19}/> Simulador</a>
         <a><BrainCircuit size={19}/> Assistente</a>
@@ -175,19 +252,23 @@ function Dashboard({logout}:{logout:()=>void}){
       <button className="logout" onClick={logout}><LogOut size={18}/> Sair</button>
     </aside>
     <main className="workspace">
-      <header><div><span className="eyebrow">NEXO ESTOQUE</span><h1>Boa tarde, administrador.</h1><p>O estoque está estável, mas há 8 itens que merecem ação hoje.</p></div><button className="new-action">+ Nova movimentação</button></header>
-      <section className="cards">
-        {cards.map(([title,value,Icon,detail])=><article className="metric" key={title}><div className="metric-top"><span>{title}</span><Icon size={20}/></div><strong>{value}</strong><small>{detail}</small></article>)}
-      </section>
-      <section className="attention">
-        <div className="section-head"><div><span className="eyebrow">PRIORIDADE DO DIA</span><h2>O que precisa da sua atenção</h2></div></div>
-        <div className="attention-grid">
-          <article className="action-card danger"><div className="icon"><AlertTriangle/></div><div><strong>Amoxicilina 500 mg</strong><span>Ruptura prevista antes da próxima entrega</span></div><b>6 dias</b></article>
-          <article className="action-card warning"><div className="icon"><PackageSearch/></div><div><strong>Iogurte natural 170 g</strong><span>17 unidades podem vencer sem saída</span></div><b>9 dias</b></article>
-          <article className="action-card"><div className="icon"><ClipboardCheck/></div><div><strong>Inventário corredor B</strong><span>Contagem cega pendente desde ontem</span></div><b>42 itens</b></article>
-        </div>
-      </section>
-      <Simulator/>
+      {page==='products'
+        ? <ProductsPanel/>
+        : <>
+          <header><div><span className="eyebrow">NEXO ESTOQUE</span><h1>Boa tarde, administrador.</h1><p>O estoque está estável, mas há 8 itens que merecem ação hoje.</p></div><button className="new-action">+ Nova movimentação</button></header>
+          <section className="cards">
+            {cards.map(([title,value,Icon,detail])=><article className="metric" key={title}><div className="metric-top"><span>{title}</span><Icon size={20}/></div><strong>{value}</strong><small>{detail}</small></article>)}
+          </section>
+          <section className="attention">
+            <div className="section-head"><div><span className="eyebrow">PRIORIDADE DO DIA</span><h2>O que precisa da sua atenção</h2></div></div>
+            <div className="attention-grid">
+              <article className="action-card danger"><div className="icon"><AlertTriangle/></div><div><strong>Amoxicilina 500 mg</strong><span>Ruptura prevista antes da próxima entrega</span></div><b>6 dias</b></article>
+              <article className="action-card warning"><div className="icon"><PackageSearch/></div><div><strong>Iogurte natural 170 g</strong><span>17 unidades podem vencer sem saída</span></div><b>9 dias</b></article>
+              <article className="action-card"><div className="icon"><ClipboardCheck/></div><div><strong>Inventário corredor B</strong><span>Contagem cega pendente desde ontem</span></div><b>42 itens</b></article>
+            </div>
+          </section>
+          <Simulator/>
+        </>}
     </main>
   </div>;
 }
