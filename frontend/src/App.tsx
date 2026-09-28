@@ -34,7 +34,13 @@ function Login({onLogin}:{onLogin:()=>void}) {
   }
   return <main className="login-shell">
     <section className="login-copy">
-      <div className="brand official-brand"><img src="/nexo-logo.png" alt="Nexo — Sistema inteligente de gestão de estoque"/></div>
+      <div className="brand official-brand">
+      <img
+        src="/nexo-logo.png"
+        alt="Nexo — Sistema inteligente de gestão de estoque"
+        className="brand-logo-full"
+      />
+    </div>
       <div className="hero">
         <span className="eyebrow">GESTÃO QUE ANTECIPA</span>
         <h1>Seu estoque deixa de ser um número e passa a ser uma decisão.</h1>
@@ -44,7 +50,13 @@ function Login({onLogin}:{onLogin:()=>void}) {
     </section>
     <section className="login-side">
       <form className="login-card" onSubmit={submit}>
-        <div className="login-title"><img className="login-logo" src="/nexo-logo.png" alt="Nexo"/><div><strong>Acesso administrativo</strong><small>Ambiente demonstrativo</small></div></div>
+        <div className="login-title">
+          <img className="login-logo" src="/nexo-logo.png" alt="Nexo" />
+          <div>
+            <strong>Acesso administrativo</strong>
+            <small>Ambiente demonstrativo</small>
+          </div>
+        </div>
         <label>Usuário<input value={user} onChange={e=>setUser(e.target.value)} placeholder="Digite seu usuário" autoFocus/></label>
         <label>Senha<input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Digite sua senha"/></label>
         {error&&<div className="error">{error}</div>}
@@ -258,7 +270,12 @@ function Dashboard({logout}:{logout:()=>void}){
 
   return <div className="app-shell">
     <aside>
-      <div className="brand sidebar-brand"><img src="/nexo-logo.png" alt="Nexo"/></div>
+      <div className="brand sidebar-brand">
+        <img src="/nexo-logo.png" alt="Nexo" className="sidebar-logo-full" />
+        <div className="sidebar-logo-symbol" aria-label="Nexo">
+          <NexoLogo compact />
+        </div>
+      </div>
       <nav>
         <a className={page==='dashboard'?'active':''} onClick={()=>setPage('dashboard')}><LayoutDashboard size={19}/> Visão geral</a>
         <a className={page==='products'?'active':''} onClick={()=>setPage('products')}><Boxes size={19}/> Produtos</a>
