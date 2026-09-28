@@ -384,7 +384,15 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState(false);
   const [error,setError]=useState('');
-  const [form,setForm]=useState({productId:'',movementType:'ENTRY',quantity:'',reason:''});
+  const [form,setForm]=useState({
+    productId:'',
+    movementType:'ENTRY',
+    quantity:'',
+    reason:'',
+    lotCode:'',
+    expiresAt:'',
+    unitCost:''
+  });
 
   useEffect(()=>{
     (async()=>{
@@ -413,6 +421,7 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
   async function submit(e:React.FormEvent){
     e.preventDefault();
     setError('');
+
     if(!form.productId||!form.quantity){
       setError('Selecione o produto e informe a quantidade.');
       return;
@@ -424,25 +433,52 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
       return;
     }
 
+    if(form.movementType==='ENTRY'&&!form.lotCode.trim()){
+      setError('Informe o lote para registrar a entrada.');
+      return;
+    }
+
     const quantity=form.movementType==='ADJUSTMENT'
       ? rawQuantity
       : Math.abs(rawQuantity);
 
+    let endpoint=API_URL+'/api/v1/stock/movements';
+    let payload:any={
+      productId:Number(form.productId),
+      movementType:form.movementType,
+      quantity,
+      reason:form.reason.trim()
+    };
+
+    if(form.movementType==='ENTRY'){
+      endpoint=API_URL+'/api/v1/stock/batches/entry';
+      payload={
+        productId:Number(form.productId),
+        lotCode:form.lotCode.trim(),
+        expiresAt:form.expiresAt||null,
+        quantity:Math.abs(rawQuantity),
+        unitCost:Number(form.unitCost||0),
+        reason:form.reason.trim()
+      };
+    }else if(form.movementType==='EXIT'){
+      endpoint=API_URL+'/api/v1/stock/batches/exit-fefo';
+      payload={
+        productId:Number(form.productId),
+        quantity:Math.abs(rawQuantity),
+        reason:form.reason.trim()
+      };
+    }
+
     setSaving(true);
     try{
-      const response=await fetch(API_URL+'/api/v1/stock/movements',{
+      const response=await fetch(endpoint,{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          productId:Number(form.productId),
-          movementType:form.movementType,
-          quantity,
-          reason:form.reason.trim()
-        })
+        body:JSON.stringify(payload)
       });
-      const payload=await response.json().catch(()=>null);
+      const responsePayload=await response.json().catch(()=>null);
       if(!response.ok){
-        const detail=payload?.detail||payload?.message||'Não foi possível registrar a movimentação.';
+        const detail=responsePayload?.detail||responsePayload?.message||'Não foi possível registrar a movimentação.';
         throw new Error(detail);
       }
       onSaved();
@@ -472,8 +508,8 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
         <div className="movement-grid">
           <label>Tipo
             <select value={form.movementType} onChange={e=>setForm({...form,movementType:e.target.value})}>
-              <option value="ENTRY">Entrada</option>
-              <option value="EXIT">Saída</option>
+              <option value="ENTRY">Entrada por lote</option>
+              <option value="EXIT">Saída FEFO</option>
               <option value="RETURN">Devolução</option>
               <option value="ADJUSTMENT">Ajuste</option>
             </select>
@@ -489,6 +525,25 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
             />
           </label>
         </div>
+
+        {form.movementType==='ENTRY'&&<>
+          <div className="movement-grid">
+            <label>Lote
+              <input value={form.lotCode} onChange={e=>setForm({...form,lotCode:e.target.value})} placeholder="Ex.: DIP2609A"/>
+            </label>
+            <label>Validade
+              <input type="date" value={form.expiresAt} onChange={e=>setForm({...form,expiresAt:e.target.value})}/>
+            </label>
+          </div>
+          <label>Custo unitário
+            <input type="number" min="0" step="0.01" value={form.unitCost} onChange={e=>setForm({...form,unitCost:e.target.value})} placeholder="Ex.: 6,85"/>
+          </label>
+          <div className="movement-hint fefo">A entrada atualiza o lote existente ou cria um novo lote, preservando validade, custo e rastreabilidade.</div>
+        </>}
+
+        {form.movementType==='EXIT'&&<div className="movement-hint fefo">
+          O Nexo aplicará FEFO automaticamente: primeiro os lotes com validade mais próxima; lotes sem validade ficam por último.
+        </div>}
 
         <label>Motivo
           <textarea
@@ -869,8 +924,134 @@ function BlindInventoryPanel(){
   </>;
 }
 
+
+type BatchView={
+  id:number;
+  productId:number;
+  sku:string;
+  productName:string;
+  lotCode:string;
+  expiresAt:string|null;
+  quantity:number;
+  unitCost:number;
+  receivedAt?:string;
+  daysToExpiry:number|null;
+  expiryStatus:'NO_EXPIRY'|'EXPIRED'|'CRITICAL'|'ATTENTION'|'OK';
+  fefoPosition:number;
+};
+
+function BatchesPanel(){
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
+  const [items,setItems]=useState<BatchView[]>([]);
+  const [query,setQuery]=useState('');
+  const [status,setStatus]=useState<'all'|BatchView['expiryStatus']>('all');
+  const [loading,setLoading]=useState(true);
+  const [error,setError]=useState('');
+
+  useEffect(()=>{
+    (async()=>{
+      setLoading(true);
+      setError('');
+      try{
+        const response=await fetch(API_URL+'/api/v1/stock/batches');
+        if(!response.ok) throw new Error('Não foi possível carregar os lotes.');
+        const data=await response.json();
+        setItems((Array.isArray(data)?data:[]).map((item:any)=>({
+          id:Number(item.id),
+          productId:Number(item.productId),
+          sku:String(item.sku||''),
+          productName:String(item.productName||'Produto'),
+          lotCode:String(item.lotCode||''),
+          expiresAt:item.expiresAt||null,
+          quantity:Number(item.quantity||0),
+          unitCost:Number(item.unitCost||0),
+          receivedAt:item.receivedAt||'',
+          daysToExpiry:item.daysToExpiry===null||item.daysToExpiry===undefined?null:Number(item.daysToExpiry),
+          expiryStatus:item.expiryStatus,
+          fefoPosition:Number(item.fefoPosition||0)
+        })));
+      }catch(err){
+        setError(err instanceof Error?err.message:'A API de lotes está indisponível.');
+      }finally{
+        setLoading(false);
+      }
+    })();
+  },[]);
+
+  const filtered=items.filter(item=>{
+    const matchesQuery=(item.productName+' '+item.sku+' '+item.lotCode).toLowerCase().includes(query.toLowerCase());
+    const matchesStatus=status==='all'||item.expiryStatus===status;
+    return matchesQuery&&matchesStatus;
+  });
+
+  const critical=items.filter(item=>item.expiryStatus==='CRITICAL'||item.expiryStatus==='EXPIRED');
+  const expiringUnits=critical.reduce((sum,item)=>sum+item.quantity,0);
+  const productsInFefo=new Set(items.map(item=>item.productId)).size;
+
+  const statusLabel=(value:BatchView['expiryStatus'])=>({
+    NO_EXPIRY:'Sem validade',
+    EXPIRED:'Vencido',
+    CRITICAL:'Até 30 dias',
+    ATTENTION:'31–90 dias',
+    OK:'Regular'
+  }[value]);
+
+  return <>
+    <header className="page-header">
+      <div>
+        <span className="eyebrow">RASTREABILIDADE FEFO</span>
+        <h1>Lotes & validade</h1>
+        <p>Visualize a ordem real de consumo, vencimentos próximos e saldo disponível por lote.</p>
+      </div>
+    </header>
+
+    <section className="batch-kpis">
+      <article><span>Lotes ativos</span><strong>{items.length}</strong><small>com saldo disponível</small></article>
+      <article><span>Produtos com lote</span><strong>{productsInFefo}</strong><small>gerenciados por FEFO</small></article>
+      <article><span>Lotes críticos</span><strong>{critical.length}</strong><small>vencidos ou até 30 dias</small></article>
+      <article><span>Unidades em atenção</span><strong>{expiringUnits.toFixed(3).replace(/\.000$/,'')}</strong><small>nos lotes críticos</small></article>
+    </section>
+
+    <section className="batch-toolbar">
+      <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar produto, SKU ou lote"/>
+      <select value={status} onChange={e=>setStatus(e.target.value as typeof status)}>
+        <option value="all">Todas as situações</option>
+        <option value="EXPIRED">Vencidos</option>
+        <option value="CRITICAL">Até 30 dias</option>
+        <option value="ATTENTION">31–90 dias</option>
+        <option value="OK">Regulares</option>
+        <option value="NO_EXPIRY">Sem validade</option>
+      </select>
+    </section>
+
+    {error&&<div className="product-feedback warning">{error}</div>}
+
+    <section className="batch-table-wrap">
+      <table className="batch-table">
+        <thead><tr><th>Produto</th><th>Lote</th><th>Validade</th><th>Saldo</th><th>Custo</th><th>FEFO</th><th>Situação</th></tr></thead>
+        <tbody>
+          {filtered.map(item=><tr key={item.id}>
+            <td><strong>{item.productName}</strong><small>{item.sku}</small></td>
+            <td><b>{item.lotCode}</b></td>
+            <td>
+              <strong>{item.expiresAt?new Date(item.expiresAt+'T12:00:00').toLocaleDateString('pt-BR'):'Sem validade'}</strong>
+              <small>{item.daysToExpiry===null?'—':item.daysToExpiry<0?`${Math.abs(item.daysToExpiry)} dias vencido`:`${item.daysToExpiry} dias`}</small>
+            </td>
+            <td><b>{item.quantity}</b></td>
+            <td>R$ {item.unitCost.toFixed(2).replace('.',',')}</td>
+            <td>{item.fefoPosition===1?<span className="fefo-next">Próximo</span>:'#'+item.fefoPosition}</td>
+            <td><span className={'expiry-pill '+item.expiryStatus.toLowerCase()}>{statusLabel(item.expiryStatus)}</span></td>
+          </tr>)}
+          {!filtered.length&&!loading&&<tr><td colSpan={7} className="empty-state">Nenhum lote encontrado.</td></tr>}
+          {loading&&<tr><td colSpan={7} className="empty-state">Carregando lotes...</td></tr>}
+        </tbody>
+      </table>
+    </section>
+  </>;
+}
+
 function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onToggleTheme:()=>void}){
-  const [page,setPage]=useState<'dashboard'|'products'|'inventory'>('dashboard');
+  const [page,setPage]=useState<'dashboard'|'products'|'batches'|'inventory'>('dashboard');
   const [showMovement,setShowMovement]=useState(false);
   const [movementRefresh,setMovementRefresh]=useState(0);
   const cards=[
@@ -889,6 +1070,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
       <nav>
         <a className={page==='dashboard'?'active':''} onClick={()=>setPage('dashboard')}><LayoutDashboard size={19}/> Visão geral</a>
         <a className={page==='products'?'active':''} onClick={()=>setPage('products')}><Boxes size={19}/> Produtos</a>
+        <a className={page==='batches'?'active':''} onClick={()=>setPage('batches')}><PackageSearch size={19}/> Lotes & validade</a>
         <a className={page==='inventory'?'active':''} onClick={()=>setPage('inventory')}><ClipboardCheck size={19}/> Inventário cego</a>
         <a><TrendingUp size={19}/> Simulador</a>
         <a><BrainCircuit size={19}/> Assistente</a>
@@ -898,9 +1080,11 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
     <main className="workspace">
       {page==='products'
         ? <ProductsPanel/>
-        : page==='inventory'
-          ? <BlindInventoryPanel/>
-          : <>
+        : page==='batches'
+          ? <BatchesPanel/>
+          : page==='inventory'
+            ? <BlindInventoryPanel/>
+            : <>
           <header><div><span className="eyebrow">NEXO ESTOQUE</span><h1>Boa tarde, administrador.</h1><p>O estoque está estável, mas há 8 itens que merecem ação hoje.</p></div><button className="new-action" onClick={()=>setShowMovement(true)}>+ Nova movimentação</button></header>
           <section className="cards">
             {cards.map(([title,value,Icon,detail])=><article className="metric" key={title}><div className="metric-top"><span>{title}</span><Icon size={20}/></div><strong>{value}</strong><small>{detail}</small></article>)}
