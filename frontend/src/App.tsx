@@ -1145,7 +1145,7 @@ function AdvisorPanel(){
     </header>
 
     <section className="advisor-workspace">
-      <aside className="advisor-context">
+      <section className="advisor-context">
         <div>
           <BrainCircuit size={22}/>
           <span className="eyebrow">CONTEXTO DISPONÍVEL</span>
@@ -1158,7 +1158,7 @@ function AdvisorPanel(){
           <span>Não altera quantidades.</span>
           <span>Não inventa fornecedores ou prazos.</span>
         </div>
-      </aside>
+      </section>
 
       <div className="advisor-chat">
         <div className="advisor-messages">
