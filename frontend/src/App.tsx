@@ -193,45 +193,139 @@ function Simulator(){
   </section>;
 }
 
+type ProductView={
+  id?:number;
+  sku:string;
+  name:string;
+  category:string;
+  stock:number;
+  min:number;
+  lot:string;
+  expiry:string;
+};
+
+const DEMO_PRODUCTS:ProductView[]=[
+  {sku:'MED-001',name:'Dipirona 500 mg',category:'Medicamentos',stock:120,min:60,lot:'DIP2609A',expiry:'18/12/2026'},
+  {sku:'MED-014',name:'Amoxicilina 500 mg',category:'Medicamentos',stock:42,min:80,lot:'AMX2608C',expiry:'10/02/2027'},
+  {sku:'MER-031',name:'Arroz tipo 1 1 kg',category:'Mercearia',stock:248,min:90,lot:'ARZ0926',expiry:'14/08/2027'},
+  {sku:'REF-008',name:'Iogurte natural 170 g',category:'Refrigerados',stock:48,min:24,lot:'IOG2809',expiry:'07/10/2026'},
+  {sku:'HIG-022',name:'Detergente neutro 500 ml',category:'Higiene e limpeza',stock:76,min:30,lot:'DET26091',expiry:'—'}
+];
+
 function ProductsPanel(){
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
   const [query,setQuery]=useState('');
   const [showForm,setShowForm]=useState(false);
-  const [products,setProducts]=useState([
-    {sku:'MED-001',name:'Dipirona 500 mg',category:'Medicamentos',stock:120,min:60,lot:'DIP2609A',expiry:'18/12/2026'},
-    {sku:'MED-014',name:'Amoxicilina 500 mg',category:'Medicamentos',stock:42,min:80,lot:'AMX2608C',expiry:'10/02/2027'},
-    {sku:'MER-031',name:'Arroz tipo 1 1 kg',category:'Mercearia',stock:248,min:90,lot:'ARZ0926',expiry:'14/08/2027'},
-    {sku:'REF-008',name:'Iogurte natural 170 g',category:'Refrigerados',stock:48,min:24,lot:'IOG2809',expiry:'07/10/2026'},
-    {sku:'HIG-022',name:'Detergente neutro 500 ml',category:'Higiene e limpeza',stock:76,min:30,lot:'DET26091',expiry:'—'}
-  ]);
+  const [products,setProducts]=useState<ProductView[]>(DEMO_PRODUCTS);
+  const [source,setSource]=useState<'loading'|'api'|'demo'>('loading');
+  const [saving,setSaving]=useState(false);
+  const [feedback,setFeedback]=useState('');
   const [form,setForm]=useState({sku:'',name:'',category:'',stock:'',min:''});
+
+  function normalizeProduct(product:any):ProductView{
+    return {
+      id:Number(product.id),
+      sku:String(product.sku||''),
+      name:String(product.name||''),
+      category:String(product.category||'Sem categoria'),
+      stock:Number(product.currentStock||0),
+      min:Number(product.minimumStock||0),
+      lot:'—',
+      expiry:'—'
+    };
+  }
+
+  async function loadProducts(){
+    try{
+      const response=await fetch(API_URL+'/api/v1/products');
+      if(!response.ok) throw new Error('API de produtos indisponível');
+      const data=await response.json();
+      if(!Array.isArray(data)) throw new Error('Resposta inválida');
+      setProducts(data.map(normalizeProduct));
+      setSource('api');
+      setFeedback('');
+    }catch{
+      setProducts(DEMO_PRODUCTS);
+      setSource('demo');
+    }
+  }
+
+  useEffect(()=>{
+    void loadProducts();
+  },[]);
+
   const filtered=products.filter(p=>(p.name+' '+p.sku+' '+p.category).toLowerCase().includes(query.toLowerCase()));
 
-  function addProduct(e:React.FormEvent){
+  async function addProduct(e:React.FormEvent){
     e.preventDefault();
-    if(!form.sku||!form.name||!form.category) return;
-    setProducts(current=>[{
-      sku:form.sku.toUpperCase(),
-      name:form.name,
-      category:form.category,
+    if(!form.sku||!form.name||!form.category) {
+      setFeedback('Preencha SKU, nome e categoria.');
+      return;
+    }
+
+    setSaving(true);
+    setFeedback('');
+    const draft:ProductView={
+      sku:form.sku.trim().toUpperCase(),
+      name:form.name.trim(),
+      category:form.category.trim(),
       stock:Number(form.stock||0),
       min:Number(form.min||0),
       lot:'—',
       expiry:'—'
-    },...current]);
-    setForm({sku:'',name:'',category:'',stock:'',min:''});
-    setShowForm(false);
+    };
+
+    try{
+      const response=await fetch(API_URL+'/api/v1/products',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          id:null,
+          sku:draft.sku,
+          barcode:'',
+          name:draft.name,
+          category:draft.category,
+          costPrice:0,
+          salePrice:0,
+          currentStock:draft.stock,
+          minimumStock:draft.min,
+          active:true
+        })
+      });
+      if(!response.ok) throw new Error('Não foi possível persistir o produto');
+
+      setForm({sku:'',name:'',category:'',stock:'',min:''});
+      setShowForm(false);
+      await loadProducts();
+      setFeedback('Produto salvo na base MySQL.');
+    }catch{
+      setProducts(current=>[draft,...current]);
+      setSource('demo');
+      setForm({sku:'',name:'',category:'',stock:'',min:''});
+      setShowForm(false);
+      setFeedback('API/MySQL indisponível. Produto mantido apenas nesta sessão de demonstração.');
+    }finally{
+      setSaving(false);
+    }
   }
 
   return <>
     <header className="page-header">
       <div><span className="eyebrow">CATÁLOGO E SALDOS</span><h1>Produtos</h1><p>Consulte estoque, lote e validade em uma única visão operacional.</p></div>
-      <button className="new-action" onClick={()=>setShowForm(true)}>+ Novo produto</button>
+      <button className="new-action" onClick={()=>{setShowForm(true);setFeedback('')}}>+ Novo produto</button>
     </header>
 
     <section className="product-toolbar">
       <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar por produto, SKU ou categoria"/>
-      <div><span>{filtered.length} produtos exibidos</span><span className="demo-badge">dados de demonstração</span></div>
+      <div>
+        <span>{filtered.length} produtos exibidos</span>
+        <span className={'data-source '+source}>
+          {source==='loading'?'conectando...':source==='api'?'API + MySQL':'modo demonstração'}
+        </span>
+      </div>
     </section>
+
+    {feedback&&<div className={'product-feedback '+(source==='api'?'success':'warning')}>{feedback}</div>}
 
     {showForm&&<form className="product-form" onSubmit={addProduct}>
       <div className="form-title"><div><span className="eyebrow">CADASTRO RÁPIDO</span><h2>Novo produto</h2></div><button type="button" onClick={()=>setShowForm(false)}>Fechar</button></div>
@@ -239,10 +333,13 @@ function ProductsPanel(){
         <label>SKU<input value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="Ex.: MED-102"/></label>
         <label>Nome<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Nome do produto"/></label>
         <label>Categoria<input value={form.category} onChange={e=>setForm({...form,category:e.target.value})} placeholder="Categoria"/></label>
-        <label>Estoque inicial<input type="number" min="0" value={form.stock} onChange={e=>setForm({...form,stock:e.target.value})}/></label>
-        <label>Estoque mínimo<input type="number" min="0" value={form.min} onChange={e=>setForm({...form,min:e.target.value})}/></label>
+        <label>Estoque inicial<input type="number" min="0" step="0.001" value={form.stock} onChange={e=>setForm({...form,stock:e.target.value})}/></label>
+        <label>Estoque mínimo<input type="number" min="0" step="0.001" value={form.min} onChange={e=>setForm({...form,min:e.target.value})}/></label>
       </div>
-      <div className="form-actions"><span>A persistência definitiva será feita pela Procedure MySQL.</span><button className="primary compact">Adicionar à demonstração</button></div>
+      <div className="form-actions">
+        <span>{source==='api'?'Cadastro será persistido pela Procedure MySQL.':'A API será usada automaticamente quando a base estiver disponível.'}</span>
+        <button className="primary compact" disabled={saving}>{saving?'Salvando...':'Salvar produto'}</button>
+      </div>
     </form>}
 
     <section className="product-table-wrap">
@@ -251,7 +348,7 @@ function ProductsPanel(){
         <tbody>
           {filtered.map(p=>{
             const critical=p.stock<p.min;
-            return <tr key={p.sku}>
+            return <tr key={p.id??p.sku}>
               <td><strong>{p.name}</strong><small>{p.sku}</small></td>
               <td>{p.category}</td>
               <td><b>{p.stock}</b></td>
@@ -261,12 +358,12 @@ function ProductsPanel(){
               <td><span className={'stock-pill '+(critical?'critical':'healthy')}>{critical?'Crítico':'Saudável'}</span></td>
             </tr>;
           })}
+          {filtered.length===0&&<tr><td colSpan={7} className="empty-state">Nenhum produto encontrado.</td></tr>}
         </tbody>
       </table>
     </section>
   </>;
 }
-
 
 function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onToggleTheme:()=>void}){
   const [page,setPage]=useState<'dashboard'|'products'>('dashboard');
