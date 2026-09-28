@@ -42,6 +42,19 @@ CREATE TABLE IF NOT EXISTS stock_movements (
   CONSTRAINT fk_movement_batch FOREIGN KEY (batch_id) REFERENCES stock_batches(id)
 );
 
+
+
+CREATE TABLE IF NOT EXISTS stock_movement_allocations (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  movement_id BIGINT NOT NULL,
+  batch_id BIGINT NOT NULL,
+  quantity DECIMAL(12,3) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_allocation_movement FOREIGN KEY (movement_id) REFERENCES stock_movements(id),
+  CONSTRAINT fk_allocation_batch FOREIGN KEY (batch_id) REFERENCES stock_batches(id),
+  CONSTRAINT uk_movement_batch UNIQUE (movement_id, batch_id)
+);
+
 CREATE TABLE IF NOT EXISTS blind_inventory_sessions (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   name VARCHAR(120) NOT NULL,
