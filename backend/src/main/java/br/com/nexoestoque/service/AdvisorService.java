@@ -306,7 +306,12 @@ public class AdvisorService {
                     + ", portanto está " + status + ". " + batchText;
         }
 
-        if (normalized.contains("crític") || normalized.contains("ruptura") || normalized.contains("repor")) {
+        if (normalized.contains("crític")
+                || normalized.contains("ruptura")
+                || normalized.contains("repor")
+                || normalized.contains("mínim")
+                || normalized.contains("minim")
+                || normalized.contains("abaixo")) {
             if (snapshot.critical().isEmpty()) {
                 return "Não há produtos abaixo do estoque mínimo no snapshot atual.";
             }
@@ -354,12 +359,13 @@ public class AdvisorService {
         }
 
         if (normalized.contains("estoque") || normalized.contains("saldo") || normalized.contains("resumo")) {
-            return "O estoque possui " + snapshot.products().size()
-                    + " produtos ativos e " + decimal(snapshot.totalStock())
-                    + " unidades no total. Há " + snapshot.critical().size()
-                    + " produtos abaixo do mínimo, " + snapshot.outOfStock()
-                    + " sem estoque e " + snapshot.expiryRisk().size()
-                    + " lotes vencidos ou com até 30 dias para vencer.";
+            return "O estoque possui " + countText(snapshot.products().size(), "produto ativo", "produtos ativos")
+                    + " e " + decimal(snapshot.totalStock())
+                    + " unidades no total. Há "
+                    + countText(snapshot.critical().size(), "produto abaixo do mínimo", "produtos abaixo do mínimo")
+                    + ", " + countText(snapshot.outOfStock(), "produto sem estoque", "produtos sem estoque")
+                    + " e " + countText(snapshot.expiryRisk().size(), "lote vencido ou com até 30 dias para vencer", "lotes vencidos ou com até 30 dias para vencer")
+                    + ".";
         }
 
         return "Posso consultar o snapshot real do Nexo sobre estoque crítico, saldos, lotes, validade, FEFO e inventários. "
@@ -432,6 +438,10 @@ public class AdvisorService {
                 + " e cobertura estimada de " + request.coverageDays()
                 + " dias. " + action
                 + " Esta explicação usa apenas os números calculados pelo motor auditável.";
+    }
+
+    private String countText(long count, String singular, String plural) {
+        return count + " " + (count == 1 ? singular : plural);
     }
 
     private BigDecimal number(BigDecimal value) {
