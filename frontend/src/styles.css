@@ -29,3 +29,14 @@
 .stock-pill{display:inline-block;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:700}.stock-pill.healthy{background:#e9f7ef;color:#25734b}.stock-pill.critical{background:#fff0ef;color:#a94339}
 @media(max-width:1000px){.form-grid{grid-template-columns:repeat(2,1fr)}.product-toolbar{align-items:stretch;flex-direction:column}}
 @media(max-width:700px){.form-grid{grid-template-columns:1fr}.form-actions,.page-header{align-items:stretch;flex-direction:column;gap:14px}}
+
+/* Nexo official brand */
+.official-brand{width:260px;max-width:55vw;padding:10px 14px;border-radius:16px;background:#101820;box-shadow:0 10px 30px rgba(17,24,32,.10)}
+.official-brand img{display:block;width:100%;height:auto;object-fit:contain}
+.login-logo{width:150px;height:auto;display:block;padding:8px 10px;border-radius:12px;background:#101820}
+.sidebar-brand{padding:4px 6px 20px!important;border-bottom:1px solid #26323c!important}
+.sidebar-brand img{display:block;width:174px;max-width:100%;height:auto;object-fit:contain}
+@media(max-width:1000px){
+  .sidebar-brand{padding:2px 0 18px!important}
+  .sidebar-brand img{width:46px;height:46px;object-fit:cover;object-position:left center;border-radius:10px}
+}
