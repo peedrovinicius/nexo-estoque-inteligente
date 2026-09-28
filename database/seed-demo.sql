@@ -35,6 +35,46 @@ BEGIN
     SELECT id, 'DET26091', NULL, 76.000, 1.95, CURRENT_TIMESTAMP
       FROM products WHERE sku = 'HIG-022';
   END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+      FROM stock_movements
+     WHERE reason = 'Carga inicial de demonstração'
+  ) THEN
+    INSERT INTO stock_movements (
+      product_id, batch_id, movement_type, quantity,
+      balance_before, balance_after, reason
+    )
+    SELECT
+      p.id,
+      b.id,
+      'ENTRY',
+      p.current_stock,
+      0,
+      p.current_stock,
+      'Carga inicial de demonstração'
+    FROM products p
+    JOIN stock_batches b
+      ON b.product_id = p.id
+    WHERE p.sku IN ('MED-001','MED-014','MER-031','REF-008','HIG-022');
+
+    INSERT INTO stock_movement_allocations (
+      movement_id, batch_id, quantity
+    )
+    SELECT
+      sm.id,
+      sm.batch_id,
+      sm.quantity
+    FROM stock_movements sm
+    WHERE sm.reason = 'Carga inicial de demonstração'
+      AND sm.batch_id IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1
+          FROM stock_movement_allocations a
+         WHERE a.movement_id = sm.id
+           AND a.batch_id = sm.batch_id
+      );
+  END IF;
 END //
 DELIMITER ;
 
