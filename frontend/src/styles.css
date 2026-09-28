@@ -12,3 +12,20 @@
 .advisor-box span{margin-left:auto;font-size:10px;color:#85919b}
 .advisor-box p{margin:10px 0 0;color:#bac3ca;font-size:12px;line-height:1.55}
 .ghost:disabled{opacity:.6;cursor:wait}
+
+.page-header{display:flex;justify-content:space-between;align-items:flex-start}
+.product-toolbar{margin-top:28px;background:#fff;border:1px solid #e5e8eb;border-radius:14px;padding:14px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.product-toolbar>input{width:min(540px,100%);border:1px solid #dce1e5;border-radius:10px;padding:12px 14px;outline:none}
+.product-toolbar>input:focus{border-color:#111820;box-shadow:0 0 0 3px #1118200d}
+.product-toolbar>div{display:flex;align-items:center;gap:10px;color:#78818a;font-size:12px}
+.demo-badge{background:#f1f3f5;color:#626b74;border-radius:999px;padding:5px 8px}
+.product-form{margin-top:14px;background:#fff;border:1px solid #dfe3e7;border-radius:15px;padding:20px;box-shadow:0 18px 45px rgba(20,25,30,.05)}
+.form-title{display:flex;align-items:flex-start;justify-content:space-between}.form-title h2{margin:4px 0 0;font:700 20px Manrope}.form-title>button{border:0;background:none;color:#6f7881;cursor:pointer}
+.form-grid{display:grid;grid-template-columns:1fr 2fr 1fr 1fr 1fr;gap:12px;margin-top:18px}
+.form-grid label{display:flex;flex-direction:column;gap:7px;color:#606973;font-size:12px;font-weight:600}.form-grid input{border:1px solid #dce1e5;border-radius:9px;padding:11px 12px;outline:none}
+.form-actions{display:flex;align-items:center;justify-content:space-between;margin-top:16px}.form-actions>span{font-size:11px;color:#8a939c}.primary.compact{margin:0;width:auto;padding:10px 14px}
+.product-table-wrap{margin-top:14px;overflow:auto;background:#fff;border:1px solid #e5e8eb;border-radius:15px}
+.product-table{width:100%;border-collapse:collapse;min-width:850px}.product-table th{text-align:left;padding:13px 16px;background:#fafbfb;border-bottom:1px solid #e7eaed;color:#7c858e;font-size:11px;text-transform:uppercase;letter-spacing:.06em}.product-table td{padding:15px 16px;border-bottom:1px solid #eef0f2;color:#4c555e;font-size:13px}.product-table tr:last-child td{border-bottom:0}.product-table td:first-child{min-width:220px}.product-table td:first-child strong,.product-table td:first-child small{display:block}.product-table td:first-child strong{color:#20252a}.product-table td:first-child small{margin-top:4px;color:#929ba3}
+.stock-pill{display:inline-block;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:700}.stock-pill.healthy{background:#e9f7ef;color:#25734b}.stock-pill.critical{background:#fff0ef;color:#a94339}
+@media(max-width:1000px){.form-grid{grid-template-columns:repeat(2,1fr)}.product-toolbar{align-items:stretch;flex-direction:column}}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr}.form-actions,.page-header{align-items:stretch;flex-direction:column;gap:14px}}
