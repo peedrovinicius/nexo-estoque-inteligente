@@ -30,7 +30,30 @@
 @media(max-width:1000px){.form-grid{grid-template-columns:repeat(2,1fr)}.product-toolbar{align-items:stretch;flex-direction:column}}
 @media(max-width:700px){.form-grid{grid-template-columns:1fr}.form-actions,.page-header{align-items:stretch;flex-direction:column;gap:14px}}
 
-/* Nexo official brand */
+/* Nexo official brand and theme system */
+html {
+  color-scheme: light;
+}
+
+body,
+.login-copy,
+.login-side,
+.login-card,
+.app-shell,
+aside,
+.workspace,
+.metric,
+.action-card,
+.product-toolbar,
+.product-form,
+.product-table-wrap,
+.product-table th,
+.product-table td,
+input,
+button {
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
 .official-brand {
   display: block;
   width: 320px;
@@ -59,7 +82,6 @@
   width: 180px;
   max-width: 100%;
   height: auto;
-  background: transparent;
   padding: 0;
   border-radius: 0;
   object-fit: contain;
@@ -82,29 +104,62 @@
 
 .sidebar-logo-symbol {
   display: none;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
 }
 
-/* Symbol used when the sidebar is compact */
-.nexo-logo {
-  display: flex;
+.login-theme-toggle {
+  position: fixed;
+  top: 22px;
+  right: 22px;
+  z-index: 20;
+}
+
+.theme-toggle {
+  min-height: 40px;
+  display: inline-flex;
   align-items: center;
-  min-width: 0;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid #dfe5ec;
+  border-radius: 10px;
+  padding: 9px 11px;
+  background: rgba(255,255,255,.9);
+  color: #364152;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(15,35,70,.05);
 }
 
-.nexo-symbol {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  filter: drop-shadow(0 8px 18px rgba(20,119,255,.18));
+.theme-toggle:hover {
+  border-color: #bfcbd8;
+  background: #fff;
 }
 
-.nexo-logo.compact .nexo-symbol {
-  width: 42px;
-  height: 42px;
-  flex-basis: 42px;
+.theme-toggle.compact {
+  width: 40px;
+  padding: 9px;
 }
 
-/* Light navigation — aligned with the Nexo visual identity */
+.sidebar-bottom {
+  margin-top: auto;
+  display: grid;
+  gap: 8px;
+}
+
+.sidebar-bottom .theme-toggle,
+.sidebar-bottom .logout {
+  width: 100%;
+  justify-content: flex-start;
+  box-shadow: none;
+}
+
+.sidebar-bottom .logout {
+  margin-top: 0;
+}
+
 aside {
   background: #ffffff;
   color: #172033;
@@ -117,7 +172,8 @@ nav a,
   color: #687386;
 }
 
-nav a:hover {
+nav a:hover,
+.logout:hover {
   background: #f4f8ff;
   color: #1265e8;
 }
@@ -128,9 +184,166 @@ nav a.active {
   box-shadow: inset 3px 0 0 #1476ff;
 }
 
-.logout:hover {
-  background: #f7f9fc;
-  color: #172033;
+/* Dark theme */
+html[data-theme='dark'] {
+  color-scheme: dark;
+  color: #e8eef5;
+  background: #0b1117;
+}
+
+[data-theme='dark'] body,
+[data-theme='dark'] .app-shell {
+  background: #0b1117;
+  color: #e8eef5;
+}
+
+[data-theme='dark'] .login-copy {
+  background: radial-gradient(circle at 18% 8%,#17222d,#0f171f 56%,#0a1016);
+}
+
+[data-theme='dark'] .login-side {
+  background: #0b1117;
+}
+
+[data-theme='dark'] .hero h1,
+[data-theme='dark'] .workspace h1,
+[data-theme='dark'] .section-head h2,
+[data-theme='dark'] .form-title h2 {
+  color: #f4f7fa;
+}
+
+[data-theme='dark'] .hero p,
+[data-theme='dark'] .workspace header p,
+[data-theme='dark'] .trust,
+[data-theme='dark'] .product-toolbar > div,
+[data-theme='dark'] .form-actions > span,
+[data-theme='dark'] .form-title > button {
+  color: #99a6b3;
+}
+
+[data-theme='dark'] .login-card,
+[data-theme='dark'] .metric,
+[data-theme='dark'] .action-card,
+[data-theme='dark'] .product-toolbar,
+[data-theme='dark'] .product-form,
+[data-theme='dark'] .product-table-wrap {
+  background: #121b24;
+  border-color: #25313d;
+  color: #e7edf3;
+  box-shadow: 0 24px 70px rgba(0,0,0,.2);
+}
+
+[data-theme='dark'] .login-title small,
+[data-theme='dark'] .metric-top,
+[data-theme='dark'] .metric small,
+[data-theme='dark'] .action-card span,
+[data-theme='dark'] .product-table td,
+[data-theme='dark'] .product-table td:first-child small,
+[data-theme='dark'] .form-grid label {
+  color: #95a2af;
+}
+
+[data-theme='dark'] .action-card td,
+[data-theme='dark'] .product-table td:first-child strong,
+[data-theme='dark'] .metric > strong {
+  color: #eaf0f6;
+}
+
+[data-theme='dark'] .login-card input,
+[data-theme='dark'] .product-toolbar > input,
+[data-theme='dark'] .form-grid input {
+  background: #0e161e;
+  border-color: #2a3845;
+  color: #edf2f7;
+}
+
+[data-theme='dark'] .login-card input::placeholder,
+[data-theme='dark'] .product-toolbar > input::placeholder,
+[data-theme='dark'] .form-grid input::placeholder {
+  color: #677583;
+}
+
+[data-theme='dark'] .login-card input:focus,
+[data-theme='dark'] .product-toolbar > input:focus,
+[data-theme='dark'] .form-grid input:focus {
+  border-color: #3183ff;
+  box-shadow: 0 0 0 3px rgba(49,131,255,.14);
+}
+
+[data-theme='dark'] .demo {
+  border-top-color: #27333e;
+}
+
+[data-theme='dark'] .demo code,
+[data-theme='dark'] .demo-badge {
+  background: #1b2630;
+  color: #c6d0da;
+}
+
+[data-theme='dark'] aside {
+  background: #0e161e;
+  color: #dbe4ec;
+  border-right-color: #22303c;
+  box-shadow: 8px 0 28px rgba(0,0,0,.14);
+}
+
+[data-theme='dark'] .sidebar-brand {
+  border-bottom-color: #263541 !important;
+}
+
+[data-theme='dark'] nav a,
+[data-theme='dark'] .logout {
+  color: #93a0ad;
+}
+
+[data-theme='dark'] nav a:hover,
+[data-theme='dark'] .logout:hover {
+  background: #15212b;
+  color: #dce9f8;
+}
+
+[data-theme='dark'] nav a.active {
+  background: linear-gradient(135deg,#15283b,#142438);
+  color: #75b2ff;
+  box-shadow: inset 3px 0 0 #3b8cff;
+}
+
+[data-theme='dark'] .workspace {
+  color: #e8eef5;
+}
+
+[data-theme='dark'] .new-action,
+[data-theme='dark'] .primary {
+  background: #f1f5f9;
+  color: #101820;
+}
+
+[data-theme='dark'] .new-action:hover,
+[data-theme='dark'] .primary:hover {
+  background: #ffffff;
+}
+
+[data-theme='dark'] .product-table th {
+  background: #0f1820;
+  color: #8f9daa;
+  border-bottom-color: #27343f;
+}
+
+[data-theme='dark'] .product-table td {
+  border-bottom-color: #202d37;
+}
+
+[data-theme='dark'] .theme-toggle {
+  background: #121d26;
+  border-color: #2a3946;
+  color: #cdd7e0;
+  box-shadow: none;
+}
+
+[data-theme='dark'] .theme-toggle:hover {
+  background: #182630;
+  border-color: #3a4c5b;
+  color: #ffffff;
 }
 
 @media (max-width: 1000px) {
@@ -140,8 +353,6 @@ nav a.active {
 
   .sidebar-logo-symbol {
     display: block;
-    width: 42px;
-    height: 42px;
   }
 
   .official-brand {
@@ -151,5 +362,21 @@ nav a.active {
   .login-logo {
     width: 130px;
   }
+
+  .sidebar-bottom .theme-toggle,
+  .sidebar-bottom .logout {
+    justify-content: center;
+    font-size: 0;
+  }
+
+  .sidebar-bottom .theme-toggle span {
+    display: none;
+  }
 }
 
+@media (max-width: 700px) {
+  .login-theme-toggle {
+    top: 14px;
+    right: 14px;
+  }
+}

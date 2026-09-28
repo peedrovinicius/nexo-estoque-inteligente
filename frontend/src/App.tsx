@@ -1,27 +1,35 @@
-import { useMemo, useState } from 'react';
-import { AlertTriangle, Boxes, BrainCircuit, ChevronRight, ClipboardCheck, LayoutDashboard, LogOut, PackageSearch, ScanLine, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Boxes, BrainCircuit, ChevronRight, ClipboardCheck, LayoutDashboard, LogOut, Moon, PackageSearch, ScanLine, ShieldCheck, Sparkles, Sun, TrendingUp } from 'lucide-react';
 
 const DEMO_USER='admin';
 const DEMO_PASSWORD='Nexo@2026';
 
-function NexoLogo({compact=false,tagline=false}:{compact?:boolean;tagline?:boolean}){
-  return <div className={'nexo-logo '+(compact?'compact':'')}>
-    <svg className="nexo-symbol" viewBox="0 0 64 64" aria-hidden="true">
-      <defs>
-        <linearGradient id="nexoGradient" x1="8" y1="4" x2="54" y2="60" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#20e6b2"/>
-          <stop offset=".48" stopColor="#08aaf2"/>
-          <stop offset="1" stopColor="#2449ff"/>
-        </linearGradient>
-      </defs>
-      <path fill="url(#nexoGradient)" d="M31.8 3.7 56 17.5v28L32 60 8 46.1V19.2l9.8-5.8 9.6 5.5-9.1 5.3v16.4L32 48.4l13.8-8V24.1L32 16.2l-5.5 3.2 17 9.8v10.6L32 46.4 20.4 39.7V28.8L32 35.5l3.4-2-17-9.8V12.5L31.8 3.7Z"/>
-    </svg>
-    {!compact&&<div className="nexo-wordmark"><strong>Nexo</strong>{tagline&&<span>Sistema inteligente de gestão de estoque</span>}</div>}
-  </div>;
+type Theme='light'|'dark';
+
+function BrandImage({theme,className,alt}:{theme:Theme;className:string;alt:string}){
+  return <img
+    src={theme==='light'?'/nexo-logo-light.png':'/nexo-logo.png'}
+    alt={alt}
+    className={className}
+  />;
+}
+
+function ThemeToggle({theme,onToggle,compact=false}:{theme:Theme;onToggle:()=>void;compact?:boolean}){
+  const dark=theme==='dark';
+  return <button
+    type="button"
+    className={'theme-toggle '+(compact?'compact':'')}
+    onClick={onToggle}
+    aria-label={dark?'Ativar tema claro':'Ativar tema escuro'}
+    title={dark?'Tema claro':'Tema escuro'}
+  >
+    {dark?<Sun size={17}/>:<Moon size={17}/>}
+    {!compact&&<span>{dark?'Tema claro':'Tema escuro'}</span>}
+  </button>;
 }
 
 
-function Login({onLogin}:{onLogin:()=>void}) {
+function Login({onLogin,theme,onToggleTheme}:{onLogin:()=>void;theme:Theme;onToggleTheme:()=>void}) {
   const [user,setUser]=useState('');
   const [password,setPassword]=useState('');
   const [error,setError]=useState('');
@@ -33,10 +41,11 @@ function Login({onLogin}:{onLogin:()=>void}) {
     } else setError('Usuário ou senha inválidos.');
   }
   return <main className="login-shell">
+    <div className="login-theme-toggle"><ThemeToggle theme={theme} onToggle={onToggleTheme} compact /></div>
     <section className="login-copy">
       <div className="brand official-brand">
-      <img
-        src="/nexo-logo.png"
+      <BrandImage
+        theme={theme}
         alt="Nexo — Sistema inteligente de gestão de estoque"
         className="brand-logo-full"
       />
@@ -51,7 +60,7 @@ function Login({onLogin}:{onLogin:()=>void}) {
     <section className="login-side">
       <form className="login-card" onSubmit={submit}>
         <div className="login-title">
-          <img className="login-logo" src="/nexo-logo.png" alt="Nexo" />
+          <BrandImage theme={theme} className="login-logo" alt="Nexo" />
           <div>
             <strong>Acesso administrativo</strong>
             <small>Ambiente demonstrativo</small>
@@ -259,7 +268,7 @@ function ProductsPanel(){
 }
 
 
-function Dashboard({logout}:{logout:()=>void}){
+function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onToggleTheme:()=>void}){
   const [page,setPage]=useState<'dashboard'|'products'>('dashboard');
   const cards=[
     ['Itens em estoque','18.421',Boxes,'+3,8%'],
@@ -271,10 +280,8 @@ function Dashboard({logout}:{logout:()=>void}){
   return <div className="app-shell">
     <aside>
       <div className="brand sidebar-brand">
-        <img src="/nexo-logo.png" alt="Nexo" className="sidebar-logo-full" />
-        <div className="sidebar-logo-symbol" aria-label="Nexo">
-          <NexoLogo compact />
-        </div>
+        <BrandImage theme={theme} className="sidebar-logo-full" alt="Nexo" />
+        <img src="/nexo-symbol.png" alt="Nexo" className="sidebar-logo-symbol" />
       </div>
       <nav>
         <a className={page==='dashboard'?'active':''} onClick={()=>setPage('dashboard')}><LayoutDashboard size={19}/> Visão geral</a>
@@ -283,7 +290,7 @@ function Dashboard({logout}:{logout:()=>void}){
         <a><TrendingUp size={19}/> Simulador</a>
         <a><BrainCircuit size={19}/> Assistente</a>
       </nav>
-      <button className="logout" onClick={logout}><LogOut size={18}/> Sair</button>
+      <div className="sidebar-bottom"><ThemeToggle theme={theme} onToggle={onToggleTheme}/><button className="logout" onClick={logout}><LogOut size={18}/> Sair</button></div>
     </aside>
     <main className="workspace">
       {page==='products'
@@ -309,5 +316,20 @@ function Dashboard({logout}:{logout:()=>void}){
 
 export default function App(){
   const [auth,setAuth]=useState(sessionStorage.getItem('nexo-auth')==='demo');
-  return auth?<Dashboard logout={()=>{sessionStorage.removeItem('nexo-auth');setAuth(false)}}/>:<Login onLogin={()=>setAuth(true)}/>;
+  const [theme,setTheme]=useState<Theme>(()=>localStorage.getItem('nexo-theme')==='dark'?'dark':'light');
+
+  useEffect(()=>{
+    document.documentElement.dataset.theme=theme;
+    localStorage.setItem('nexo-theme',theme);
+  },[theme]);
+
+  const toggleTheme=()=>setTheme(current=>current==='light'?'dark':'light');
+
+  return auth
+    ? <Dashboard
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        logout={()=>{sessionStorage.removeItem('nexo-auth');setAuth(false)}}
+      />
+    : <Login onLogin={()=>setAuth(true)} theme={theme} onToggleTheme={toggleTheme}/>;
 }
