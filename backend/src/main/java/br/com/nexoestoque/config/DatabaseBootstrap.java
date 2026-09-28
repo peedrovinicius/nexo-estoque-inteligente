@@ -24,13 +24,16 @@ public class DatabaseBootstrap implements ApplicationRunner {
 
     private final DataSource dataSource;
     private final boolean enabled;
+    private final boolean demoSeedEnabled;
 
     public DatabaseBootstrap(
             DataSource dataSource,
-            @Value("${nexo.db.bootstrap:true}") boolean enabled
+            @Value("${nexo.db.bootstrap:true}") boolean enabled,
+            @Value("${nexo.db.demo-seed:false}") boolean demoSeedEnabled
     ) {
         this.dataSource = dataSource;
         this.enabled = enabled;
+        this.demoSeedEnabled = demoSeedEnabled;
     }
 
     @Override
@@ -46,6 +49,12 @@ public class DatabaseBootstrap implements ApplicationRunner {
             try (Connection connection = dataSource.getConnection()) {
                 executeScript(connection, Path.of("/app/database/schema.sql"));
                 executeScript(connection, Path.of("/app/database/procedures.sql"));
+
+                if (demoSeedEnabled) {
+                    executeScript(connection, Path.of("/app/database/seed-demo.sql"));
+                    log.info("Demo seed checked on attempt {}", attempt);
+                }
+
                 log.info("Database schema and procedures synchronized on attempt {}", attempt);
                 return;
             } catch (Exception exception) {
