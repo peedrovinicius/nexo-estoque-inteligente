@@ -87,6 +87,7 @@ CREATE PROCEDURE sp_stock_move(
 BEGIN
   DECLARE v_delta DECIMAL(12,3);
   DECLARE v_type VARCHAR(20);
+  DECLARE v_batch_count INT DEFAULT 0;
 
   SET v_type = UPPER(TRIM(p_movement_type));
 
@@ -119,6 +120,16 @@ BEGIN
   IF p_balance_before IS NULL THEN
     ROLLBACK;
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado';
+  END IF;
+
+  SELECT COUNT(*)
+    INTO v_batch_count
+    FROM stock_batches
+   WHERE product_id = p_product_id;
+
+  IF v_batch_count > 0 THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto rastreado por lote exige movimentação por lote';
   END IF;
 
   SET p_balance_after = p_balance_before + v_delta;
@@ -691,5 +702,182 @@ BEGIN
     b.expires_at ASC,
     b.received_at ASC,
     b.id ASC;
+END //
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS sp_stock_batch_return;
+DELIMITER //
+CREATE PROCEDURE sp_stock_batch_return(
+  IN p_product_id BIGINT,
+  IN p_batch_id BIGINT,
+  IN p_quantity DECIMAL(12,3),
+  IN p_reason VARCHAR(255),
+  OUT p_movement_id BIGINT,
+  OUT p_balance_before DECIMAL(12,3),
+  OUT p_balance_after DECIMAL(12,3)
+)
+BEGIN
+  DECLARE v_batch_quantity DECIMAL(12,3);
+
+  IF p_quantity IS NULL OR p_quantity <= 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A quantidade da devolução deve ser maior que zero';
+  END IF;
+
+  START TRANSACTION;
+
+  SET p_balance_before = NULL;
+  SELECT current_stock
+    INTO p_balance_before
+    FROM products
+   WHERE id = p_product_id
+     AND active = TRUE
+   FOR UPDATE;
+
+  IF p_balance_before IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado ou inativo';
+  END IF;
+
+  SET v_batch_quantity = NULL;
+  SELECT quantity
+    INTO v_batch_quantity
+    FROM stock_batches
+   WHERE id = p_batch_id
+     AND product_id = p_product_id
+   FOR UPDATE;
+
+  IF v_batch_quantity IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lote não encontrado para o produto';
+  END IF;
+
+  SET p_balance_after = p_balance_before + p_quantity;
+
+  UPDATE stock_batches
+     SET quantity = quantity + p_quantity
+   WHERE id = p_batch_id;
+
+  UPDATE products
+     SET current_stock = p_balance_after
+   WHERE id = p_product_id;
+
+  INSERT INTO stock_movements(
+    product_id, batch_id, movement_type, quantity, balance_before, balance_after, reason
+  )
+  VALUES(
+    p_product_id,
+    p_batch_id,
+    'RETURN',
+    p_quantity,
+    p_balance_before,
+    p_balance_after,
+    NULLIF(TRIM(p_reason),'')
+  );
+
+  SET p_movement_id = LAST_INSERT_ID();
+
+  INSERT INTO stock_movement_allocations(
+    movement_id, batch_id, quantity
+  )
+  VALUES(
+    p_movement_id, p_batch_id, p_quantity
+  );
+
+  COMMIT;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sp_stock_batch_adjustment;
+DELIMITER //
+CREATE PROCEDURE sp_stock_batch_adjustment(
+  IN p_product_id BIGINT,
+  IN p_batch_id BIGINT,
+  IN p_quantity_delta DECIMAL(12,3),
+  IN p_reason VARCHAR(255),
+  OUT p_movement_id BIGINT,
+  OUT p_balance_before DECIMAL(12,3),
+  OUT p_balance_after DECIMAL(12,3)
+)
+BEGIN
+  DECLARE v_batch_before DECIMAL(12,3);
+  DECLARE v_batch_after DECIMAL(12,3);
+
+  IF p_quantity_delta IS NULL OR p_quantity_delta = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'O ajuste deve ser diferente de zero';
+  END IF;
+
+  START TRANSACTION;
+
+  SET p_balance_before = NULL;
+  SELECT current_stock
+    INTO p_balance_before
+    FROM products
+   WHERE id = p_product_id
+     AND active = TRUE
+   FOR UPDATE;
+
+  IF p_balance_before IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado ou inativo';
+  END IF;
+
+  SET v_batch_before = NULL;
+  SELECT quantity
+    INTO v_batch_before
+    FROM stock_batches
+   WHERE id = p_batch_id
+     AND product_id = p_product_id
+   FOR UPDATE;
+
+  IF v_batch_before IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lote não encontrado para o produto';
+  END IF;
+
+  SET v_batch_after = v_batch_before + p_quantity_delta;
+  SET p_balance_after = p_balance_before + p_quantity_delta;
+
+  IF v_batch_after < 0 THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ajuste deixaria o lote negativo';
+  END IF;
+
+  IF p_balance_after < 0 THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ajuste deixaria o estoque negativo';
+  END IF;
+
+  UPDATE stock_batches
+     SET quantity = v_batch_after
+   WHERE id = p_batch_id;
+
+  UPDATE products
+     SET current_stock = p_balance_after
+   WHERE id = p_product_id;
+
+  INSERT INTO stock_movements(
+    product_id, batch_id, movement_type, quantity, balance_before, balance_after, reason
+  )
+  VALUES(
+    p_product_id,
+    p_batch_id,
+    'ADJUSTMENT',
+    ABS(p_quantity_delta),
+    p_balance_before,
+    p_balance_after,
+    NULLIF(TRIM(p_reason),'')
+  );
+
+  SET p_movement_id = LAST_INSERT_ID();
+
+  INSERT INTO stock_movement_allocations(
+    movement_id, batch_id, quantity
+  )
+  VALUES(
+    p_movement_id, p_batch_id, ABS(p_quantity_delta)
+  );
+
+  COMMIT;
 END //
 DELIMITER ;
