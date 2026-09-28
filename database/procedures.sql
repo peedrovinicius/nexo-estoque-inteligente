@@ -172,3 +172,221 @@ BEGIN
   LIMIT p_limit;
 END //
 DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS sp_blind_inventory_create;
+DELIMITER //
+CREATE PROCEDURE sp_blind_inventory_create(
+  IN p_name VARCHAR(120),
+  OUT p_session_id BIGINT
+)
+BEGIN
+  IF p_name IS NULL OR CHAR_LENGTH(TRIM(p_name)) = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Informe um nome para o inventário';
+  END IF;
+
+  INSERT INTO blind_inventory_sessions(name, status)
+  VALUES(TRIM(p_name), 'OPEN');
+
+  SET p_session_id = LAST_INSERT_ID();
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sp_blind_inventory_list;
+DELIMITER //
+CREATE PROCEDURE sp_blind_inventory_list()
+BEGIN
+  SELECT
+    s.id,
+    s.name,
+    s.status,
+    s.started_at,
+    s.closed_at,
+    COUNT(c.id) AS counted_items,
+    SUM(CASE WHEN c.difference_quantity <> 0 THEN 1 ELSE 0 END) AS divergent_items
+  FROM blind_inventory_sessions s
+  LEFT JOIN blind_inventory_counts c ON c.session_id = s.id
+  GROUP BY s.id, s.name, s.status, s.started_at, s.closed_at
+  ORDER BY
+    CASE s.status WHEN 'OPEN' THEN 0 WHEN 'CLOSED' THEN 1 ELSE 2 END,
+    s.started_at DESC,
+    s.id DESC;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sp_blind_inventory_items;
+DELIMITER //
+CREATE PROCEDURE sp_blind_inventory_items(
+  IN p_session_id BIGINT
+)
+BEGIN
+  DECLARE v_status VARCHAR(20);
+
+  SELECT status
+    INTO v_status
+    FROM blind_inventory_sessions
+   WHERE id = p_session_id;
+
+  IF v_status IS NULL THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sessão de inventário não encontrada';
+  END IF;
+
+  SELECT
+    p.id AS product_id,
+    p.sku,
+    p.name AS product_name,
+    c.counted_quantity,
+    CASE WHEN v_status = 'CLOSED' THEN c.system_quantity_snapshot ELSE NULL END AS system_quantity_snapshot,
+    CASE WHEN v_status = 'CLOSED' THEN c.difference_quantity ELSE NULL END AS difference_quantity,
+    c.counted_at,
+    (v_status = 'CLOSED') AS revealed
+  FROM products p
+  LEFT JOIN blind_inventory_counts c
+    ON c.product_id = p.id
+   AND c.session_id = p_session_id
+  WHERE p.active = TRUE
+  ORDER BY p.name ASC, p.id ASC;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sp_blind_inventory_count;
+DELIMITER //
+CREATE PROCEDURE sp_blind_inventory_count(
+  IN p_session_id BIGINT,
+  IN p_product_id BIGINT,
+  IN p_counted_quantity DECIMAL(12,3)
+)
+BEGIN
+  DECLARE v_status VARCHAR(20);
+  DECLARE v_system_quantity DECIMAL(12,3);
+  DECLARE v_existing_id BIGINT;
+
+  IF p_counted_quantity IS NULL OR p_counted_quantity < 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A contagem não pode ser negativa';
+  END IF;
+
+  START TRANSACTION;
+
+  SELECT status
+    INTO v_status
+    FROM blind_inventory_sessions
+   WHERE id = p_session_id
+   FOR UPDATE;
+
+  IF v_status IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sessão de inventário não encontrada';
+  END IF;
+
+  IF v_status <> 'OPEN' THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Somente inventários abertos aceitam contagens';
+  END IF;
+
+  SELECT current_stock
+    INTO v_system_quantity
+    FROM products
+   WHERE id = p_product_id
+     AND active = TRUE
+   FOR UPDATE;
+
+  IF v_system_quantity IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado ou inativo';
+  END IF;
+
+  SET v_existing_id = NULL;
+  SELECT id
+    INTO v_existing_id
+    FROM blind_inventory_counts
+   WHERE session_id = p_session_id
+     AND product_id = p_product_id
+   ORDER BY id ASC
+   LIMIT 1;
+
+  IF v_existing_id IS NULL THEN
+    INSERT INTO blind_inventory_counts(
+      session_id,
+      product_id,
+      counted_quantity,
+      system_quantity_snapshot,
+      difference_quantity,
+      counted_at
+    )
+    VALUES(
+      p_session_id,
+      p_product_id,
+      p_counted_quantity,
+      v_system_quantity,
+      p_counted_quantity - v_system_quantity,
+      CURRENT_TIMESTAMP
+    );
+  ELSE
+    UPDATE blind_inventory_counts
+       SET counted_quantity = p_counted_quantity,
+           system_quantity_snapshot = v_system_quantity,
+           difference_quantity = p_counted_quantity - v_system_quantity,
+           counted_at = CURRENT_TIMESTAMP
+     WHERE id = v_existing_id;
+  END IF;
+
+  COMMIT;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sp_blind_inventory_close;
+DELIMITER //
+CREATE PROCEDURE sp_blind_inventory_close(
+  IN p_session_id BIGINT
+)
+BEGIN
+  DECLARE v_status VARCHAR(20);
+  DECLARE v_active_products INT DEFAULT 0;
+  DECLARE v_counted_products INT DEFAULT 0;
+
+  START TRANSACTION;
+
+  SELECT status
+    INTO v_status
+    FROM blind_inventory_sessions
+   WHERE id = p_session_id
+   FOR UPDATE;
+
+  IF v_status IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sessão de inventário não encontrada';
+  END IF;
+
+  IF v_status <> 'OPEN' THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'O inventário já foi encerrado';
+  END IF;
+
+  SELECT COUNT(*)
+    INTO v_active_products
+    FROM products
+   WHERE active = TRUE;
+
+  SELECT COUNT(DISTINCT product_id)
+    INTO v_counted_products
+    FROM blind_inventory_counts
+   WHERE session_id = p_session_id;
+
+  IF v_active_products = 0 THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Não há produtos ativos para inventariar';
+  END IF;
+
+  IF v_counted_products < v_active_products THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Existem produtos sem contagem';
+  END IF;
+
+  UPDATE blind_inventory_sessions
+     SET status = 'CLOSED',
+         closed_at = CURRENT_TIMESTAMP
+   WHERE id = p_session_id;
+
+  COMMIT;
+END //
+DELIMITER ;
