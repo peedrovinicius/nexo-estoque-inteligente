@@ -1764,24 +1764,28 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
       title:'Unidades em estoque',
       value:dashboard?formatQuantity(dashboard.totalStock):'—',
       Icon:Boxes,
+      tone:'blue',
       detail:dashboard?`${dashboard.activeProducts} produtos ativos`:(dashboardLoading?'carregando...':'indisponível')
     },
     {
       title:'Estoque crítico',
       value:dashboard?String(dashboard.criticalProducts):'—',
       Icon:AlertTriangle,
+      tone:'red',
       detail:dashboard?`${dashboard.outOfStockProducts} sem estoque`:(dashboardLoading?'carregando...':'indisponível')
     },
     {
       title:'Risco de validade',
       value:dashboard?String(dashboard.expiryRiskBatches):'—',
       Icon:PackageSearch,
+      tone:'amber',
       detail:dashboard?formatMoney(dashboard.expiryRiskValue):(dashboardLoading?'carregando...':'indisponível')
     },
     {
       title:'Precisão inventário',
       value:dashboard?.inventoryAccuracy!=null?`${dashboard.inventoryAccuracy.toFixed(1).replace('.',',')}%`:'—',
       Icon:ClipboardCheck,
+      tone:'green',
       detail:dashboard?.inventoryAccuracy!=null
         ? `${dashboard.inventoryDivergences||0} divergências no último inventário`
         : (dashboardLoading?'carregando...':'sem inventário fechado')
@@ -1823,9 +1827,9 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
               : page==='assistant'
                 ? <AdvisorPanel/>
                 : <>
-          <header>
-            <div>
-              <span className="eyebrow">NEXO ESTOQUE</span>
+          <header className="dashboard-hero">
+            <div className="dashboard-hero-copy">
+              <span className="eyebrow">VISÃO GERAL</span>
               <h1>Boa tarde, administrador.</h1>
               <p>{dashboard
                 ? actionCount>0
@@ -1834,14 +1838,18 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
                 : dashboardLoading
                   ? 'Carregando a situação real do estoque...'
                   : 'Os indicadores operacionais estão temporariamente indisponíveis.'}</p>
+              <div className="dashboard-hero-tags">
+                <span><Boxes size={14}/>{dashboard?dashboard.activeProducts:'—'} produtos ativos</span>
+                <span><PackageSearch size={14}/>{dashboard?dashboard.expiryRiskBatches:'—'} lotes em atenção</span>
+              </div>
             </div>
-            <button className="new-action" onClick={()=>setShowMovement(true)}>+ Nova movimentação</button>
+            <button className="new-action dashboard-primary-action" onClick={()=>setShowMovement(true)}>+ Nova movimentação</button>
           </header>
 
           {dashboardError&&<div className="product-feedback warning">{dashboardError}</div>}
 
           <section className="cards">
-            {cards.map(({title,value,Icon,detail})=><article className="metric" key={title}><div className="metric-top"><span>{title}</span><Icon size={20}/></div><strong>{value}</strong><small>{detail}</small></article>)}
+            {cards.map(({title,value,Icon,detail,tone})=><article className={'metric metric-'+tone} key={title}><div className="metric-top"><span>{title}</span><div className="metric-icon"><Icon size={19}/></div></div><strong>{value}</strong><small>{detail}</small></article>)}
           </section>
 
           <section className="attention">
