@@ -365,8 +365,224 @@ function ProductsPanel(){
   </>;
 }
 
+
+type MovementView={
+  id?:number;
+  productId?:number;
+  productName:string;
+  movementType:'ENTRY'|'EXIT'|'ADJUSTMENT'|'RETURN';
+  quantity:number;
+  balanceBefore?:number;
+  balanceAfter?:number;
+  reason?:string;
+  createdAt?:string;
+};
+
+function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void}){
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
+  const [products,setProducts]=useState<ProductView[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [saving,setSaving]=useState(false);
+  const [error,setError]=useState('');
+  const [form,setForm]=useState({productId:'',movementType:'ENTRY',quantity:'',reason:''});
+
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const response=await fetch(API_URL+'/api/v1/products');
+        if(!response.ok) throw new Error();
+        const data=await response.json();
+        setProducts((Array.isArray(data)?data:[]).map((p:any)=>({
+          id:Number(p.id),
+          sku:String(p.sku||''),
+          name:String(p.name||''),
+          category:String(p.category||''),
+          stock:Number(p.currentStock||0),
+          min:Number(p.minimumStock||0),
+          lot:'—',
+          expiry:'—'
+        })));
+      }catch{
+        setError('A API de produtos está indisponível. Movimentações reais exigem conexão com a base.');
+      }finally{
+        setLoading(false);
+      }
+    })();
+  },[]);
+
+  async function submit(e:React.FormEvent){
+    e.preventDefault();
+    setError('');
+    if(!form.productId||!form.quantity){
+      setError('Selecione o produto e informe a quantidade.');
+      return;
+    }
+
+    const rawQuantity=Number(form.quantity);
+    if(!Number.isFinite(rawQuantity)||rawQuantity===0){
+      setError('Informe uma quantidade válida e diferente de zero.');
+      return;
+    }
+
+    const quantity=form.movementType==='ADJUSTMENT'
+      ? rawQuantity
+      : Math.abs(rawQuantity);
+
+    setSaving(true);
+    try{
+      const response=await fetch(API_URL+'/api/v1/stock/movements',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          productId:Number(form.productId),
+          movementType:form.movementType,
+          quantity,
+          reason:form.reason.trim()
+        })
+      });
+      const payload=await response.json().catch(()=>null);
+      if(!response.ok){
+        const detail=payload?.detail||payload?.message||'Não foi possível registrar a movimentação.';
+        throw new Error(detail);
+      }
+      onSaved();
+      onClose();
+    }catch(err){
+      setError(err instanceof Error?err.message:'Não foi possível registrar a movimentação.');
+    }finally{
+      setSaving(false);
+    }
+  }
+
+  return <div className="modal-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}>
+    <section className="movement-modal" role="dialog" aria-modal="true" aria-labelledby="movement-title">
+      <div className="modal-head">
+        <div><span className="eyebrow">MOVIMENTAÇÃO DE ESTOQUE</span><h2 id="movement-title">Registrar movimentação</h2></div>
+        <button type="button" className="modal-close" onClick={onClose}>Fechar</button>
+      </div>
+
+      <form onSubmit={submit}>
+        <label>Produto
+          <select value={form.productId} onChange={e=>setForm({...form,productId:e.target.value})} disabled={loading}>
+            <option value="">{loading?'Carregando produtos...':'Selecione um produto'}</option>
+            {products.map(p=><option key={p.id??p.sku} value={p.id}>{p.name} · {p.sku} · saldo {p.stock}</option>)}
+          </select>
+        </label>
+
+        <div className="movement-grid">
+          <label>Tipo
+            <select value={form.movementType} onChange={e=>setForm({...form,movementType:e.target.value})}>
+              <option value="ENTRY">Entrada</option>
+              <option value="EXIT">Saída</option>
+              <option value="RETURN">Devolução</option>
+              <option value="ADJUSTMENT">Ajuste</option>
+            </select>
+          </label>
+
+          <label>Quantidade
+            <input
+              type="number"
+              step="0.001"
+              value={form.quantity}
+              onChange={e=>setForm({...form,quantity:e.target.value})}
+              placeholder={form.movementType==='ADJUSTMENT'?'Ex.: -3 ou 5':'Ex.: 12'}
+            />
+          </label>
+        </div>
+
+        <label>Motivo
+          <textarea
+            value={form.reason}
+            onChange={e=>setForm({...form,reason:e.target.value})}
+            placeholder="Ex.: recebimento do fornecedor, baixa por venda, correção após inventário"
+            rows={3}
+          />
+        </label>
+
+        {form.movementType==='ADJUSTMENT'&&<div className="movement-hint">No ajuste, use valor positivo para aumentar o saldo e negativo para reduzir.</div>}
+        {error&&<div className="error">{error}</div>}
+
+        <div className="modal-actions">
+          <button type="button" className="secondary-action" onClick={onClose}>Cancelar</button>
+          <button className="primary compact" disabled={saving||loading}>{saving?'Registrando...':'Registrar movimentação'}</button>
+        </div>
+      </form>
+    </section>
+  </div>;
+}
+
+function RecentMovements({refreshKey}:{refreshKey:number}){
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
+  const [items,setItems]=useState<MovementView[]>([]);
+  const [source,setSource]=useState<'loading'|'api'|'empty'|'offline'>('loading');
+
+  useEffect(()=>{
+    (async()=>{
+      setSource('loading');
+      try{
+        const response=await fetch(API_URL+'/api/v1/stock/movements?limit=8');
+        if(!response.ok) throw new Error();
+        const data=await response.json();
+        const rows:Array<any>=Array.isArray(data)?data:[];
+        setItems(rows.map(item=>({
+          id:Number(item.id),
+          productId:Number(item.productId),
+          productName:String(item.productName||'Produto'),
+          movementType:item.movementType,
+          quantity:Number(item.quantity||0),
+          balanceBefore:Number(item.balanceBefore||0),
+          balanceAfter:Number(item.balanceAfter||0),
+          reason:item.reason||'',
+          createdAt:item.createdAt||''
+        })));
+        setSource(rows.length?'api':'empty');
+      }catch{
+        setItems([]);
+        setSource('offline');
+      }
+    })();
+  },[refreshKey]);
+
+  const label=(type:MovementView['movementType'])=>({
+    ENTRY:'Entrada',
+    EXIT:'Saída',
+    RETURN:'Devolução',
+    ADJUSTMENT:'Ajuste'
+  }[type]);
+
+  return <section className="movements-section">
+    <div className="section-head">
+      <div><span className="eyebrow">RASTREABILIDADE</span><h2>Movimentações recentes</h2></div>
+      <span className={'data-source '+(source==='api'?'api':source==='loading'?'loading':'demo')}>
+        {source==='api'?'API + MySQL':source==='loading'?'carregando...':source==='empty'?'sem movimentações':'API indisponível'}
+      </span>
+    </div>
+
+    {items.length>0
+      ? <div className="movement-list">
+          {items.map(item=><article className="movement-row" key={item.id}>
+            <div className={'movement-kind '+item.movementType.toLowerCase()}>{label(item.movementType)}</div>
+            <div className="movement-main">
+              <strong>{item.productName}</strong>
+              <span>{item.reason||'Sem motivo informado'}</span>
+            </div>
+            <div className="movement-balance">
+              <b>{item.balanceBefore} → {item.balanceAfter}</b>
+              <span>{item.quantity} un.</span>
+            </div>
+            <time>{item.createdAt?new Date(item.createdAt).toLocaleString('pt-BR'):'—'}</time>
+          </article>)}
+        </div>
+      : <div className="movement-empty">
+          {source==='offline'?'Conecte a API/MySQL para visualizar o histórico real.':'Nenhuma movimentação registrada ainda.'}
+        </div>}
+  </section>;
+}
+
 function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onToggleTheme:()=>void}){
   const [page,setPage]=useState<'dashboard'|'products'>('dashboard');
+  const [showMovement,setShowMovement]=useState(false);
+  const [movementRefresh,setMovementRefresh]=useState(0);
   const cards=[
     ['Itens em estoque','18.421',Boxes,'+3,8%'],
     ['Estoque crítico','27',AlertTriangle,'8 urgentes'],
@@ -393,7 +609,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
       {page==='products'
         ? <ProductsPanel/>
         : <>
-          <header><div><span className="eyebrow">NEXO ESTOQUE</span><h1>Boa tarde, administrador.</h1><p>O estoque está estável, mas há 8 itens que merecem ação hoje.</p></div><button className="new-action">+ Nova movimentação</button></header>
+          <header><div><span className="eyebrow">NEXO ESTOQUE</span><h1>Boa tarde, administrador.</h1><p>O estoque está estável, mas há 8 itens que merecem ação hoje.</p></div><button className="new-action" onClick={()=>setShowMovement(true)}>+ Nova movimentação</button></header>
           <section className="cards">
             {cards.map(([title,value,Icon,detail])=><article className="metric" key={title}><div className="metric-top"><span>{title}</span><Icon size={20}/></div><strong>{value}</strong><small>{detail}</small></article>)}
           </section>
@@ -405,7 +621,12 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
               <article className="action-card"><div className="icon"><ClipboardCheck/></div><div><strong>Inventário corredor B</strong><span>Contagem cega pendente desde ontem</span></div><b>42 itens</b></article>
             </div>
           </section>
+          <RecentMovements refreshKey={movementRefresh}/>
           <Simulator/>
+          {showMovement&&<StockMovementModal
+            onClose={()=>setShowMovement(false)}
+            onSaved={()=>setMovementRefresh(value=>value+1)}
+          />}
         </>}
     </main>
   </div>;
