@@ -18,3 +18,8 @@ management:
     web:
       exposure:
         include: health
+
+nexo:
+  ai:
+    api-key: ${OPENAI_API_KEY:}
+    model: ${OPENAI_MODEL:gpt-5.6-luna}
