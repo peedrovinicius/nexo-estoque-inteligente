@@ -249,6 +249,15 @@ main: BEGIN
    WHERE idempotency_key = TRIM(p_idempotency_key)
    LIMIT 1;
 
+  IF v_existing_movement IS NULL AND EXISTS (
+    SELECT 1
+      FROM stock_movements_archive
+     WHERE idempotency_key = TRIM(p_idempotency_key)
+  ) THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Chave de idempotência pertence a operação arquivada';
+  END IF;
+
   IF v_existing_movement IS NOT NULL THEN
     IF v_existing_product <> p_product_id
        OR v_existing_type <> v_type
@@ -625,6 +634,15 @@ main: BEGIN
    WHERE idempotency_key = TRIM(p_idempotency_key)
    LIMIT 1;
 
+  IF v_existing_movement IS NULL AND EXISTS (
+    SELECT 1
+      FROM stock_movements_archive
+     WHERE idempotency_key = TRIM(p_idempotency_key)
+  ) THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Chave de idempotência pertence a operação arquivada';
+  END IF;
+
   IF v_existing_movement IS NOT NULL THEN
     IF v_existing_product <> p_product_id
        OR v_existing_type <> 'ENTRY'
@@ -773,6 +791,15 @@ main: BEGIN
     FROM stock_movements
    WHERE idempotency_key = TRIM(p_idempotency_key)
    LIMIT 1;
+
+  IF v_existing_movement IS NULL AND EXISTS (
+    SELECT 1
+      FROM stock_movements_archive
+     WHERE idempotency_key = TRIM(p_idempotency_key)
+  ) THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Chave de idempotência pertence a operação arquivada';
+  END IF;
 
   IF v_existing_movement IS NOT NULL THEN
     IF v_existing_product <> p_product_id
@@ -1013,6 +1040,15 @@ main: BEGIN
    WHERE idempotency_key = TRIM(p_idempotency_key)
    LIMIT 1;
 
+  IF v_existing_movement IS NULL AND EXISTS (
+    SELECT 1
+      FROM stock_movements_archive
+     WHERE idempotency_key = TRIM(p_idempotency_key)
+  ) THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Chave de idempotência pertence a operação arquivada';
+  END IF;
+
   IF v_existing_movement IS NOT NULL THEN
     IF v_existing_product <> p_product_id
        OR v_existing_type <> 'RETURN'
@@ -1145,6 +1181,15 @@ main: BEGIN
    WHERE idempotency_key = TRIM(p_idempotency_key)
    LIMIT 1;
 
+  IF v_existing_movement IS NULL AND EXISTS (
+    SELECT 1
+      FROM stock_movements_archive
+     WHERE idempotency_key = TRIM(p_idempotency_key)
+  ) THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Chave de idempotência pertence a operação arquivada';
+  END IF;
+
   IF v_existing_movement IS NOT NULL THEN
     IF v_existing_product <> p_product_id
        OR v_existing_type <> 'ADJUSTMENT'
@@ -1229,6 +1274,120 @@ main: BEGIN
   VALUES(
     p_movement_id, p_batch_id, ABS(p_quantity_delta)
   );
+
+  COMMIT;
+END //
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS sp_archive_stock_movements;
+DELIMITER //
+CREATE PROCEDURE sp_archive_stock_movements(
+  IN p_before DATETIME,
+  IN p_limit INT,
+  IN p_actor VARCHAR(120),
+  OUT p_archived INT
+)
+BEGIN
+  DECLARE v_limit INT DEFAULT 1000;
+
+  SET v_limit = LEAST(GREATEST(COALESCE(p_limit,1000),1),10000);
+  SET p_archived = 0;
+
+  START TRANSACTION;
+
+  CREATE TEMPORARY TABLE IF NOT EXISTS tmp_archive_movement_ids(
+    id BIGINT PRIMARY KEY
+  ) ENGINE=MEMORY;
+
+  TRUNCATE TABLE tmp_archive_movement_ids;
+
+  INSERT INTO tmp_archive_movement_ids(id)
+  SELECT sm.id
+    FROM stock_movements sm
+   WHERE sm.created_at < p_before
+   ORDER BY sm.created_at, sm.id
+   LIMIT v_limit;
+
+  INSERT IGNORE INTO stock_movement_allocations_archive(
+    original_allocation_id,
+    original_movement_id,
+    original_batch_id,
+    lot_code,
+    expires_at,
+    quantity,
+    created_at
+  )
+  SELECT
+    sma.id,
+    sma.movement_id,
+    sma.batch_id,
+    sb.lot_code,
+    sb.expires_at,
+    sma.quantity,
+    sma.created_at
+  FROM stock_movement_allocations sma
+  JOIN tmp_archive_movement_ids ids ON ids.id = sma.movement_id
+  JOIN stock_batches sb ON sb.id = sma.batch_id;
+
+  INSERT IGNORE INTO stock_movements_archive(
+    original_movement_id,
+    product_id,
+    product_sku,
+    product_name,
+    batch_id,
+    lot_code,
+    movement_type,
+    quantity,
+    balance_before,
+    balance_after,
+    reason,
+    idempotency_key,
+    performed_by,
+    created_at
+  )
+  SELECT
+    sm.id,
+    sm.product_id,
+    p.sku,
+    p.name,
+    sm.batch_id,
+    sb.lot_code,
+    sm.movement_type,
+    sm.quantity,
+    sm.balance_before,
+    sm.balance_after,
+    sm.reason,
+    sm.idempotency_key,
+    sm.performed_by,
+    sm.created_at
+  FROM stock_movements sm
+  JOIN tmp_archive_movement_ids ids ON ids.id = sm.id
+  JOIN products p ON p.id = sm.product_id
+  LEFT JOIN stock_batches sb ON sb.id = sm.batch_id;
+
+  DELETE sma
+    FROM stock_movement_allocations sma
+    JOIN tmp_archive_movement_ids ids ON ids.id = sma.movement_id;
+
+  DELETE sm
+    FROM stock_movements sm
+    JOIN tmp_archive_movement_ids ids ON ids.id = sm.id;
+
+  SET p_archived = ROW_COUNT();
+
+  INSERT INTO stock_retention_runs(
+    cutoff_at,
+    archived_movements,
+    actor_username
+  )
+  VALUES(
+    p_before,
+    p_archived,
+    COALESCE(NULLIF(TRIM(p_actor),''),'system')
+  );
+
+  DROP TEMPORARY TABLE IF EXISTS tmp_archive_movement_ids;
 
   COMMIT;
 END //
