@@ -187,18 +187,27 @@ public class PurchaseOrderRepository {
             connection.setAutoCommit(false);
             try {
                 String current;
+                String source;
                 try (PreparedStatement statement = connection.prepareStatement("""
-                        SELECT status FROM purchase_orders WHERE id = ? FOR UPDATE
+                        SELECT status, source FROM purchase_orders WHERE id = ? FOR UPDATE
                         """)) {
                     statement.setLong(1, id);
                     try (ResultSet rs = statement.executeQuery()) {
                         if (!rs.next()) return null;
                         current = rs.getString("status");
+                        source = rs.getString("source");
                     }
                 }
 
                 if (!allowedTransition(current, next)) {
                     throw business("Transição de status inválida: " + current + " -> " + next);
+                }
+
+                if ("DRAFT".equals(current)
+                        && "SENT".equals(next)
+                        && "REPLENISHMENT_RECOMMENDATION".equals(source)
+                        && !recommendationApproved(connection, id)) {
+                    throw business("Pedido de reposição assistida precisa de aprovação do Admin antes do envio");
                 }
 
                 try (PreparedStatement statement = connection.prepareStatement("""
@@ -224,6 +233,23 @@ public class PurchaseOrderRepository {
             }
         }
         return findById(id);
+    }
+
+    private boolean recommendationApproved(Connection connection, long orderId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT EXISTS(
+                    SELECT 1
+                      FROM purchase_order_approvals
+                     WHERE purchase_order_id = ?
+                       AND status = 'APPROVED'
+                )
+                """)) {
+            statement.setLong(1, orderId);
+            try (ResultSet rs = statement.executeQuery()) {
+                rs.next();
+                return rs.getBoolean(1);
+            }
+        }
     }
 
     private boolean allowedTransition(String current, String next) {
