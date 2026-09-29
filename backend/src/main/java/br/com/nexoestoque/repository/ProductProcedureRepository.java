@@ -90,6 +90,25 @@ public class ProductProcedureRepository {
         return null;
     }
 
+    public Product findByBarcode(String barcode) throws SQLException {
+        String normalized = normalizeNullable(barcode);
+        if (normalized == null) return null;
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT id, sku, barcode, name, category, cost_price, sale_price,
+                            current_stock, minimum_stock, active
+                       FROM products
+                      WHERE barcode = ?
+                      LIMIT 1
+                     """)) {
+            statement.setString(1, normalized);
+            try (ResultSet rs = statement.executeQuery()) {
+                return rs.next() ? map(rs) : null;
+            }
+        }
+    }
+
     public List<Product> findAll() throws SQLException {
         return search(0, 200, null, null, true, "name", "asc").content();
     }
