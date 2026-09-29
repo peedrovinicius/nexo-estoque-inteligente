@@ -1,43 +1,12 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Boxes, BrainCircuit, ChevronRight, ClipboardCheck, LayoutDashboard, LogOut, Moon, PackageSearch, ScanLine, ShieldCheck, Sparkles, Sun, TrendingUp } from 'lucide-react';
 import { NEXO_LOGO_ORIGINAL } from './nexoLogoOriginal';
+import { apiFetch, clearAuthSession, isReadOnlySession, newIdempotencyKey, readAuthSession, saveAuthSession, type AuthRole, type AuthSession } from './auth';
 
 const DEMO_USER='demo';
 const DEMO_PASSWORD='Nexo@2026';
 
 type Theme='light'|'dark';
-type AuthRole='ADMIN'|'OPERATOR'|'VIEWER';
-type AuthSession={username:string;role:AuthRole;authorization:string};
-
-function readAuthSession():AuthSession|null{
-  try{
-    const raw=sessionStorage.getItem('nexo-auth');
-    if(!raw) return null;
-    const parsed=JSON.parse(raw);
-    if(!parsed?.username||!parsed?.role||!parsed?.authorization) return null;
-    return parsed as AuthSession;
-  }catch{
-    return null;
-  }
-}
-
-function isReadOnlySession(){
-  return readAuthSession()?.role==='VIEWER';
-}
-
-async function apiFetch(input:RequestInfo|URL,init:RequestInit={}){
-  const session=readAuthSession();
-  const headers=new Headers(init.headers||{});
-  if(session?.authorization) headers.set('Authorization',session.authorization);
-
-  const response=await fetch(input,{...init,headers});
-  if(response.status===401){
-    sessionStorage.removeItem('nexo-auth');
-    window.location.reload();
-  }
-  return response;
-}
-
 function BrandImage({
   theme,
   className,
@@ -118,11 +87,11 @@ function Login({onLogin,theme,onToggleTheme}:{onLogin:()=>void;theme:Theme;onTog
       const data=await response.json();
       const role=String(data.role||'VIEWER') as AuthRole;
 
-      sessionStorage.setItem('nexo-auth',JSON.stringify({
+      saveAuthSession({
         username:String(data.username||user),
         role,
         authorization
-      } satisfies AuthSession));
+      } satisfies AuthSession);
       onLogin();
     }catch(err){
       setError(err instanceof Error?err.message:'Não foi possível autenticar.');
@@ -849,9 +818,11 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
       };
     }
 
+    payload={...payload,idempotencyKey:newIdempotencyKey()};
+
     setSaving(true);
     try{
-      const response=await fetch(endpoint,{
+      const response=await apiFetch(endpoint,{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify(payload)
@@ -1992,7 +1963,7 @@ export default function App(){
     ? <Dashboard
         theme={theme}
         onToggleTheme={toggleTheme}
-        logout={()=>{sessionStorage.removeItem('nexo-auth');setAuth(false)}}
+        logout={()=>{clearAuthSession();setAuth(false)}}
       />
     : <Login onLogin={()=>setAuth(true)} theme={theme} onToggleTheme={toggleTheme}/>;
 }
