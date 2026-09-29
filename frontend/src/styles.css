@@ -1575,3 +1575,31 @@ html[data-theme="dark"] .sidebar-brand{
   .official-brand{width:270px!important}
   .login-title .login-logo{width:190px!important;max-width:100%!important}
 }
+
+
+/* Brand correction: preserve original transparent PNG, no colored container */
+html[data-theme="light"] .official-brand,
+html[data-theme="light"] .login-title .login-logo,
+html[data-theme="light"] .sidebar-brand{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+html[data-theme="light"] .official-brand{
+  padding:0!important;
+}
+html[data-theme="light"] .login-title .login-logo{
+  padding:0!important;
+  border-radius:0!important;
+}
+html[data-theme="light"] .sidebar-brand{
+  padding:0 0 20px 0!important;
+  border-radius:0!important;
+  border-bottom:1px solid #e8edf3!important;
+}
+html[data-theme="light"] .brand-logo-full,
+html[data-theme="light"] .login-logo,
+html[data-theme="light"] .sidebar-logo-full{
+  background:transparent!important;
+  filter:none!important;
+}
