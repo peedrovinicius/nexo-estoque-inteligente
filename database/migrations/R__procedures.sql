@@ -38,6 +38,109 @@ BEGIN
 END //
 DELIMITER ;
 
+
+DROP PROCEDURE IF EXISTS sp_product_update;
+DELIMITER //
+CREATE PROCEDURE sp_product_update(
+  IN p_id BIGINT,
+  IN p_sku VARCHAR(50),
+  IN p_barcode VARCHAR(32),
+  IN p_name VARCHAR(160),
+  IN p_category VARCHAR(100),
+  IN p_cost_price DECIMAL(12,2),
+  IN p_sale_price DECIMAL(12,2),
+  IN p_minimum_stock DECIMAL(12,3)
+)
+BEGIN
+  DECLARE v_exists BIGINT DEFAULT NULL;
+
+  START TRANSACTION;
+
+  SELECT id
+    INTO v_exists
+    FROM products
+   WHERE id = p_id
+   FOR UPDATE;
+
+  IF v_exists IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado';
+  END IF;
+
+  UPDATE products
+     SET sku = TRIM(p_sku),
+         barcode = NULLIF(TRIM(p_barcode),''),
+         name = TRIM(p_name),
+         category = TRIM(p_category),
+         cost_price = COALESCE(p_cost_price,0),
+         sale_price = COALESCE(p_sale_price,0),
+         minimum_stock = COALESCE(p_minimum_stock,0)
+   WHERE id = p_id;
+
+  COMMIT;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sp_product_set_active;
+DELIMITER //
+CREATE PROCEDURE sp_product_set_active(
+  IN p_id BIGINT,
+  IN p_active BOOLEAN
+)
+BEGIN
+  DECLARE v_exists BIGINT DEFAULT NULL;
+  DECLARE v_stock DECIMAL(12,3) DEFAULT 0;
+  DECLARE v_batch_stock DECIMAL(12,3) DEFAULT 0;
+  DECLARE v_open_inventories INT DEFAULT 0;
+
+  START TRANSACTION;
+
+  SELECT id, current_stock
+    INTO v_exists, v_stock
+    FROM products
+   WHERE id = p_id
+   FOR UPDATE;
+
+  IF v_exists IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado';
+  END IF;
+
+  IF p_active = FALSE THEN
+    SELECT COALESCE(SUM(quantity),0)
+      INTO v_batch_stock
+      FROM stock_batches
+     WHERE product_id = p_id;
+
+    SELECT COUNT(*)
+      INTO v_open_inventories
+      FROM blind_inventory_sessions
+     WHERE status = 'OPEN';
+
+    IF COALESCE(v_stock,0) <> 0 THEN
+      ROLLBACK;
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Zere o estoque antes de inativar o produto';
+    END IF;
+
+    IF COALESCE(v_batch_stock,0) <> 0 THEN
+      ROLLBACK;
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Zere os lotes antes de inativar o produto';
+    END IF;
+
+    IF v_open_inventories > 0 THEN
+      ROLLBACK;
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Encerre os inventários abertos antes de inativar produtos';
+    END IF;
+  END IF;
+
+  UPDATE products
+     SET active = p_active
+   WHERE id = p_id;
+
+  COMMIT;
+END //
+DELIMITER ;
+
 DROP PROCEDURE IF EXISTS sp_stock_adjust;
 DELIMITER //
 CREATE PROCEDURE sp_stock_adjust(
