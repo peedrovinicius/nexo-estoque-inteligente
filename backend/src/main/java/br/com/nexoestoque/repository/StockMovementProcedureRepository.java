@@ -20,19 +20,20 @@ public class StockMovementProcedureRepository {
 
     public StockMovement create(StockMovementRequest request) throws SQLException {
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall("{call sp_stock_move(?,?,?,?,?,?,?)}")) {
+             CallableStatement statement = connection.prepareCall("{call sp_stock_move(?,?,?,?,?,?,?,?)}")) {
             statement.setLong(1, request.productId());
             statement.setString(2, request.movementType());
             statement.setBigDecimal(3, request.quantity());
             statement.setString(4, request.reason());
-            statement.registerOutParameter(5, Types.BIGINT);
-            statement.registerOutParameter(6, Types.DECIMAL);
+            statement.setString(5, request.idempotencyKey());
+            statement.registerOutParameter(6, Types.BIGINT);
             statement.registerOutParameter(7, Types.DECIMAL);
+            statement.registerOutParameter(8, Types.DECIMAL);
             statement.execute();
 
-            long movementId = statement.getLong(5);
-            BigDecimal balanceBefore = statement.getBigDecimal(6);
-            BigDecimal balanceAfter = statement.getBigDecimal(7);
+            long movementId = statement.getLong(6);
+            BigDecimal balanceBefore = statement.getBigDecimal(7);
+            BigDecimal balanceAfter = statement.getBigDecimal(8);
 
             return findById(connection, movementId, balanceBefore, balanceAfter);
         }
