@@ -67,7 +67,17 @@ jobs:
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V2__stock_idempotency.sql
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V3__audit_history_and_indexes.sql
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V4__purchasing_retention.sql
+          mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V5__warehouses_receipts_transfers.sql
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/R__procedures.sql
+      - name: Verify warehouse receipt transfer and barcode integration
+        env:
+          NEXO_DB_INTEGRATION_URL: jdbc:mysql://127.0.0.1:3306/nexo_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+          NEXO_DB_INTEGRATION_USER: root
+          NEXO_DB_INTEGRATION_PASSWORD: root
+        run: |
+          cd backend
+          mvn -B -Dtest=WarehouseFlowIntegrationTest test
+
       - name: Verify idempotent stock write
         shell: bash
         run: |
