@@ -5,6 +5,7 @@ import br.com.nexoestoque.model.StockMovement;
 import br.com.nexoestoque.repository.StockMovementProcedureRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -31,7 +32,7 @@ public class StockMovementController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public StockMovement create(@Valid @RequestBody StockMovementRequest request) throws SQLException {
+    public StockMovement create(@Valid @RequestBody StockMovementRequest request, Authentication authentication) throws SQLException {
         validate(request);
         try {
             return repository.create(new StockMovementRequest(
@@ -40,7 +41,7 @@ public class StockMovementController {
                     request.quantity(),
                     request.reason() == null ? "" : request.reason().trim(),
                     request.idempotencyKey()
-            ));
+            ), authentication == null ? "system" : authentication.getName());
         } catch (SQLException exception) {
             if ("45000".equals(exception.getSQLState())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
