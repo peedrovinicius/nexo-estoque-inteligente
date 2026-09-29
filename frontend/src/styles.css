@@ -2028,50 +2028,48 @@ html:not([data-theme="dark"]) .login-theme-toggle .theme-toggle{
   box-shadow:0 8px 22px rgba(16,33,63,.08)!important;
 }
 
-
-/* Mobile/light readability: subtle dark outline for logo and text */
-html:not([data-theme="dark"]) .login-title .login-logo{
-  filter:
-    drop-shadow(0 0 0.8px rgba(0,0,0,.95))
-    drop-shadow(1px 0 0 rgba(0,0,0,.55))
-    drop-shadow(-1px 0 0 rgba(0,0,0,.55))
-    drop-shadow(0 1px 0 rgba(0,0,0,.55))
-    drop-shadow(0 -1px 0 rgba(0,0,0,.55))!important;
+/* Light login logo: preserve original artwork, blacken only the Nexo wordmark */
+html:not([data-theme="dark"]) .login-logo-wordmark{
+  position:relative;
+  display:block;
+  width:194px;
+  max-width:48%;
+  line-height:0;
+  flex:0 0 auto;
 }
 
-html:not([data-theme="dark"]) .login-access-copy strong{
-  -webkit-text-stroke:.35px rgba(0,0,0,.75);
-  text-shadow:0 1px 1px rgba(0,0,0,.14);
+html:not([data-theme="dark"]) .login-logo-wordmark .login-logo{
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  object-fit:contain!important;
 }
 
-html:not([data-theme="dark"]) .login-access-copy small,
-html:not([data-theme="dark"]) .login-card label,
-html:not([data-theme="dark"]) .login-card input,
-html:not([data-theme="dark"]) .login-card input::placeholder,
-html:not([data-theme="dark"]) .demo,
-html:not([data-theme="dark"]) .demo code{
-  -webkit-text-stroke:.22px rgba(0,0,0,.68);
-  text-shadow:0 .5px .8px rgba(0,0,0,.10);
+html:not([data-theme="dark"]) .login-logo-wordmark .login-logo-base{
+  position:relative;
+  z-index:1;
+  filter:none!important;
+}
+
+html:not([data-theme="dark"]) .login-logo-wordmark .login-logo-blackword{
+  position:absolute!important;
+  inset:0!important;
+  z-index:2;
+  pointer-events:none;
+  filter:brightness(0)!important;
+  clip-path:inset(8% 0 27% 35%);
 }
 
 @media(max-width:700px){
-  html:not([data-theme="dark"]) .login-title .login-logo{
-    filter:
-      drop-shadow(0 0 0.9px rgba(0,0,0,1))
-      drop-shadow(1px 0 0 rgba(0,0,0,.62))
-      drop-shadow(-1px 0 0 rgba(0,0,0,.62))
-      drop-shadow(0 1px 0 rgba(0,0,0,.62))
-      drop-shadow(0 -1px 0 rgba(0,0,0,.62))!important;
-  }
-
-  html:not([data-theme="dark"]) .login-access-copy strong{
-    -webkit-text-stroke:.45px rgba(0,0,0,.78);
-  }
-
-  html:not([data-theme="dark"]) .login-access-copy small,
-  html:not([data-theme="dark"]) .login-card label,
-  html:not([data-theme="dark"]) .login-card input,
-  html:not([data-theme="dark"]) .login-card input::placeholder{
-    -webkit-text-stroke:.28px rgba(0,0,0,.70);
+  html:not([data-theme="dark"]) .login-logo-wordmark{
+    width:190px;
+    max-width:100%;
   }
 }
