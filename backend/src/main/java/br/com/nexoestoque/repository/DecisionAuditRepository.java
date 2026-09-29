@@ -27,8 +27,14 @@ public class DecisionAuditRepository {
             String ruleVersion,
             String actorUsername
     ) throws SQLException {
-        String inputJson = objectMapper.writeValueAsString(input);
-        String outputJson = objectMapper.writeValueAsString(output);
+        String inputJson;
+        String outputJson;
+        try {
+            inputJson = objectMapper.writeValueAsString(input);
+            outputJson = objectMapper.writeValueAsString(output);
+        } catch (Exception exception) {
+            throw new SQLException("Não foi possível serializar a auditoria de decisão", exception);
+        }
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
