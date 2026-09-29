@@ -39,3 +39,98 @@ jobs:
         run: npm test
       - name: Build frontend
         run: npm run build
+
+  database:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:9.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: nexo_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MySQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y default-mysql-client
+      - name: Apply database migrations
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V1__baseline_schema.sql
+          mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V2__stock_idempotency.sql
+          mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/R__procedures.sql
+      - name: Verify idempotent stock write
+        shell: bash
+        run: |
+          set -euo pipefail
+          mysql -h 127.0.0.1 -uroot -proot nexo_test -e "
+            INSERT INTO products(sku,name,category,current_stock,minimum_stock,active)
+            VALUES('IDEM-001','Teste idempotência','Teste',0,0,TRUE);
+          "
+          PRODUCT_ID=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT id FROM products WHERE sku='IDEM-001';")
+
+          mysql -h 127.0.0.1 -uroot -proot nexo_test -e "
+            CALL sp_stock_batch_entry($PRODUCT_ID,'LOT-IDEM',NULL,5,1,'ci','ci-idem-entry-001',@m,@b,@before,@after);
+            CALL sp_stock_batch_entry($PRODUCT_ID,'LOT-IDEM',NULL,5,1,'ci','ci-idem-entry-001',@m2,@b2,@before2,@after2);
+          "
+
+          STOCK=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT current_stock FROM products WHERE id=$PRODUCT_ID;")
+          MOVES=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT COUNT(*) FROM stock_movements WHERE product_id=$PRODUCT_ID AND movement_type='ENTRY';")
+
+          test "$STOCK" = "5.000"
+          test "$MOVES" = "1"
+      - name: Verify concurrent FEFO exits cannot oversell
+        shell: bash
+        run: |
+          set -euo pipefail
+          mysql -h 127.0.0.1 -uroot -proot nexo_test -e "
+            INSERT INTO products(sku,name,category,current_stock,minimum_stock,active)
+            VALUES('LOCK-001','Teste concorrência','Teste',0,0,TRUE);
+          "
+          PRODUCT_ID=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT id FROM products WHERE sku='LOCK-001';")
+          mysql -h 127.0.0.1 -uroot -proot nexo_test -e "
+            CALL sp_stock_batch_entry($PRODUCT_ID,'LOT-LOCK',NULL,10,1,'ci','ci-lock-seed-001',@m,@b,@before,@after);
+          "
+
+          (
+            set +e
+            mysql -h 127.0.0.1 -uroot -proot nexo_test -e "
+              CALL sp_stock_exit_fefo($PRODUCT_ID,7,'ci','ci-lock-exit-a',@m,@before,@after);
+            " >/tmp/exit-a.log 2>&1
+            echo $? >/tmp/exit-a.code
+          ) &
+          PID_A=$!
+
+          (
+            set +e
+            mysql -h 127.0.0.1 -uroot -proot nexo_test -e "
+              CALL sp_stock_exit_fefo($PRODUCT_ID,7,'ci','ci-lock-exit-b',@m,@before,@after);
+            " >/tmp/exit-b.log 2>&1
+            echo $? >/tmp/exit-b.code
+          ) &
+          PID_B=$!
+
+          wait "$PID_A"
+          wait "$PID_B"
+
+          STOCK=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT current_stock FROM products WHERE id=$PRODUCT_ID;")
+          BATCH=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT quantity FROM stock_batches WHERE product_id=$PRODUCT_ID AND lot_code='LOT-LOCK';")
+          EXITS=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT COUNT(*) FROM stock_movements WHERE product_id=$PRODUCT_ID AND movement_type='EXIT';")
+          CODE_A=$(cat /tmp/exit-a.code)
+          CODE_B=$(cat /tmp/exit-b.code)
+
+          test "$STOCK" = "3.000"
+          test "$BATCH" = "3.000"
+          test "$EXITS" = "1"
+
+          if [ "$CODE_A" -eq 0 ] && [ "$CODE_B" -eq 0 ]; then
+            echo "Both concurrent exits succeeded; expected one to be rejected."
+            exit 1
+          fi
