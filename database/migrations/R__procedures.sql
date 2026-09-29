@@ -330,6 +330,7 @@ BEGIN
     sm.balance_before,
     sm.balance_after,
     sm.reason,
+    sm.performed_by,
     sm.created_at
   FROM stock_movements sm
   JOIN products p ON p.id = sm.product_id
