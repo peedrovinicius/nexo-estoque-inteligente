@@ -42,6 +42,11 @@ O Nexo concentra operação, rastreabilidade e apoio à decisão em uma única a
 - análise de estoque sem giro
 - cobertura de estoque baseada em consumo real
 - envelhecimento e atraso de pedidos de compra abertos
+- exposição financeira por lotes vencidos e próximos do vencimento
+- capital imobilizado por categoria e por depósito
+- filtros analíticos por produto, SKU e categoria
+- exportação CSV de curva ABC, estoque sem giro e cobertura
+- central de alertas operacionais com limiares persistidos e edição exclusiva de Admin
 - workspace de inteligência operacional no frontend
 
 ## Inteligência operacional
@@ -55,22 +60,31 @@ GET /api/v1/operations/expiry
 GET /api/v1/operations/stock-position
 GET /api/v1/operations/stock-position.csv
 GET /api/v1/operations/abc
+GET /api/v1/operations/abc.csv
 GET /api/v1/operations/slow-moving
+GET /api/v1/operations/slow-moving.csv
 GET /api/v1/operations/coverage
+GET /api/v1/operations/coverage.csv
 GET /api/v1/operations/open-purchases
+GET /api/v1/operations/expiry-exposure
+GET /api/v1/operations/capital
+GET /api/v1/operations/alerts
+GET /api/v1/operations/alerts/config
+PUT /api/v1/operations/alerts/config
 ```
 
-O dashboard não recalcula as regras críticas no navegador. Totais, valor em estoque, ruptura, produtos abaixo do mínimo, lotes vencidos ou próximos do vencimento e precisão do último inventário são consolidados pelo backend.
+Filtros de produto/SKU e categoria são aplicados no backend. A central de alertas combina ruptura, validade, cobertura, ausência de giro e compras atrasadas usando limiares persistidos no MySQL.
 
 ## Segurança e consistência
 
 - CORS restrito em produção
 - credenciais administrativas mantidas fora do repositório
 - operações de escrita bloqueadas para o perfil de consulta
+- configuração de alertas alterável somente por Admin
 - chaves de idempotência persistidas
 - travas de banco em saídas FEFO
 - histórico operacional preservado
-- exportação CSV neutraliza células que poderiam ser interpretadas como fórmulas
+- exportações CSV neutralizam células que poderiam ser interpretadas como fórmulas
 
 ## Demonstração
 
@@ -85,4 +99,4 @@ senha: Nexo@2026
 
 ## Estado
 
-Em desenvolvimento ativo. A versão da API neste bloco é 0.4.0.
+Em desenvolvimento ativo. A versão da API neste bloco é 0.5.0.
