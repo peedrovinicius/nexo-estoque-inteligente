@@ -122,6 +122,7 @@ public class OperationalInsightsRepository {
                             rs.getString("barcode"),
                             rs.getString("product_name"),
                             rs.getString("category"),
+                            rs.getString("lot_code"),
                             rs.getLong("warehouse_id"),
                             rs.getString("warehouse_code"),
                             rs.getString("warehouse_name"),
