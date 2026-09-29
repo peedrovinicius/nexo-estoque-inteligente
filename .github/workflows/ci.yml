@@ -121,6 +121,15 @@ jobs:
           cd backend
           mvn -B -Dtest=ActionCenterIntegrationTest test
 
+      - name: Verify demand planning
+        env:
+          NEXO_DB_INTEGRATION_URL: jdbc:mysql://127.0.0.1:3306/nexo_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+          NEXO_DB_INTEGRATION_USER: root
+          NEXO_DB_INTEGRATION_PASSWORD: root
+        run: |
+          cd backend
+          mvn -B -Dtest=DemandPlanningIntegrationTest test
+
       - name: Verify idempotent stock write
         shell: bash
         run: |
