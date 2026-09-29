@@ -12,6 +12,7 @@ import br.com.nexoestoque.model.StockOperationResult;
 import br.com.nexoestoque.repository.StockBatchProcedureRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -35,7 +36,7 @@ public class StockBatchController {
 
     @PostMapping("/entry")
     @ResponseStatus(HttpStatus.CREATED)
-    public StockOperationResult entry(@Valid @RequestBody BatchEntryRequest request) throws SQLException {
+    public StockOperationResult entry(@Valid @RequestBody BatchEntryRequest request, Authentication authentication) throws SQLException {
         validateProductAndQuantity(request.productId(), request.quantity());
 
         if (request.lotCode() == null || request.lotCode().trim().isEmpty()) {
@@ -51,7 +52,7 @@ public class StockBatchController {
                     request.unitCost() == null ? BigDecimal.ZERO : request.unitCost(),
                     request.reason() == null ? "" : request.reason().trim(),
                     requireIdempotencyKey(request.idempotencyKey())
-            ));
+            ), actor(authentication));
         } catch (SQLException exception) {
             throw translate(exception);
         }
@@ -70,7 +71,7 @@ public class StockBatchController {
 
     @PostMapping("/exit-fefo")
     @ResponseStatus(HttpStatus.CREATED)
-    public StockOperationResult exitFefo(@Valid @RequestBody FefoExitRequest request) throws SQLException {
+    public StockOperationResult exitFefo(@Valid @RequestBody FefoExitRequest request, Authentication authentication) throws SQLException {
         validateProductAndQuantity(request.productId(), request.quantity());
 
         try {
@@ -79,7 +80,7 @@ public class StockBatchController {
                     request.quantity(),
                     request.reason() == null ? "" : request.reason().trim(),
                     requireIdempotencyKey(request.idempotencyKey())
-            ));
+            ), actor(authentication));
         } catch (SQLException exception) {
             throw translate(exception);
         }
@@ -88,7 +89,7 @@ public class StockBatchController {
 
     @PostMapping("/return")
     @ResponseStatus(HttpStatus.CREATED)
-    public StockOperationResult returnToBatch(@Valid @RequestBody BatchReturnRequest request) throws SQLException {
+    public StockOperationResult returnToBatch(@Valid @RequestBody BatchReturnRequest request, Authentication authentication) throws SQLException {
         validateProductAndQuantity(request.productId(), request.quantity());
 
         if (request.batchId() == null || request.batchId() <= 0) {
@@ -102,7 +103,7 @@ public class StockBatchController {
                     request.quantity(),
                     request.reason() == null ? "" : request.reason().trim(),
                     requireIdempotencyKey(request.idempotencyKey())
-            ));
+            ), actor(authentication));
         } catch (SQLException exception) {
             throw translate(exception);
         }
@@ -110,7 +111,7 @@ public class StockBatchController {
 
     @PostMapping("/adjustment")
     @ResponseStatus(HttpStatus.CREATED)
-    public StockOperationResult adjustBatch(@Valid @RequestBody BatchAdjustmentRequest request) throws SQLException {
+    public StockOperationResult adjustBatch(@Valid @RequestBody BatchAdjustmentRequest request, Authentication authentication) throws SQLException {
         if (request.productId() == null || request.productId() <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Produto inválido");
         }
@@ -128,7 +129,7 @@ public class StockBatchController {
                     request.quantityDelta(),
                     request.reason() == null ? "" : request.reason().trim(),
                     requireIdempotencyKey(request.idempotencyKey())
-            ));
+            ), actor(authentication));
         } catch (SQLException exception) {
             throw translate(exception);
         }
@@ -137,6 +138,10 @@ public class StockBatchController {
     @GetMapping("/movements/{movementId}/allocations")
     public List<MovementAllocation> allocations(@PathVariable long movementId) throws SQLException {
         return repository.findAllocations(movementId);
+    }
+
+    private String actor(Authentication authentication) {
+        return authentication == null ? "system" : authentication.getName();
     }
 
     private void validateProductAndQuantity(Long productId, BigDecimal quantity) {
