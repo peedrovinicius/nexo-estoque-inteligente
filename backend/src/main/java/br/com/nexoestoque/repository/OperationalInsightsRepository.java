@@ -4,10 +4,7 @@ import br.com.nexoestoque.model.OperationalDashboard;
 import br.com.nexoestoque.model.OperationalDashboard.CriticalStockItem;
 import br.com.nexoestoque.model.OperationalDashboard.ExpiryRiskItem;
 import br.com.nexoestoque.model.OperationalDashboard.StockPositionItem;
-import br.com.nexoestoque.model.InventoryIntelligence.AbcItem;
-import br.com.nexoestoque.model.InventoryIntelligence.SlowMovingItem;
-import br.com.nexoestoque.model.InventoryIntelligence.CoverageItem;
-import br.com.nexoestoque.model.InventoryIntelligence.OpenPurchaseAgingItem;
+import br.com.nexoestoque.model.InventoryIntelligence.*;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -346,7 +343,14 @@ public class OperationalInsightsRepository {
 
 
     public List<AbcItem> abcAnalysis(int limit) throws SQLException {
+        return abcAnalysis(null, null, limit);
+    }
+
+    public List<AbcItem> abcAnalysis(String category, String query, int limit) throws SQLException {
         int safeLimit = normalizeLimit(limit, 1000);
+        String normalizedCategory = normalizeText(category);
+        String normalizedQuery = normalizeText(query);
+        String queryPattern = normalizedQuery == null ? null : "%" + normalizedQuery + "%";
         List<AbcRow> rows = new ArrayList<>();
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
@@ -355,13 +359,21 @@ public class OperationalInsightsRepository {
                        FROM products p
                        LEFT JOIN stock_batches b ON b.product_id = p.id
                       WHERE p.active = TRUE
+                        AND (? IS NULL OR p.category = ?)
+                        AND (? IS NULL OR p.name LIKE ? OR p.sku LIKE ?)
                       GROUP BY p.id, p.sku, p.name, p.category, p.current_stock
                       ORDER BY stock_value DESC, p.name, p.id
-                     """);
-             ResultSet rs = statement.executeQuery()) {
-            while (rs.next()) {
-                rows.add(new AbcRow(rs.getLong("id"), rs.getString("sku"), rs.getString("name"),
-                        rs.getString("category"), rs.getBigDecimal("current_stock"), rs.getBigDecimal("stock_value")));
+                     """)) {
+            setNullableText(statement, 1, normalizedCategory);
+            setNullableText(statement, 2, normalizedCategory);
+            setNullableText(statement, 3, normalizedQuery);
+            setNullableText(statement, 4, queryPattern);
+            setNullableText(statement, 5, queryPattern);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(new AbcRow(rs.getLong("id"), rs.getString("sku"), rs.getString("name"),
+                            rs.getString("category"), rs.getBigDecimal("current_stock"), rs.getBigDecimal("stock_value")));
+                }
             }
         }
         BigDecimal total = rows.stream().map(AbcRow::stockValue).reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -382,8 +394,15 @@ public class OperationalInsightsRepository {
     }
 
     public List<SlowMovingItem> slowMoving(int days, int limit) throws SQLException {
+        return slowMoving(days, null, null, limit);
+    }
+
+    public List<SlowMovingItem> slowMoving(int days, String category, String query, int limit) throws SQLException {
         int safeDays = Math.max(1, Math.min(days, 3650));
         int safeLimit = normalizeLimit(limit, 1000);
+        String normalizedCategory = normalizeText(category);
+        String normalizedQuery = normalizeText(query);
+        String queryPattern = normalizedQuery == null ? null : "%" + normalizedQuery + "%";
         List<SlowMovingItem> items = new ArrayList<>();
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
@@ -408,11 +427,18 @@ public class OperationalInsightsRepository {
                        ) mv ON mv.product_id = p.id
                       WHERE p.active = TRUE AND p.current_stock > 0
                         AND (mv.last_exit_at IS NULL OR DATEDIFF(CURDATE(), DATE(mv.last_exit_at)) >= ?)
+                        AND (? IS NULL OR p.category = ?)
+                        AND (? IS NULL OR p.name LIKE ? OR p.sku LIKE ?)
                       ORDER BY (mv.last_exit_at IS NULL) DESC, days_since_last_exit DESC, stock_value DESC, p.name
                       LIMIT ?
                      """)) {
             statement.setInt(1, safeDays);
-            statement.setInt(2, safeLimit);
+            setNullableText(statement, 2, normalizedCategory);
+            setNullableText(statement, 3, normalizedCategory);
+            setNullableText(statement, 4, normalizedQuery);
+            setNullableText(statement, 5, queryPattern);
+            setNullableText(statement, 6, queryPattern);
+            statement.setInt(7, safeLimit);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
                     Timestamp lastExit = rs.getTimestamp("last_exit_at");
@@ -428,8 +454,15 @@ public class OperationalInsightsRepository {
     }
 
     public List<CoverageItem> coverage(int windowDays, int limit) throws SQLException {
+        return coverage(windowDays, null, null, limit);
+    }
+
+    public List<CoverageItem> coverage(int windowDays, String category, String query, int limit) throws SQLException {
         int safeWindow = Math.max(7, Math.min(windowDays, 365));
         int safeLimit = normalizeLimit(limit, 1000);
+        String normalizedCategory = normalizeText(category);
+        String normalizedQuery = normalizeText(query);
+        String queryPattern = normalizedQuery == null ? null : "%" + normalizedQuery + "%";
         List<CoverageItem> items = new ArrayList<>();
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
@@ -446,9 +479,16 @@ public class OperationalInsightsRepository {
                             GROUP BY product_id
                        ) m ON m.product_id = p.id
                       WHERE p.active = TRUE
+                        AND (? IS NULL OR p.category = ?)
+                        AND (? IS NULL OR p.name LIKE ? OR p.sku LIKE ?)
                       ORDER BY p.name, p.id
                      """)) {
             statement.setInt(1, safeWindow);
+            setNullableText(statement, 2, normalizedCategory);
+            setNullableText(statement, 3, normalizedCategory);
+            setNullableText(statement, 4, normalizedQuery);
+            setNullableText(statement, 5, queryPattern);
+            setNullableText(statement, 6, queryPattern);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
                     BigDecimal currentStock = rs.getBigDecimal("current_stock");
@@ -503,6 +543,256 @@ public class OperationalInsightsRepository {
             }
         }
         return items;
+    }
+
+    public ExpiryExposureSummary expiryExposure(int horizonDays, String category, String query) throws SQLException {
+        int safeHorizon = Math.max(30, Math.min(horizonDays, 365));
+        String normalizedCategory = normalizeText(category);
+        String normalizedQuery = normalizeText(query);
+        String queryPattern = normalizedQuery == null ? null : "%" + normalizedQuery + "%";
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT
+                       SUM(CASE WHEN b.expires_at < CURDATE() THEN 1 ELSE 0 END) AS expired_batches,
+                       COALESCE(SUM(CASE WHEN b.expires_at < CURDATE() THEN b.quantity ELSE 0 END), 0) AS expired_quantity,
+                       COALESCE(SUM(CASE WHEN b.expires_at < CURDATE() THEN b.quantity * b.unit_cost ELSE 0 END), 0) AS expired_value,
+                       SUM(CASE WHEN DATEDIFF(b.expires_at, CURDATE()) BETWEEN 0 AND 30 THEN 1 ELSE 0 END) AS critical_batches,
+                       COALESCE(SUM(CASE WHEN DATEDIFF(b.expires_at, CURDATE()) BETWEEN 0 AND 30 THEN b.quantity ELSE 0 END), 0) AS critical_quantity,
+                       COALESCE(SUM(CASE WHEN DATEDIFF(b.expires_at, CURDATE()) BETWEEN 0 AND 30 THEN b.quantity * b.unit_cost ELSE 0 END), 0) AS critical_value,
+                       SUM(CASE WHEN DATEDIFF(b.expires_at, CURDATE()) BETWEEN 31 AND ? THEN 1 ELSE 0 END) AS warning_batches,
+                       COALESCE(SUM(CASE WHEN DATEDIFF(b.expires_at, CURDATE()) BETWEEN 31 AND ? THEN b.quantity ELSE 0 END), 0) AS warning_quantity,
+                       COALESCE(SUM(CASE WHEN DATEDIFF(b.expires_at, CURDATE()) BETWEEN 31 AND ? THEN b.quantity * b.unit_cost ELSE 0 END), 0) AS warning_value
+                      FROM stock_batches b
+                      JOIN products p ON p.id = b.product_id
+                     WHERE b.quantity > 0
+                       AND b.expires_at IS NOT NULL
+                       AND p.active = TRUE
+                       AND (? IS NULL OR p.category = ?)
+                       AND (? IS NULL OR p.name LIKE ? OR p.sku LIKE ?)
+                     """)) {
+            statement.setInt(1, safeHorizon);
+            statement.setInt(2, safeHorizon);
+            statement.setInt(3, safeHorizon);
+            setNullableText(statement, 4, normalizedCategory);
+            setNullableText(statement, 5, normalizedCategory);
+            setNullableText(statement, 6, normalizedQuery);
+            setNullableText(statement, 7, queryPattern);
+            setNullableText(statement, 8, queryPattern);
+            try (ResultSet rs = statement.executeQuery()) {
+                rs.next();
+                return new ExpiryExposureSummary(
+                        safeHorizon,
+                        rs.getInt("expired_batches"),
+                        rs.getBigDecimal("expired_quantity"),
+                        rs.getBigDecimal("expired_value"),
+                        rs.getInt("critical_batches"),
+                        rs.getBigDecimal("critical_quantity"),
+                        rs.getBigDecimal("critical_value"),
+                        rs.getInt("warning_batches"),
+                        rs.getBigDecimal("warning_quantity"),
+                        rs.getBigDecimal("warning_value")
+                );
+            }
+        }
+    }
+
+    public List<CapitalBreakdownItem> capitalBreakdown(
+            String dimension, String category, String query, int limit
+    ) throws SQLException {
+        String normalizedDimension = dimension == null ? "category" : dimension.trim().toLowerCase();
+        if (!normalizedDimension.equals("category") && !normalizedDimension.equals("warehouse")) {
+            throw new IllegalArgumentException("Dimensão deve ser category ou warehouse");
+        }
+        int safeLimit = normalizeLimit(limit, 500);
+        String normalizedCategory = normalizeText(category);
+        String normalizedQuery = normalizeText(query);
+        String queryPattern = normalizedQuery == null ? null : "%" + normalizedQuery + "%";
+        String selectDimension = normalizedDimension.equals("warehouse")
+                ? "CAST(w.id AS CHAR) AS item_key, w.name AS item_label"
+                : "p.category AS item_key, p.category AS item_label";
+        String joins = normalizedDimension.equals("warehouse")
+                ? " JOIN stock_locations l ON l.id = b.location_id JOIN warehouses w ON w.id = l.warehouse_id "
+                : " ";
+        String groupBy = normalizedDimension.equals("warehouse") ? "w.id, w.name" : "p.category";
+        String sql = """
+                SELECT %s,
+                       SUM(b.quantity) AS stock_quantity,
+                       SUM(b.quantity * b.unit_cost) AS stock_value
+                  FROM stock_batches b
+                  JOIN products p ON p.id = b.product_id
+                  %s
+                 WHERE b.quantity > 0
+                   AND p.active = TRUE
+                   AND (? IS NULL OR p.category = ?)
+                   AND (? IS NULL OR p.name LIKE ? OR p.sku LIKE ?)
+                 GROUP BY %s
+                 ORDER BY stock_value DESC, item_label
+                 LIMIT ?
+                """.formatted(selectDimension, joins, groupBy);
+
+        List<CapitalBreakdownItem> raw = new ArrayList<>();
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            setNullableText(statement, 1, normalizedCategory);
+            setNullableText(statement, 2, normalizedCategory);
+            setNullableText(statement, 3, normalizedQuery);
+            setNullableText(statement, 4, queryPattern);
+            setNullableText(statement, 5, queryPattern);
+            statement.setInt(6, safeLimit);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    raw.add(new CapitalBreakdownItem(
+                            normalizedDimension,
+                            rs.getString("item_key"),
+                            rs.getString("item_label"),
+                            rs.getBigDecimal("stock_quantity"),
+                            rs.getBigDecimal("stock_value"),
+                            BigDecimal.ZERO
+                    ));
+                }
+            }
+        }
+        BigDecimal total = raw.stream().map(CapitalBreakdownItem::stockValue).reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<CapitalBreakdownItem> result = new ArrayList<>();
+        for (CapitalBreakdownItem item : raw) {
+            result.add(new CapitalBreakdownItem(
+                    item.dimension(), item.key(), item.label(), item.stockQuantity(),
+                    item.stockValue(), percent(item.stockValue(), total)
+            ));
+        }
+        return result;
+    }
+
+    public AlertSettings alertSettings() throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT expiry_warning_days, low_coverage_days, slow_moving_days,
+                            purchase_overdue_days, coverage_window_days
+                       FROM inventory_alert_settings
+                      WHERE id = 1
+                     """);
+             ResultSet rs = statement.executeQuery()) {
+            if (!rs.next()) return new AlertSettings(30, 7, 90, 1, 30);
+            return new AlertSettings(
+                    rs.getInt("expiry_warning_days"),
+                    rs.getInt("low_coverage_days"),
+                    rs.getInt("slow_moving_days"),
+                    rs.getInt("purchase_overdue_days"),
+                    rs.getInt("coverage_window_days")
+            );
+        }
+    }
+
+    public AlertSettings updateAlertSettings(AlertSettings settings, String actor) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     UPDATE inventory_alert_settings
+                        SET expiry_warning_days = ?,
+                            low_coverage_days = ?,
+                            slow_moving_days = ?,
+                            purchase_overdue_days = ?,
+                            coverage_window_days = ?,
+                            updated_by = ?,
+                            updated_at = CURRENT_TIMESTAMP
+                      WHERE id = 1
+                     """)) {
+            statement.setInt(1, settings.expiryWarningDays());
+            statement.setInt(2, settings.lowCoverageDays());
+            statement.setInt(3, settings.slowMovingDays());
+            statement.setInt(4, settings.purchaseOverdueDays());
+            statement.setInt(5, settings.coverageWindowDays());
+            statement.setString(6, actor == null || actor.isBlank() ? "system" : actor);
+            statement.executeUpdate();
+        }
+        return alertSettings();
+    }
+
+    public List<OperationalAlert> operationalAlerts() throws SQLException {
+        AlertSettings settings = alertSettings();
+        List<OperationalAlert> alerts = new ArrayList<>();
+
+        for (CriticalStockItem item : criticalStock(100)) {
+            alerts.add(new OperationalAlert(
+                    "stock-" + item.productId(),
+                    "STOCK",
+                    item.currentStock().signum() <= 0 ? "CRITICAL" : "WARNING",
+                    item.name(),
+                    "Saldo " + item.currentStock() + " · mínimo " + item.minimumStock(),
+                    item.deficit() + " abaixo"
+            ));
+        }
+
+        for (ExpiryRiskItem item : expiryRisk(settings.expiryWarningDays(), 200)) {
+            alerts.add(new OperationalAlert(
+                    "expiry-" + item.batchId(),
+                    "EXPIRY",
+                    item.daysToExpiry() <= 7 ? "CRITICAL" : "WARNING",
+                    item.productName(),
+                    "Lote " + item.lotCode() + " · " + item.warehouseName() + "/" + item.locationCode(),
+                    item.daysToExpiry() < 0 ? Math.abs(item.daysToExpiry()) + " d vencido" : item.daysToExpiry() + " d"
+            ));
+        }
+
+        for (CoverageItem item : coverage(settings.coverageWindowDays(), 300)) {
+            if (item.coverageDays() != null
+                    && item.coverageDays().compareTo(BigDecimal.valueOf(settings.lowCoverageDays())) < 0) {
+                alerts.add(new OperationalAlert(
+                        "coverage-" + item.productId(),
+                        "COVERAGE",
+                        "CRITICAL",
+                        item.productName(),
+                        "Cobertura abaixo do limiar configurado",
+                        item.coverageDays() + " d"
+                ));
+            }
+        }
+
+        for (SlowMovingItem item : slowMoving(settings.slowMovingDays(), 200)) {
+            alerts.add(new OperationalAlert(
+                    "slow-" + item.productId(),
+                    "SLOW_MOVING",
+                    "INFO",
+                    item.productName(),
+                    item.daysSinceLastExit() == null ? "Sem saída registrada" : "Sem saída recente",
+                    item.daysSinceLastExit() == null ? "sem histórico" : item.daysSinceLastExit() + " d"
+            ));
+        }
+
+        for (OpenPurchaseAgingItem item : openPurchaseAging(200)) {
+            if (item.overdueDays() >= settings.purchaseOverdueDays() && item.overdueDays() > 0) {
+                alerts.add(new OperationalAlert(
+                        "purchase-" + item.orderId(),
+                        "PURCHASE",
+                        "WARNING",
+                        "Pedido #" + item.orderId() + " · " + item.supplierName(),
+                        "Pedido aberto com recebimento pendente",
+                        item.overdueDays() + " d atraso"
+                ));
+            }
+        }
+
+        alerts.sort((a, b) -> {
+            int severity = Integer.compare(severityRank(a.severity()), severityRank(b.severity()));
+            return severity != 0 ? severity : a.title().compareToIgnoreCase(b.title());
+        });
+        return alerts.size() <= 300 ? alerts : new ArrayList<>(alerts.subList(0, 300));
+    }
+
+    private int severityRank(String severity) {
+        if ("CRITICAL".equals(severity)) return 0;
+        if ("WARNING".equals(severity)) return 1;
+        return 2;
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) return null;
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private void setNullableText(PreparedStatement statement, int index, String value) throws SQLException {
+        if (value == null) statement.setNull(index, Types.VARCHAR);
+        else statement.setString(index, value);
     }
 
     private BigDecimal percent(BigDecimal value, BigDecimal total) {

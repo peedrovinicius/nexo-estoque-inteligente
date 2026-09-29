@@ -1,9 +1,8 @@
 package br.com.nexoestoque.repository;
 
-import br.com.nexoestoque.model.InventoryIntelligence.AbcItem;
-import br.com.nexoestoque.model.InventoryIntelligence.CoverageItem;
-import br.com.nexoestoque.model.InventoryIntelligence.OpenPurchaseAgingItem;
-import br.com.nexoestoque.model.InventoryIntelligence.SlowMovingItem;
+import br.com.nexoestoque.controller.OperationalInsightsController;
+import br.com.nexoestoque.model.InventoryIntelligence.*;
+import org.springframework.http.ResponseEntity;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
@@ -16,7 +15,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class InventoryIntelligenceIntegrationTest {
 
     @Test
-    void calculatesAbcSlowMovingCoverageAndOpenPurchaseAging() throws Exception {
+    void calculatesInventoryIntelligenceFiltersExportsExposureCapitalAndAlerts() throws Exception {
         String url = System.getenv("NEXO_DB_INTEGRATION_URL");
         assumeTrue(url != null && !url.isBlank(), "MySQL integration URL not configured");
 
@@ -50,6 +49,17 @@ class InventoryIntelligenceIntegrationTest {
 
             insertBatch(connection, fastProductId, locationId, "INT-FAST-LOT", 20, 10);
             insertBatch(connection, idleProductId, locationId, "INT-IDLE-LOT", 12, 40);
+
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    UPDATE stock_batches
+                       SET expires_at = CASE lot_code
+                           WHEN 'INT-FAST-LOT' THEN DATE_ADD(CURDATE(), INTERVAL 10 DAY)
+                           WHEN 'INT-IDLE-LOT' THEN DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                           ELSE expires_at END
+                     WHERE lot_code IN ('INT-FAST-LOT','INT-IDLE-LOT')
+                    """)) {
+                statement.executeUpdate();
+            }
 
             try (PreparedStatement statement = connection.prepareStatement("""
                     INSERT INTO stock_movements(
@@ -124,6 +134,52 @@ class InventoryIntelligenceIntegrationTest {
                 item.orderId() == orderId
                         && item.overdueDays() >= 3
                         && item.pendingQuantity().compareTo(new java.math.BigDecimal("8.000")) == 0);
+
+
+        List<AbcItem> filteredAbc = repository.abcAnalysis("Inteligência", "sem giro", 50);
+        assertThat(filteredAbc).hasSize(1);
+        assertThat(filteredAbc.getFirst().productId()).isEqualTo(idleProductId);
+
+        ExpiryExposureSummary exposure = repository.expiryExposure(90, "Inteligência", null);
+        assertThat(exposure.expiredBatches()).isEqualTo(1);
+        assertThat(exposure.expiredValue()).isEqualByComparingTo("480");
+        assertThat(exposure.criticalBatches()).isEqualTo(1);
+        assertThat(exposure.criticalValue()).isEqualByComparingTo("200");
+
+        List<CapitalBreakdownItem> capital = repository.capitalBreakdown("category", "Inteligência", null, 50);
+        assertThat(capital).hasSize(1);
+        assertThat(capital.getFirst().label()).isEqualTo("Inteligência");
+        assertThat(capital.getFirst().stockValue()).isEqualByComparingTo("680");
+        assertThat(capital.getFirst().participationPercent()).isEqualByComparingTo("100.00");
+
+        AlertSettings updatedSettings = repository.updateAlertSettings(
+                new AlertSettings(45, 7, 90, 1, 30),
+                "ci-admin"
+        );
+        assertThat(updatedSettings.expiryWarningDays()).isEqualTo(45);
+
+        List<OperationalAlert> alerts = repository.operationalAlerts();
+        long idleBatchId = batchId(dataSource, "INT-IDLE-LOT");
+        assertThat(alerts).anyMatch(item -> item.key().equals("expiry-" + idleBatchId));
+        assertThat(alerts).anyMatch(item -> item.key().equals("slow-" + idleProductId));
+        assertThat(alerts).anyMatch(item -> item.key().equals("purchase-" + orderId));
+
+        OperationalInsightsController controller = new OperationalInsightsController(repository);
+        ResponseEntity<String> abcCsv = controller.abcCsv("Inteligência", "sem giro");
+        assertThat(abcCsv.getBody()).contains("Produto sem giro").contains("INT-IDLE");
+        assertThat(abcCsv.getHeaders().getFirst("Content-Disposition")).contains("nexo-curva-abc.csv");
+    }
+
+    private long batchId(DriverManagerDataSource dataSource, String lotCode) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT id FROM stock_batches WHERE lot_code = ? ORDER BY id DESC LIMIT 1")) {
+            statement.setString(1, lotCode);
+            try (ResultSet rs = statement.executeQuery()) {
+                rs.next();
+                return rs.getLong(1);
+            }
+        }
     }
 
     private long insertProduct(

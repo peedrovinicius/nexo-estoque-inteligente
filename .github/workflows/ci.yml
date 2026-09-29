@@ -73,6 +73,7 @@ jobs:
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V3__audit_history_and_indexes.sql
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V4__purchasing_retention.sql
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V5__warehouses_receipts_transfers.sql
+          mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V6__inventory_alert_settings.sql
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/R__procedures.sql
       - name: Verify warehouse receipt transfer and barcode integration
         env:
