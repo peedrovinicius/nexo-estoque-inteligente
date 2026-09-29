@@ -2,10 +2,41 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle, Boxes, BrainCircuit, ChevronRight, ClipboardCheck, LayoutDashboard, LogOut, Moon, PackageSearch, ScanLine, ShieldCheck, Sparkles, Sun, TrendingUp } from 'lucide-react';
 import { NEXO_LOGO_ORIGINAL } from './nexoLogoOriginal';
 
-const DEMO_USER='admin';
+const DEMO_USER='demo';
 const DEMO_PASSWORD='Nexo@2026';
 
 type Theme='light'|'dark';
+type AuthRole='ADMIN'|'OPERATOR'|'VIEWER';
+type AuthSession={username:string;role:AuthRole;authorization:string};
+
+function readAuthSession():AuthSession|null{
+  try{
+    const raw=sessionStorage.getItem('nexo-auth');
+    if(!raw) return null;
+    const parsed=JSON.parse(raw);
+    if(!parsed?.username||!parsed?.role||!parsed?.authorization) return null;
+    return parsed as AuthSession;
+  }catch{
+    return null;
+  }
+}
+
+function isReadOnlySession(){
+  return readAuthSession()?.role==='VIEWER';
+}
+
+async function apiFetch(input:RequestInfo|URL,init:RequestInit={}){
+  const session=readAuthSession();
+  const headers=new Headers(init.headers||{});
+  if(session?.authorization) headers.set('Authorization',session.authorization);
+
+  const response=await fetch(input,{...init,headers});
+  if(response.status===401){
+    sessionStorage.removeItem('nexo-auth');
+    window.location.reload();
+  }
+  return response;
+}
 
 function BrandImage({
   theme,
@@ -65,15 +96,39 @@ function ThemeToggle({theme,onToggle,compact=false}:{theme:Theme;onToggle:()=>vo
 
 
 function Login({onLogin,theme,onToggleTheme}:{onLogin:()=>void;theme:Theme;onToggleTheme:()=>void}) {
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [user,setUser]=useState('');
   const [password,setPassword]=useState('');
   const [error,setError]=useState('');
-  function submit(e:React.FormEvent){
+  const [loading,setLoading]=useState(false);
+
+  async function submit(e:React.FormEvent){
     e.preventDefault();
-    if(user===DEMO_USER && password===DEMO_PASSWORD){
-      sessionStorage.setItem('nexo-auth','demo');
+    setError('');
+    setLoading(true);
+
+    try{
+      const authorization='Basic '+btoa(user+':'+password);
+      const response=await apiFetch(API_URL+'/api/v1/auth/login',{
+        method:'POST',
+        headers:{Authorization:authorization}
+      });
+
+      if(!response.ok) throw new Error('Usuário ou senha inválidos.');
+      const data=await response.json();
+      const role=String(data.role||'VIEWER') as AuthRole;
+
+      sessionStorage.setItem('nexo-auth',JSON.stringify({
+        username:String(data.username||user),
+        role,
+        authorization
+      } satisfies AuthSession));
       onLogin();
-    } else setError('Usuário ou senha inválidos.');
+    }catch(err){
+      setError(err instanceof Error?err.message:'Não foi possível autenticar.');
+    }finally{
+      setLoading(false);
+    }
   }
   return <main className="login-shell">
     <div className="login-theme-toggle"><ThemeToggle theme={theme} onToggle={onToggleTheme} compact /></div>
@@ -103,15 +158,15 @@ function Login({onLogin,theme,onToggleTheme}:{onLogin:()=>void;theme:Theme;onTog
         <div className="login-title">
           <BrandImage theme={theme} className="login-logo" alt="Nexo" />
           <div className="login-access-copy">
-            <strong>Acesso administrativo</strong>
-            <small>Ambiente demonstrativo</small>
+            <strong>Acesso ao Nexo</strong>
+            <small>Demonstração · somente leitura</small>
           </div>
         </div>
         <label>Usuário<input value={user} onChange={e=>setUser(e.target.value)} placeholder="Digite seu usuário" autoFocus/></label>
         <label>Senha<input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Digite sua senha"/></label>
         {error&&<div className="error">{error}</div>}
-        <button className="primary">Entrar <ChevronRight size={18}/></button>
-        <div className="demo"><span>Demo</span><code>admin</code><code>Nexo@2026</code></div>
+        <button className="primary" disabled={loading}>{loading?'Entrando...':<>Entrar <ChevronRight size={18}/></>}</button>
+        <div className="demo"><span>Demo</span><code>{DEMO_USER}</code><code>{DEMO_PASSWORD}</code></div>
       </form>
     </section>
   </main>;
@@ -154,7 +209,7 @@ function Simulator(){
 
     (async()=>{
       try{
-        const response=await fetch(API_URL+'/api/v1/products');
+        const response=await apiFetch(API_URL+'/api/v1/products');
         if(!response.ok) throw new Error();
         const data=await response.json();
         if(!active) return;
@@ -222,7 +277,7 @@ function Simulator(){
 
     setLoading(true);
     try{
-      const response=await fetch(API_URL+'/api/v1/simulations',{
+      const response=await apiFetch(API_URL+'/api/v1/simulations',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
@@ -265,7 +320,7 @@ function Simulator(){
     setAdvisorLoading(true);
     setExplanation('');
     try{
-      const response=await fetch(API_URL+'/api/v1/advisor/explain',{
+      const response=await apiFetch(API_URL+'/api/v1/advisor/explain',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
@@ -391,6 +446,7 @@ type ProductView={
 
 function ProductsPanel(){
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const readOnly=isReadOnlySession();
   const [query,setQuery]=useState('');
   const [showForm,setShowForm]=useState(false);
   const [products,setProducts]=useState<ProductView[]>([]);
@@ -414,7 +470,7 @@ function ProductsPanel(){
 
   async function loadProducts(){
     try{
-      const response=await fetch(API_URL+'/api/v1/products');
+      const response=await apiFetch(API_URL+'/api/v1/products');
       if(!response.ok) throw new Error('API de produtos indisponível');
       const data=await response.json();
       if(!Array.isArray(data)) throw new Error('Resposta inválida');
@@ -436,6 +492,7 @@ function ProductsPanel(){
 
   async function addProduct(e:React.FormEvent){
     e.preventDefault();
+    if(readOnly){setFeedback('Modo demonstração: alterações de cadastro estão bloqueadas.');return;}
     if(!form.sku||!form.name||!form.category) {
       setFeedback('Preencha SKU, nome e categoria.');
       return;
@@ -454,7 +511,7 @@ function ProductsPanel(){
     };
 
     try{
-      const response=await fetch(API_URL+'/api/v1/products',{
+      const response=await apiFetch(API_URL+'/api/v1/products',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
@@ -487,7 +544,7 @@ function ProductsPanel(){
   return <>
     <header className="page-header">
       <div><span className="eyebrow">CATÁLOGO E SALDOS</span><h1>Produtos</h1><p>Consulte estoque, lote e validade em uma única visão operacional.</p></div>
-      <button className="new-action" onClick={()=>{setShowForm(true);setFeedback('')}}>+ Novo produto</button>
+      <button className="new-action" disabled={readOnly} title={readOnly?'Disponível para Admin e Operador':undefined} onClick={()=>{setShowForm(true);setFeedback('')}}>+ Novo produto</button>
     </header>
 
     <section className="product-toolbar">
@@ -594,7 +651,7 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
   useEffect(()=>{
     (async()=>{
       try{
-        const response=await fetch(API_URL+'/api/v1/products');
+        const response=await apiFetch(API_URL+'/api/v1/products');
         if(!response.ok) throw new Error();
         const data=await response.json();
         setProducts((Array.isArray(data)?data:[]).map((p:any)=>({
@@ -628,7 +685,7 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
 
     (async()=>{
       try{
-        const response=await fetch(API_URL+'/api/v1/stock/batches?productId='+encodeURIComponent(form.productId));
+        const response=await apiFetch(API_URL+'/api/v1/stock/batches?productId='+encodeURIComponent(form.productId));
         if(!response.ok) throw new Error();
         const data=await response.json();
         if(!active) return;
@@ -672,7 +729,7 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
 
       (async()=>{
         try{
-          const response=await fetch(API_URL+'/api/v1/stock/batches/exit-fefo/preview',{
+          const response=await apiFetch(API_URL+'/api/v1/stock/batches/exit-fefo/preview',{
             method:'POST',
             headers:{'Content-Type':'application/json'},
             body:JSON.stringify({
@@ -944,7 +1001,7 @@ function RecentMovements({refreshKey}:{refreshKey:number}){
     (async()=>{
       setSource('loading');
       try{
-        const response=await fetch(API_URL+'/api/v1/stock/movements?limit=8');
+        const response=await apiFetch(API_URL+'/api/v1/stock/movements?limit=8');
         if(!response.ok) throw new Error();
         const data=await response.json();
         const rows:Array<any>=Array.isArray(data)?data:[];
@@ -1027,6 +1084,7 @@ type InventoryItemView={
 
 function BlindInventoryPanel(){
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const readOnly=isReadOnlySession();
   const [sessions,setSessions]=useState<InventorySessionView[]>([]);
   const [selectedId,setSelectedId]=useState<number|null>(null);
   const [items,setItems]=useState<InventoryItemView[]>([]);
@@ -1049,7 +1107,7 @@ function BlindInventoryPanel(){
   }
 
   async function loadSessions(preferredId?:number){
-    const response=await fetch(API_URL+'/api/v1/inventory/blind');
+    const response=await apiFetch(API_URL+'/api/v1/inventory/blind');
     if(!response.ok) throw new Error(await readError(response,'Não foi possível carregar os inventários.'));
     const data=await response.json();
     const rows:InventorySessionView[]=(Array.isArray(data)?data:[]).map((session:any)=>({
@@ -1069,7 +1127,7 @@ function BlindInventoryPanel(){
   }
 
   async function loadItems(sessionId:number){
-    const response=await fetch(API_URL+`/api/v1/inventory/blind/${sessionId}/items`);
+    const response=await apiFetch(API_URL+`/api/v1/inventory/blind/${sessionId}/items`);
     if(!response.ok) throw new Error(await readError(response,'Não foi possível carregar os itens do inventário.'));
     const data=await response.json();
     const rows:InventoryItemView[]=(Array.isArray(data)?data:[]).map((item:any)=>({
@@ -1119,12 +1177,13 @@ function BlindInventoryPanel(){
 
   async function createSession(e:React.FormEvent){
     e.preventDefault();
+    if(readOnly){setError('Modo demonstração: abertura de inventário está bloqueada.');return;}
     if(!newName.trim()) return;
     setCreating(true);
     setError('');
     setFeedback('');
     try{
-      const response=await fetch(API_URL+'/api/v1/inventory/blind',{
+      const response=await apiFetch(API_URL+'/api/v1/inventory/blind',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({name:newName.trim()})
@@ -1143,6 +1202,7 @@ function BlindInventoryPanel(){
   }
 
   async function saveCount(productId:number){
+    if(readOnly){setError('Modo demonstração: contagens estão bloqueadas.');return;}
     const raw=drafts[productId];
     const quantity=Number(raw);
     if(raw===''||!Number.isFinite(quantity)||quantity<0){
@@ -1155,7 +1215,7 @@ function BlindInventoryPanel(){
     setError('');
     setFeedback('');
     try{
-      const response=await fetch(API_URL+`/api/v1/inventory/blind/${selectedId}/counts`,{
+      const response=await apiFetch(API_URL+`/api/v1/inventory/blind/${selectedId}/counts`,{
         method:'PUT',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({productId,countedQuantity:quantity})
@@ -1171,12 +1231,13 @@ function BlindInventoryPanel(){
   }
 
   async function closeSession(){
+    if(readOnly){setError('Modo demonstração: fechamento de inventário está bloqueado.');return;}
     if(!selectedId||!complete) return;
     setClosing(true);
     setError('');
     setFeedback('');
     try{
-      const response=await fetch(API_URL+`/api/v1/inventory/blind/${selectedId}/close`,{method:'POST'});
+      const response=await apiFetch(API_URL+`/api/v1/inventory/blind/${selectedId}/close`,{method:'POST'});
       if(!response.ok) throw new Error(await readError(response,'Não foi possível fechar o inventário.'));
       await loadSessions(selectedId);
       await loadItems(selectedId);
@@ -1199,8 +1260,8 @@ function BlindInventoryPanel(){
 
     <section className="blind-create">
       <form onSubmit={createSession}>
-        <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="Nome do inventário, ex.: Contagem semanal · Corredor A"/>
-        <button className="primary compact" disabled={creating||!newName.trim()}>{creating?'Abrindo...':'+ Abrir inventário'}</button>
+        <input value={newName} disabled={readOnly} onChange={e=>setNewName(e.target.value)} placeholder="Nome do inventário, ex.: Contagem semanal · Corredor A"/>
+        <button className="primary compact" disabled={readOnly||creating||!newName.trim()}>{creating?'Abrindo...':'+ Abrir inventário'}</button>
       </form>
       <div className="blind-shield"><ShieldCheck size={17}/><span>Durante a contagem, o Nexo não envia o saldo do sistema para a tela.</span></div>
     </section>
@@ -1234,7 +1295,7 @@ function BlindInventoryPanel(){
                     ? `${counted} de ${items.length} produtos contados`
                     : `${selected.countedItems} itens conferidos · ${selected.divergentItems} divergências`}</p>
                 </div>
-                {selected.status==='OPEN'&&<button className="close-inventory" disabled={!complete||closing} onClick={closeSession}>
+                {selected.status==='OPEN'&&<button className="close-inventory" disabled={readOnly||!complete||closing} onClick={closeSession}>
                   {closing?'Fechando...':'Fechar e revelar diferenças'}
                 </button>}
               </div>
@@ -1260,6 +1321,7 @@ function BlindInventoryPanel(){
                               type="number"
                               min="0"
                               step="0.001"
+                              disabled={readOnly}
                               value={drafts[item.productId]??''}
                               onChange={e=>setDrafts(current=>({...current,[item.productId]:e.target.value}))}
                               placeholder="Quantidade física"
@@ -1273,7 +1335,7 @@ function BlindInventoryPanel(){
                         </span></td>
                       </>}
                       {selected.status==='OPEN'&&<td>
-                        <button className="count-save" disabled={savingId===item.productId} onClick={()=>saveCount(item.productId)}>
+                        <button className="count-save" disabled={readOnly||savingId===item.productId} onClick={()=>saveCount(item.productId)}>
                           {savingId===item.productId?'Salvando...':item.countedQuantity===null?'Salvar':'Atualizar'}
                         </button>
                       </td>}
@@ -1322,7 +1384,7 @@ function BatchesPanel(){
       setLoading(true);
       setError('');
       try{
-        const response=await fetch(API_URL+'/api/v1/stock/batches');
+        const response=await apiFetch(API_URL+'/api/v1/stock/batches');
         if(!response.ok) throw new Error('Não foi possível carregar os lotes.');
         const data=await response.json();
         setItems((Array.isArray(data)?data:[]).map((item:any)=>({
@@ -1460,7 +1522,7 @@ function AdvisorPanel(){
     setLoading(true);
 
     try{
-      const response=await fetch(API_URL+'/api/v1/advisor/chat',{
+      const response=await apiFetch(API_URL+'/api/v1/advisor/chat',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({question:clean})
@@ -1580,7 +1642,7 @@ function SystemReadiness(){
 
     async function check(){
       try{
-        const response=await fetch(API_URL+'/api/v1/system/readiness');
+        const response=await apiFetch(API_URL+'/api/v1/system/readiness');
         if(!response.ok) throw new Error();
         const data=await response.json();
         if(!active) return;
@@ -1619,6 +1681,8 @@ function SystemReadiness(){
 
 function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onToggleTheme:()=>void}){
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const authSession=readAuthSession();
+  const readOnly=authSession?.role==='VIEWER';
   const [page,setPage]=useState<'dashboard'|'products'|'batches'|'inventory'|'simulator'|'assistant'>('dashboard');
   const [showMovement,setShowMovement]=useState(false);
   const [movementRefresh,setMovementRefresh]=useState(0);
@@ -1654,9 +1718,9 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
 
       try{
         const [productsResponse,batchesResponse,inventoryResponse]=await Promise.all([
-          fetch(API_URL+'/api/v1/products'),
-          fetch(API_URL+'/api/v1/stock/batches'),
-          fetch(API_URL+'/api/v1/inventory/blind')
+          apiFetch(API_URL+'/api/v1/products'),
+          apiFetch(API_URL+'/api/v1/stock/batches'),
+          apiFetch(API_URL+'/api/v1/inventory/blind')
         ]);
 
         if(!productsResponse.ok||!batchesResponse.ok||!inventoryResponse.ok){
@@ -1851,6 +1915,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
     </aside>
     <main className="workspace">
       <SystemReadiness/>
+      {readOnly&&<div className="demo-readonly-banner"><ShieldCheck size={16}/><span>Modo demonstração: consulta, FEFO, simulador e assistente liberados. Alterações de estoque estão bloqueadas.</span></div>}
       {page==='products'
         ? <ProductsPanel/>
         : page==='batches'
@@ -1865,7 +1930,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
           <header className="dashboard-hero">
             <div className="dashboard-hero-copy">
               <span className="eyebrow">VISÃO GERAL</span>
-              <h1>Boa tarde, administrador.</h1>
+              <h1>Olá, {authSession?.username??'usuário'}.</h1>
               <p>{dashboard
                 ? actionCount>0
                   ? `Há ${actionCount} alertas operacionais calculados com dados atuais do estoque.`
@@ -1878,7 +1943,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
                 <span><PackageSearch size={14}/>{dashboard?dashboard.expiryRiskBatches:'—'} lotes em atenção</span>
               </div>
             </div>
-            <button className="new-action dashboard-primary-action" onClick={()=>setShowMovement(true)}>+ Nova movimentação</button>
+            <button className="new-action dashboard-primary-action" disabled={readOnly} title={readOnly?'Disponível para Admin e Operador':undefined} onClick={()=>setShowMovement(true)}>+ Nova movimentação</button>
           </header>
 
           {dashboardError&&<div className="product-feedback warning">{dashboardError}</div>}
@@ -1903,7 +1968,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
           </section>
 
           <RecentMovements refreshKey={movementRefresh}/>
-          {showMovement&&<StockMovementModal
+          {showMovement&&!readOnly&&<StockMovementModal
             onClose={()=>setShowMovement(false)}
             onSaved={()=>setMovementRefresh(value=>value+1)}
           />}
@@ -1913,7 +1978,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
 }
 
 export default function App(){
-  const [auth,setAuth]=useState(sessionStorage.getItem('nexo-auth')==='demo');
+  const [auth,setAuth]=useState(Boolean(readAuthSession()));
   const [theme,setTheme]=useState<Theme>(()=>localStorage.getItem('nexo-theme')==='dark'?'dark':'light');
 
   useEffect(()=>{
