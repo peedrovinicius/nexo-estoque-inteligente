@@ -2027,3 +2027,51 @@ html:not([data-theme="dark"]) .login-theme-toggle .theme-toggle{
   color:#415571!important;
   box-shadow:0 8px 22px rgba(16,33,63,.08)!important;
 }
+
+
+/* Mobile/light readability: subtle dark outline for logo and text */
+html:not([data-theme="dark"]) .login-title .login-logo{
+  filter:
+    drop-shadow(0 0 0.8px rgba(0,0,0,.95))
+    drop-shadow(1px 0 0 rgba(0,0,0,.55))
+    drop-shadow(-1px 0 0 rgba(0,0,0,.55))
+    drop-shadow(0 1px 0 rgba(0,0,0,.55))
+    drop-shadow(0 -1px 0 rgba(0,0,0,.55))!important;
+}
+
+html:not([data-theme="dark"]) .login-access-copy strong{
+  -webkit-text-stroke:.35px rgba(0,0,0,.75);
+  text-shadow:0 1px 1px rgba(0,0,0,.14);
+}
+
+html:not([data-theme="dark"]) .login-access-copy small,
+html:not([data-theme="dark"]) .login-card label,
+html:not([data-theme="dark"]) .login-card input,
+html:not([data-theme="dark"]) .login-card input::placeholder,
+html:not([data-theme="dark"]) .demo,
+html:not([data-theme="dark"]) .demo code{
+  -webkit-text-stroke:.22px rgba(0,0,0,.68);
+  text-shadow:0 .5px .8px rgba(0,0,0,.10);
+}
+
+@media(max-width:700px){
+  html:not([data-theme="dark"]) .login-title .login-logo{
+    filter:
+      drop-shadow(0 0 0.9px rgba(0,0,0,1))
+      drop-shadow(1px 0 0 rgba(0,0,0,.62))
+      drop-shadow(-1px 0 0 rgba(0,0,0,.62))
+      drop-shadow(0 1px 0 rgba(0,0,0,.62))
+      drop-shadow(0 -1px 0 rgba(0,0,0,.62))!important;
+  }
+
+  html:not([data-theme="dark"]) .login-access-copy strong{
+    -webkit-text-stroke:.45px rgba(0,0,0,.78);
+  }
+
+  html:not([data-theme="dark"]) .login-access-copy small,
+  html:not([data-theme="dark"]) .login-card label,
+  html:not([data-theme="dark"]) .login-card input,
+  html:not([data-theme="dark"]) .login-card input::placeholder{
+    -webkit-text-stroke:.28px rgba(0,0,0,.70);
+  }
+}
