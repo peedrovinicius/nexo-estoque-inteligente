@@ -3,7 +3,9 @@ package br.com.nexoestoque.controller;
 import br.com.nexoestoque.dto.*;
 import br.com.nexoestoque.model.PurchaseOrderDetails;
 import br.com.nexoestoque.model.PurchaseOrderSummary;
+import br.com.nexoestoque.model.PurchaseReceiptResult;
 import br.com.nexoestoque.repository.PurchaseOrderRepository;
+import br.com.nexoestoque.repository.PurchaseReceiptRepository;
 import br.com.nexoestoque.service.ReplenishmentPurchaseService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -21,13 +23,16 @@ import java.util.List;
 @Validated
 public class PurchaseOrderController {
     private final PurchaseOrderRepository repository;
+    private final PurchaseReceiptRepository receiptRepository;
     private final ReplenishmentPurchaseService replenishmentService;
 
     public PurchaseOrderController(
             PurchaseOrderRepository repository,
+            PurchaseReceiptRepository receiptRepository,
             ReplenishmentPurchaseService replenishmentService
     ) {
         this.repository = repository;
+        this.receiptRepository = receiptRepository;
         this.replenishmentService = replenishmentService;
     }
 
@@ -69,6 +74,16 @@ public class PurchaseOrderController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido de compra não encontrado");
         }
         return order;
+    }
+
+    @PostMapping("/{id}/receipts")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PurchaseReceiptResult receive(
+            @PathVariable @Min(1) long id,
+            @Valid @RequestBody PurchaseReceiptRequest request,
+            Authentication authentication
+    ) throws SQLException {
+        return receiptRepository.receive(id, request, actor(authentication));
     }
 
     @PostMapping("/from-recommendation")
