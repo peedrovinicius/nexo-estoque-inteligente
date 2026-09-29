@@ -12,5 +12,6 @@ public record StockMovement(
         BigDecimal balanceBefore,
         BigDecimal balanceAfter,
         String reason,
+        String performedBy,
         LocalDateTime createdAt
 ) {}
