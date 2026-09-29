@@ -47,7 +47,13 @@ O Nexo concentra operação, rastreabilidade e apoio à decisão em uma única a
 - filtros analíticos por produto, SKU e categoria
 - exportação CSV de curva ABC, estoque sem giro e cobertura
 - central de alertas operacionais com limiares persistidos e edição exclusiva de Admin
+- desempenho de fornecedores com taxa de atendimento, prazo e lead time observado
+- fluxo de estoque por produto combinando histórico ativo e arquivado
+- livro de movimentações pesquisável com exportação CSV
+- rastreabilidade de lote desde recebimento, transferências e consumo FEFO
+- diagnóstico de integridade entre saldos, lotes e recebimentos
 - workspace de inteligência operacional no frontend
+- workspace dedicado de rastreabilidade no frontend
 
 ## Inteligência operacional
 
@@ -71,9 +77,18 @@ GET /api/v1/operations/capital
 GET /api/v1/operations/alerts
 GET /api/v1/operations/alerts/config
 PUT /api/v1/operations/alerts/config
+
+GET /api/v1/traceability/suppliers
+GET /api/v1/traceability/stock-flow
+GET /api/v1/traceability/movements
+GET /api/v1/traceability/movements.csv
+GET /api/v1/traceability/lots/{lotCode}
+GET /api/v1/traceability/integrity
 ```
 
 Filtros de produto/SKU e categoria são aplicados no backend. A central de alertas combina ruptura, validade, cobertura, ausência de giro e compras atrasadas usando limiares persistidos no MySQL.
+
+A camada de rastreabilidade consolida movimentos correntes e arquivados, mede desempenho de fornecedores, reconstrói a linha do tempo de lotes e reconcilia automaticamente o saldo mestre contra lotes e recebimentos.
 
 ## Segurança e consistência
 
@@ -99,4 +114,4 @@ senha: Nexo@2026
 
 ## Estado
 
-Em desenvolvimento ativo. A versão da API neste bloco é 0.5.0.
+Em desenvolvimento ativo. A versão da API neste bloco é 0.6.0.
