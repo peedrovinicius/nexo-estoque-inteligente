@@ -4,6 +4,10 @@ import br.com.nexoestoque.model.OperationalDashboard;
 import br.com.nexoestoque.model.OperationalDashboard.CriticalStockItem;
 import br.com.nexoestoque.model.OperationalDashboard.ExpiryRiskItem;
 import br.com.nexoestoque.model.OperationalDashboard.StockPositionItem;
+import br.com.nexoestoque.model.InventoryIntelligence.AbcItem;
+import br.com.nexoestoque.model.InventoryIntelligence.SlowMovingItem;
+import br.com.nexoestoque.model.InventoryIntelligence.CoverageItem;
+import br.com.nexoestoque.model.InventoryIntelligence.OpenPurchaseAgingItem;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -340,6 +344,179 @@ public class OperationalInsightsRepository {
         return "WARNING";
     }
 
+
+    public List<AbcItem> abcAnalysis(int limit) throws SQLException {
+        int safeLimit = normalizeLimit(limit, 1000);
+        List<AbcRow> rows = new ArrayList<>();
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT p.id, p.sku, p.name, p.category, p.current_stock,
+                            COALESCE(SUM(CASE WHEN b.quantity > 0 THEN b.quantity * b.unit_cost ELSE 0 END), 0) AS stock_value
+                       FROM products p
+                       LEFT JOIN stock_batches b ON b.product_id = p.id
+                      WHERE p.active = TRUE
+                      GROUP BY p.id, p.sku, p.name, p.category, p.current_stock
+                      ORDER BY stock_value DESC, p.name, p.id
+                     """);
+             ResultSet rs = statement.executeQuery()) {
+            while (rs.next()) {
+                rows.add(new AbcRow(rs.getLong("id"), rs.getString("sku"), rs.getString("name"),
+                        rs.getString("category"), rs.getBigDecimal("current_stock"), rs.getBigDecimal("stock_value")));
+            }
+        }
+        BigDecimal total = rows.stream().map(AbcRow::stockValue).reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<AbcItem> items = new ArrayList<>();
+        BigDecimal cumulativeValue = BigDecimal.ZERO;
+        for (AbcRow row : rows) {
+            cumulativeValue = cumulativeValue.add(row.stockValue());
+            BigDecimal participation = percent(row.stockValue(), total);
+            BigDecimal cumulative = percent(cumulativeValue, total);
+            String abcClass = cumulative.compareTo(new BigDecimal("80")) <= 0 ? "A"
+                    : cumulative.compareTo(new BigDecimal("95")) <= 0 ? "B" : "C";
+            if (total.signum() == 0) abcClass = "C";
+            items.add(new AbcItem(row.productId(), row.sku(), row.productName(), row.category(),
+                    row.stockQuantity(), row.stockValue(), participation, cumulative, abcClass));
+            if (items.size() >= safeLimit) break;
+        }
+        return items;
+    }
+
+    public List<SlowMovingItem> slowMoving(int days, int limit) throws SQLException {
+        int safeDays = Math.max(1, Math.min(days, 3650));
+        int safeLimit = normalizeLimit(limit, 1000);
+        List<SlowMovingItem> items = new ArrayList<>();
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT p.id, p.sku, p.name, p.current_stock,
+                            COALESCE(bv.stock_value, p.current_stock * p.cost_price, 0) AS stock_value,
+                            mv.last_exit_at,
+                            CASE WHEN mv.last_exit_at IS NULL THEN NULL
+                                 ELSE DATEDIFF(CURDATE(), DATE(mv.last_exit_at)) END AS days_since_last_exit
+                       FROM products p
+                       LEFT JOIN (
+                           SELECT product_id, SUM(quantity * unit_cost) AS stock_value
+                             FROM stock_batches WHERE quantity > 0 GROUP BY product_id
+                       ) bv ON bv.product_id = p.id
+                       LEFT JOIN (
+                           SELECT product_id, MAX(created_at) AS last_exit_at
+                             FROM (
+                                   SELECT product_id, created_at FROM stock_movements WHERE movement_type = 'EXIT'
+                                   UNION ALL
+                                   SELECT product_id, created_at FROM stock_movements_archive WHERE movement_type = 'EXIT'
+                             ) movement_history
+                            GROUP BY product_id
+                       ) mv ON mv.product_id = p.id
+                      WHERE p.active = TRUE AND p.current_stock > 0
+                        AND (mv.last_exit_at IS NULL OR DATEDIFF(CURDATE(), DATE(mv.last_exit_at)) >= ?)
+                      ORDER BY (mv.last_exit_at IS NULL) DESC, days_since_last_exit DESC, stock_value DESC, p.name
+                      LIMIT ?
+                     """)) {
+            statement.setInt(1, safeDays);
+            statement.setInt(2, safeLimit);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    Timestamp lastExit = rs.getTimestamp("last_exit_at");
+                    Object daysObject = rs.getObject("days_since_last_exit");
+                    items.add(new SlowMovingItem(rs.getLong("id"), rs.getString("sku"), rs.getString("name"),
+                            rs.getBigDecimal("current_stock"), rs.getBigDecimal("stock_value"),
+                            lastExit == null ? null : lastExit.toLocalDateTime(),
+                            daysObject == null ? null : ((Number) daysObject).intValue()));
+                }
+            }
+        }
+        return items;
+    }
+
+    public List<CoverageItem> coverage(int windowDays, int limit) throws SQLException {
+        int safeWindow = Math.max(7, Math.min(windowDays, 365));
+        int safeLimit = normalizeLimit(limit, 1000);
+        List<CoverageItem> items = new ArrayList<>();
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT p.id, p.sku, p.name, p.current_stock, COALESCE(m.exit_quantity, 0) AS exit_quantity
+                       FROM products p
+                       LEFT JOIN (
+                           SELECT product_id, SUM(quantity) AS exit_quantity
+                             FROM (
+                                   SELECT product_id, quantity, created_at FROM stock_movements WHERE movement_type = 'EXIT'
+                                   UNION ALL
+                                   SELECT product_id, quantity, created_at FROM stock_movements_archive WHERE movement_type = 'EXIT'
+                             ) movement_history
+                            WHERE created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+                            GROUP BY product_id
+                       ) m ON m.product_id = p.id
+                      WHERE p.active = TRUE
+                      ORDER BY p.name, p.id
+                     """)) {
+            statement.setInt(1, safeWindow);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    BigDecimal currentStock = rs.getBigDecimal("current_stock");
+                    BigDecimal exitQuantity = rs.getBigDecimal("exit_quantity");
+                    BigDecimal average = exitQuantity.signum() == 0 ? BigDecimal.ZERO
+                            : exitQuantity.divide(BigDecimal.valueOf(safeWindow), 3, RoundingMode.HALF_UP);
+                    BigDecimal coverageDays = average.signum() == 0 ? null
+                            : currentStock.divide(average, 1, RoundingMode.HALF_UP);
+                    items.add(new CoverageItem(rs.getLong("id"), rs.getString("sku"), rs.getString("name"),
+                            currentStock, exitQuantity, average, coverageDays, coverageLevel(coverageDays)));
+                }
+            }
+        }
+        items.sort((a, b) -> {
+            if (a.coverageDays() == null && b.coverageDays() == null) return a.productName().compareToIgnoreCase(b.productName());
+            if (a.coverageDays() == null) return 1;
+            if (b.coverageDays() == null) return -1;
+            int comparison = a.coverageDays().compareTo(b.coverageDays());
+            return comparison != 0 ? comparison : a.productName().compareToIgnoreCase(b.productName());
+        });
+        return items.size() <= safeLimit ? items : new ArrayList<>(items.subList(0, safeLimit));
+    }
+
+    public List<OpenPurchaseAgingItem> openPurchaseAging(int limit) throws SQLException {
+        int safeLimit = normalizeLimit(limit, 1000);
+        List<OpenPurchaseAgingItem> items = new ArrayList<>();
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT po.id AS order_id, s.id AS supplier_id, s.name AS supplier_name, po.status, po.expected_at,
+                            DATEDIFF(CURDATE(), DATE(COALESCE(po.sent_at, po.created_at))) AS days_open,
+                            CASE WHEN po.expected_at IS NOT NULL AND po.expected_at < CURDATE()
+                                 THEN DATEDIFF(CURDATE(), po.expected_at) ELSE 0 END AS overdue_days,
+                            COALESCE(SUM(GREATEST(poi.quantity - poi.received_quantity, 0)), 0) AS pending_quantity,
+                            COALESCE(SUM(GREATEST(poi.quantity - poi.received_quantity, 0) * poi.unit_cost), 0) AS pending_value
+                       FROM purchase_orders po
+                       JOIN suppliers s ON s.id = po.supplier_id
+                       JOIN purchase_order_items poi ON poi.purchase_order_id = po.id
+                      WHERE po.status IN ('SENT', 'PARTIALLY_RECEIVED')
+                      GROUP BY po.id, s.id, s.name, po.status, po.expected_at, po.sent_at, po.created_at
+                      ORDER BY overdue_days DESC, days_open DESC, po.id
+                      LIMIT ?
+                     """)) {
+            statement.setInt(1, safeLimit);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    Date expected = rs.getDate("expected_at");
+                    items.add(new OpenPurchaseAgingItem(rs.getLong("order_id"), rs.getLong("supplier_id"),
+                            rs.getString("supplier_name"), rs.getString("status"),
+                            expected == null ? null : expected.toLocalDate(), rs.getInt("days_open"),
+                            rs.getInt("overdue_days"), rs.getBigDecimal("pending_quantity"), rs.getBigDecimal("pending_value")));
+                }
+            }
+        }
+        return items;
+    }
+
+    private BigDecimal percent(BigDecimal value, BigDecimal total) {
+        if (total == null || total.signum() == 0) return BigDecimal.ZERO;
+        return value.multiply(BigDecimal.valueOf(100)).divide(total, 2, RoundingMode.HALF_UP);
+    }
+
+    private String coverageLevel(BigDecimal coverageDays) {
+        if (coverageDays == null) return "NO_CONSUMPTION";
+        if (coverageDays.compareTo(BigDecimal.valueOf(7)) < 0) return "CRITICAL";
+        if (coverageDays.compareTo(BigDecimal.valueOf(30)) < 0) return "ATTENTION";
+        return "HEALTHY";
+    }
+
     private int normalizeLimit(int limit, int max) {
         if (limit <= 0) return Math.min(100, max);
         return Math.min(limit, max);
@@ -350,4 +527,6 @@ public class OperationalInsightsRepository {
     private record ExpiryCounts(int risk30, int expired, int warning90, BigDecimal riskValue30) {}
     private record InventoryMetrics(BigDecimal accuracy, Integer divergences) {}
     private record OpenInventory(Long id, String name, int countedItems) {}
+    private record AbcRow(long productId, String sku, String productName, String category,
+                          BigDecimal stockQuantity, BigDecimal stockValue) {}
 }
