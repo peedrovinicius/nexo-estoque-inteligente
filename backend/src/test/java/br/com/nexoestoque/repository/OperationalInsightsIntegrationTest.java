@@ -95,8 +95,8 @@ class OperationalInsightsIntegrationTest {
         OperationalInsightsRepository repository = new OperationalInsightsRepository(dataSource);
         OperationalDashboard dashboard = repository.dashboard();
 
-        assertThat(dashboard.totalStock()).isGreaterThanOrEqualTo("6");
-        assertThat(dashboard.stockValue()).isGreaterThanOrEqualTo("15");
+        assertThat(dashboard.totalStock()).isGreaterThanOrEqualTo(new java.math.BigDecimal("6"));
+        assertThat(dashboard.stockValue()).isGreaterThanOrEqualTo(new java.math.BigDecimal("15"));
         assertThat(dashboard.criticalProducts()).isGreaterThanOrEqualTo(1);
         assertThat(dashboard.expiryRiskBatches()).isGreaterThanOrEqualTo(2);
         assertThat(dashboard.expiredBatches()).isGreaterThanOrEqualTo(1);
