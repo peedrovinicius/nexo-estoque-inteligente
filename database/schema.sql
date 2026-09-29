@@ -37,9 +37,11 @@ CREATE TABLE IF NOT EXISTS stock_movements (
   balance_before DECIMAL(12,3) NOT NULL,
   balance_after DECIMAL(12,3) NOT NULL,
   reason VARCHAR(255),
+  idempotency_key VARCHAR(64) NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_movement_product FOREIGN KEY (product_id) REFERENCES products(id),
-  CONSTRAINT fk_movement_batch FOREIGN KEY (batch_id) REFERENCES stock_batches(id)
+  CONSTRAINT fk_movement_batch FOREIGN KEY (batch_id) REFERENCES stock_batches(id),
+  CONSTRAINT uk_stock_movements_idempotency UNIQUE (idempotency_key)
 );
 
 
