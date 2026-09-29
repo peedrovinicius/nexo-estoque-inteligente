@@ -2090,3 +2090,121 @@ html:not([data-theme="dark"]) .theme-toggle{
   border-color:#cbd6e1!important;
   color:#3f5573!important;
 }
+
+
+/* Darker typography for light theme */
+html:not([data-theme="dark"]){
+  --nexo-text:#091a36;
+  --nexo-text-strong:#07162e;
+  --nexo-muted:#42546f;
+  --nexo-muted-2:#52657e;
+  --nexo-muted-3:#63758c;
+}
+
+html:not([data-theme="dark"]) body,
+html:not([data-theme="dark"]) .workspace,
+html:not([data-theme="dark"]) .login-card,
+html:not([data-theme="dark"]) .advisor-chat,
+html:not([data-theme="dark"]) .advisor-context,
+html:not([data-theme="dark"]) .simulator{
+  color:var(--nexo-text)!important;
+}
+
+html:not([data-theme="dark"]) h1,
+html:not([data-theme="dark"]) h2,
+html:not([data-theme="dark"]) h3,
+html:not([data-theme="dark"]) strong,
+html:not([data-theme="dark"]) .metric>strong,
+html:not([data-theme="dark"]) .action-card strong,
+html:not([data-theme="dark"]) .product-table td:first-child strong,
+html:not([data-theme="dark"]) .batch-table td:first-child strong,
+html:not([data-theme="dark"]) .blind-table td:first-child strong{
+  color:var(--nexo-text-strong)!important;
+}
+
+html:not([data-theme="dark"]) p,
+html:not([data-theme="dark"]) small,
+html:not([data-theme="dark"]) label,
+html:not([data-theme="dark"]) .workspace header p,
+html:not([data-theme="dark"]) .page-header p,
+html:not([data-theme="dark"]) .hero p,
+html:not([data-theme="dark"]) .metric small,
+html:not([data-theme="dark"]) .metric-top span,
+html:not([data-theme="dark"]) .action-card span,
+html:not([data-theme="dark"]) .product-table td,
+html:not([data-theme="dark"]) .batch-table td,
+html:not([data-theme="dark"]) .blind-table td,
+html:not([data-theme="dark"]) .product-table td:first-child small,
+html:not([data-theme="dark"]) .advisor-message small,
+html:not([data-theme="dark"]) .advisor-context p,
+html:not([data-theme="dark"]) .advisor-boundaries span,
+html:not([data-theme="dark"]) .movement-row span,
+html:not([data-theme="dark"]) .movement-row small,
+html:not([data-theme="dark"]) .data-source,
+html:not([data-theme="dark"]) .demo,
+html:not([data-theme="dark"]) .login-title small,
+html:not([data-theme="dark"]) .login-access-copy small{
+  color:var(--nexo-muted)!important;
+}
+
+html:not([data-theme="dark"]) .eyebrow,
+html:not([data-theme="dark"]) .section-head .eyebrow,
+html:not([data-theme="dark"]) .advisor-message-role,
+html:not([data-theme="dark"]) .fefo-preview-head span,
+html:not([data-theme="dark"]) .sim-real-baseline span,
+html:not([data-theme="dark"]) .product-table th,
+html:not([data-theme="dark"]) .batch-table th,
+html:not([data-theme="dark"]) .blind-table th{
+  color:#4b5e79!important;
+}
+
+html:not([data-theme="dark"]) nav a,
+html:not([data-theme="dark"]) .logout,
+html:not([data-theme="dark"]) .theme-toggle,
+html:not([data-theme="dark"]) .dashboard-hero-tags span,
+html:not([data-theme="dark"]) .advisor-suggestions button,
+html:not([data-theme="dark"]) .ghost{
+  color:#3f5270!important;
+}
+
+html:not([data-theme="dark"]) input,
+html:not([data-theme="dark"]) select,
+html:not([data-theme="dark"]) textarea{
+  color:#132847!important;
+}
+
+html:not([data-theme="dark"]) input::placeholder,
+html:not([data-theme="dark"]) textarea::placeholder{
+  color:#75849a!important;
+  opacity:1!important;
+}
+
+html:not([data-theme="dark"]) .login-card label,
+html:not([data-theme="dark"]) .form-grid label,
+html:not([data-theme="dark"]) .movement-form label,
+html:not([data-theme="dark"]) .sim-input-grid label{
+  color:#2e4261!important;
+}
+
+html:not([data-theme="dark"]) .login-access-copy strong,
+html:not([data-theme="dark"]) .advisor-boundaries strong,
+html:not([data-theme="dark"]) .fefo-preview-head strong,
+html:not([data-theme="dark"]) .fefo-preview-row strong,
+html:not([data-theme="dark"]) .fefo-preview-row>b{
+  color:#183051!important;
+}
+
+html:not([data-theme="dark"]) .stock-pill,
+html:not([data-theme="dark"]) .expiry-pill,
+html:not([data-theme="dark"]) .data-source,
+html:not([data-theme="dark"]) .risk{
+  font-weight:700!important;
+}
+
+html:not([data-theme="dark"]) .hero-feature-grid span{
+  color:#1f3659!important;
+}
+
+html:not([data-theme="dark"]) .trust{
+  color:#435775!important;
+}
