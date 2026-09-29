@@ -3,6 +3,7 @@ package br.com.nexoestoque.controller;
 import br.com.nexoestoque.dto.StockMovementRequest;
 import br.com.nexoestoque.model.StockMovement;
 import br.com.nexoestoque.repository.StockMovementProcedureRepository;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -30,7 +31,7 @@ public class StockMovementController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public StockMovement create(@RequestBody StockMovementRequest request) throws SQLException {
+    public StockMovement create(@Valid @RequestBody StockMovementRequest request) throws SQLException {
         validate(request);
         try {
             return repository.create(new StockMovementRequest(
