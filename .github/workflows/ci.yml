@@ -86,6 +86,42 @@ jobs:
 
           test "$STOCK" = "5.000"
           test "$MOVES" = "1"
+      - name: Verify product edit preserves stock and deactivation is controlled
+        shell: bash
+        run: |
+          set -euo pipefail
+          mysql -h 127.0.0.1 -uroot -proot nexo_test -e "
+            INSERT INTO products(sku,name,category,current_stock,minimum_stock,active)
+            VALUES('EDIT-001','Produto original','Teste',0,2,TRUE);
+          "
+          PRODUCT_ID=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT id FROM products WHERE sku='EDIT-001';")
+
+          mysql -h 127.0.0.1 -uroot -proot nexo_test -e "
+            CALL sp_stock_batch_entry($PRODUCT_ID,'LOT-EDIT',NULL,4,2,'ci','ci-edit-stock-001',@m,@b,@before,@after);
+            CALL sp_product_update($PRODUCT_ID,'EDIT-001','123456','Produto atualizado','Nova categoria',3,5,6);
+          "
+
+          STOCK=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT current_stock FROM products WHERE id=$PRODUCT_ID;")
+          NAME=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT name FROM products WHERE id=$PRODUCT_ID;")
+          test "$STOCK" = "4.000"
+          test "$NAME" = "Produto atualizado"
+
+          set +e
+          mysql -h 127.0.0.1 -uroot -proot nexo_test -e "CALL sp_product_set_active($PRODUCT_ID,FALSE);" >/tmp/deactivate-stock.log 2>&1
+          BLOCK_CODE=$?
+          set -e
+          test "$BLOCK_CODE" -ne 0
+
+          ACTIVE=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT active FROM products WHERE id=$PRODUCT_ID;")
+          test "$ACTIVE" = "1"
+
+          mysql -h 127.0.0.1 -uroot -proot nexo_test -e "
+            CALL sp_stock_exit_fefo($PRODUCT_ID,4,'ci','ci-edit-zero-001',@m,@before,@after);
+            CALL sp_product_set_active($PRODUCT_ID,FALSE);
+          "
+          ACTIVE_AFTER=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT active FROM products WHERE id=$PRODUCT_ID;")
+          test "$ACTIVE_AFTER" = "0"
+
       - name: Verify concurrent FEFO exits cannot oversell
         shell: bash
         run: |
