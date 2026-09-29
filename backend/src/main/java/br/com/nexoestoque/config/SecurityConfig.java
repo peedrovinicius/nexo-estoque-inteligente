@@ -1,5 +1,7 @@
 package br.com.nexoestoque.config;
 
+import br.com.nexoestoque.dto.ApiError;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,8 +17,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 public class SecurityConfig {
@@ -74,7 +78,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
@@ -92,6 +96,34 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("ADMIN", "OPERATOR", "VIEWER")
                         .requestMatchers("/api/**").hasAnyRole("ADMIN", "OPERATOR")
                         .anyRequest().permitAll()
+                )
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, exception) -> {
+                            response.setStatus(401);
+                            response.setContentType("application/json");
+                            objectMapper.writeValue(response.getOutputStream(), new ApiError(
+                                    OffsetDateTime.now(),
+                                    401,
+                                    "Unauthorized",
+                                    "AUTHENTICATION_REQUIRED",
+                                    "Autenticação obrigatória",
+                                    request.getRequestURI(),
+                                    Map.of()
+                            ));
+                        })
+                        .accessDeniedHandler((request, response, exception) -> {
+                            response.setStatus(403);
+                            response.setContentType("application/json");
+                            objectMapper.writeValue(response.getOutputStream(), new ApiError(
+                                    OffsetDateTime.now(),
+                                    403,
+                                    "Forbidden",
+                                    "ACCESS_DENIED",
+                                    "Você não tem permissão para executar esta operação",
+                                    request.getRequestURI(),
+                                    Map.of()
+                            ));
+                        })
                 )
                 .httpBasic(Customizer.withDefaults())
                 .build();
