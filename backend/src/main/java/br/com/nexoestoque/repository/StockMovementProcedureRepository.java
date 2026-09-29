@@ -18,7 +18,7 @@ public class StockMovementProcedureRepository {
         this.dataSource = dataSource;
     }
 
-    public StockMovement create(StockMovementRequest request) throws SQLException {
+    public StockMovement create(StockMovementRequest request, String actorUsername) throws SQLException {
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement = connection.prepareCall("{call sp_stock_move(?,?,?,?,?,?,?,?)}")) {
             statement.setLong(1, request.productId());
@@ -34,6 +34,7 @@ public class StockMovementProcedureRepository {
             long movementId = statement.getLong(6);
             BigDecimal balanceBefore = statement.getBigDecimal(7);
             BigDecimal balanceAfter = statement.getBigDecimal(8);
+            recordActor(connection, movementId, actorUsername);
 
             return findById(connection, movementId, balanceBefore, balanceAfter);
         }
@@ -61,7 +62,8 @@ public class StockMovementProcedureRepository {
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("""
                 SELECT sm.id, sm.product_id, p.name AS product_name, sm.movement_type,
-                       sm.quantity, sm.balance_before, sm.balance_after, sm.reason, sm.created_at
+                       sm.quantity, sm.balance_before, sm.balance_after, sm.reason,
+                       sm.performed_by, sm.created_at
                 FROM stock_movements sm
                 JOIN products p ON p.id = sm.product_id
                 WHERE sm.id = ?
@@ -83,8 +85,21 @@ public class StockMovementProcedureRepository {
                 balanceBefore,
                 balanceAfter,
                 null,
+                null,
                 null
         );
+    }
+
+    private void recordActor(Connection connection, long movementId, String actorUsername) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                UPDATE stock_movements
+                   SET performed_by = COALESCE(performed_by, ?)
+                 WHERE id = ?
+                """)) {
+            statement.setString(1, actorUsername == null || actorUsername.isBlank() ? "system" : actorUsername);
+            statement.setLong(2, movementId);
+            statement.executeUpdate();
+        }
     }
 
     private StockMovement map(ResultSet rs) throws SQLException {
@@ -98,6 +113,7 @@ public class StockMovementProcedureRepository {
                 rs.getBigDecimal("balance_before"),
                 rs.getBigDecimal("balance_after"),
                 rs.getString("reason"),
+                rs.getString("performed_by"),
                 createdAt == null ? null : createdAt.toLocalDateTime()
         );
     }
