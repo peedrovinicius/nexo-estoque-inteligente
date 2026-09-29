@@ -12,6 +12,12 @@ spring:
     hikari:
       initialization-fail-timeout: -1
       connection-timeout: 3000
+  flyway:
+    enabled: true
+    locations: filesystem:/app/database/migrations
+    baseline-on-migrate: true
+    baseline-version: 1
+    validate-on-migrate: true
 
 management:
   endpoints:
