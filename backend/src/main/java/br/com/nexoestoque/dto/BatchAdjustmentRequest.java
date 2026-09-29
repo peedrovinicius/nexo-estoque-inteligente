@@ -6,5 +6,6 @@ public record BatchAdjustmentRequest(
         Long productId,
         Long batchId,
         BigDecimal quantityDelta,
-        String reason
+        String reason,
+        String idempotencyKey
 ) {}
