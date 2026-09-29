@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { AlertTriangle, Boxes, BrainCircuit, ChevronRight, ClipboardCheck, LayoutDashboard, LogOut, Moon, PackageSearch, ScanLine, ShieldCheck, ShoppingCart, Sparkles, Sun, TrendingUp, Truck } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { AlertTriangle, ArrowRightLeft, Boxes, BrainCircuit, Camera, ChevronRight, ClipboardCheck, LayoutDashboard, LogOut, MapPin, Moon, PackageSearch, ScanLine, ShieldCheck, ShoppingCart, Sparkles, Sun, TrendingUp, Truck } from 'lucide-react';
 import { NEXO_LOGO_ORIGINAL } from './nexoLogoOriginal';
 import { apiFetch, clearAuthSession, isReadOnlySession, newIdempotencyKey, readAuthSession, saveAuthSession, type AuthRole, type AuthSession } from './auth';
 
@@ -22,6 +22,95 @@ async function apiErrorMessage(response:Response,fallback:string){
 
 
 type Theme='light'|'dark';
+
+function BarcodeScanner({
+  onDetected,
+  onClose
+}:{onDetected:(value:string)=>void;onClose:()=>void}){
+  const videoRef=useRef<HTMLVideoElement|null>(null);
+  const [error,setError]=useState('');
+
+  useEffect(()=>{
+    let stream:MediaStream|null=null;
+    let stopped=false;
+    let timer:number|undefined;
+
+    async function start(){
+      try{
+        const Detector=(window as any).BarcodeDetector;
+        if(!Detector){
+          setError('Leitura automática não é suportada neste navegador. Use a busca manual pelo código.');
+          return;
+        }
+
+        stream=await navigator.mediaDevices.getUserMedia({
+          video:{facingMode:{ideal:'environment'}},
+          audio:false
+        });
+
+        const video=videoRef.current;
+        if(!video) return;
+        video.srcObject=stream;
+        await video.play();
+
+        const supported=Detector.getSupportedFormats
+          ? await Detector.getSupportedFormats()
+          : null;
+        const wanted=['ean_13','ean_8','upc_a','upc_e','code_128','qr_code'];
+        const formats=Array.isArray(supported)
+          ? wanted.filter(format=>supported.includes(format))
+          : wanted;
+        const detector=formats.length?new Detector({formats}):new Detector();
+
+        const scan=async()=>{
+          if(stopped||!videoRef.current) return;
+          try{
+            const codes=await detector.detect(videoRef.current);
+            const value=String(codes?.[0]?.rawValue||'').trim();
+            if(value){
+              stopped=true;
+              onDetected(value);
+              onClose();
+              return;
+            }
+          }catch{
+            // A câmera pode ainda estar ajustando foco/exposição.
+          }
+          timer=window.setTimeout(()=>void scan(),320);
+        };
+
+        void scan();
+      }catch(err){
+        setError(err instanceof Error?err.message:'Não foi possível acessar a câmera.');
+      }
+    }
+
+    void start();
+
+    return ()=>{
+      stopped=true;
+      if(timer!==undefined) window.clearTimeout(timer);
+      stream?.getTracks().forEach(track=>track.stop());
+    };
+  },[]);
+
+  return <div className="barcode-overlay" role="dialog" aria-modal="true" aria-label="Leitor de código de barras">
+    <div className="barcode-card">
+      <div className="form-title">
+        <div><span className="eyebrow">CÂMERA</span><h2>Ler código de barras</h2></div>
+        <button type="button" onClick={onClose}>Fechar</button>
+      </div>
+      <div className="barcode-camera">
+        <video ref={videoRef} playsInline muted/>
+        <div className="barcode-guide"><span/></div>
+      </div>
+      {error
+        ? <div className="product-feedback warning">{error}</div>
+        : <p className="barcode-hint">Aponte a câmera para EAN, UPC ou Code 128. A leitura é automática.</p>}
+    </div>
+  </div>;
+}
+
 function BrandImage({
   theme,
   className,
