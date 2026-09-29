@@ -25,7 +25,7 @@ public class StockBatchProcedureRepository {
         this.dataSource = dataSource;
     }
 
-    public StockOperationResult entry(BatchEntryRequest request) throws SQLException {
+    public StockOperationResult entry(BatchEntryRequest request, String actorUsername) throws SQLException {
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement = connection.prepareCall("{call sp_stock_batch_entry(?,?,?,?,?,?,?,?,?,?,?)}")) {
             statement.setLong(1, request.productId());
@@ -44,6 +44,7 @@ public class StockBatchProcedureRepository {
 
             long movementId = statement.getLong(8);
             long batchId = statement.getLong(9);
+            recordActor(connection, movementId, actorUsername);
 
             return new StockOperationResult(
                     movementId,
@@ -55,7 +56,7 @@ public class StockBatchProcedureRepository {
         }
     }
 
-    public StockOperationResult exitFefo(FefoExitRequest request) throws SQLException {
+    public StockOperationResult exitFefo(FefoExitRequest request, String actorUsername) throws SQLException {
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement = connection.prepareCall("{call sp_stock_exit_fefo(?,?,?,?,?,?,?)}")) {
             statement.setLong(1, request.productId());
@@ -68,6 +69,7 @@ public class StockBatchProcedureRepository {
             statement.execute();
 
             long movementId = statement.getLong(5);
+            recordActor(connection, movementId, actorUsername);
             return new StockOperationResult(
                     movementId,
                     null,
@@ -79,7 +81,7 @@ public class StockBatchProcedureRepository {
     }
 
 
-    public StockOperationResult returnToBatch(BatchReturnRequest request) throws SQLException {
+    public StockOperationResult returnToBatch(BatchReturnRequest request, String actorUsername) throws SQLException {
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement = connection.prepareCall("{call sp_stock_batch_return(?,?,?,?,?,?,?,?)}")) {
             statement.setLong(1, request.productId());
@@ -93,6 +95,7 @@ public class StockBatchProcedureRepository {
             statement.execute();
 
             long movementId = statement.getLong(6);
+            recordActor(connection, movementId, actorUsername);
             return new StockOperationResult(
                     movementId,
                     request.batchId(),
@@ -103,7 +106,7 @@ public class StockBatchProcedureRepository {
         }
     }
 
-    public StockOperationResult adjustBatch(BatchAdjustmentRequest request) throws SQLException {
+    public StockOperationResult adjustBatch(BatchAdjustmentRequest request, String actorUsername) throws SQLException {
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement = connection.prepareCall("{call sp_stock_batch_adjustment(?,?,?,?,?,?,?,?)}")) {
             statement.setLong(1, request.productId());
@@ -117,6 +120,7 @@ public class StockBatchProcedureRepository {
             statement.execute();
 
             long movementId = statement.getLong(6);
+            recordActor(connection, movementId, actorUsername);
             return new StockOperationResult(
                     movementId,
                     request.batchId(),
@@ -195,6 +199,18 @@ public class StockBatchProcedureRepository {
             }
         }
         return batches;
+    }
+
+    private void recordActor(Connection connection, long movementId, String actorUsername) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                UPDATE stock_movements
+                   SET performed_by = COALESCE(performed_by, ?)
+                 WHERE id = ?
+                """)) {
+            statement.setString(1, actorUsername == null || actorUsername.isBlank() ? "system" : actorUsername);
+            statement.setLong(2, movementId);
+            statement.executeUpdate();
+        }
     }
 
     public List<MovementAllocation> findAllocations(long movementId) throws SQLException {
