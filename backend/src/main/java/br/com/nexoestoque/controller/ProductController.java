@@ -5,17 +5,21 @@ import br.com.nexoestoque.dto.ProductPage;
 import br.com.nexoestoque.dto.ProductStatusRequest;
 import br.com.nexoestoque.dto.ProductUpdateRequest;
 import br.com.nexoestoque.model.Product;
+import br.com.nexoestoque.model.ProductChangeHistory;
+import br.com.nexoestoque.repository.ProductHistoryRepository;
 import br.com.nexoestoque.repository.ProductProcedureRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -23,9 +27,14 @@ import java.util.Map;
 @Validated
 public class ProductController {
     private final ProductProcedureRepository repository;
+    private final ProductHistoryRepository historyRepository;
 
-    public ProductController(ProductProcedureRepository repository) {
+    public ProductController(
+            ProductProcedureRepository repository,
+            ProductHistoryRepository historyRepository
+    ) {
         this.repository = repository;
+        this.historyRepository = historyRepository;
     }
 
     @GetMapping
@@ -50,9 +59,23 @@ public class ProductController {
         return product;
     }
 
+    @GetMapping("/{id}/history")
+    public List<ProductChangeHistory> history(
+            @PathVariable @Min(1) long id,
+            @RequestParam(defaultValue = "30") @Min(1) @Max(100) int limit
+    ) throws SQLException {
+        if (repository.findById(id) == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado");
+        }
+        return historyRepository.findByProduct(id, limit);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, Long> create(@Valid @RequestBody ProductCreateRequest product) throws SQLException {
+    public Map<String, Long> create(
+            @Valid @RequestBody ProductCreateRequest product,
+            Authentication authentication
+    ) throws SQLException {
         BigDecimal openingStock = product.currentStock() == null
                 ? BigDecimal.ZERO
                 : product.currentStock();
@@ -64,30 +87,51 @@ public class ProductController {
             );
         }
 
-        return Map.of("id", repository.create(product));
+        long id = repository.create(product);
+        Product created = repository.findById(id);
+        historyRepository.record(id, "CREATE", actor(authentication), null, created);
+        return Map.of("id", id);
     }
 
     @PutMapping("/{id}")
     public Product update(
             @PathVariable @Min(1) long id,
-            @Valid @RequestBody ProductUpdateRequest product
+            @Valid @RequestBody ProductUpdateRequest product,
+            Authentication authentication
     ) throws SQLException {
-        Product updated = repository.update(id, product);
-        if (updated == null) {
+        Product before = repository.findById(id);
+        if (before == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado");
         }
+
+        Product updated = repository.update(id, product);
+        historyRepository.record(id, "UPDATE", actor(authentication), before, updated);
         return updated;
     }
 
     @PatchMapping("/{id}/active")
     public Product setActive(
             @PathVariable @Min(1) long id,
-            @Valid @RequestBody ProductStatusRequest request
+            @Valid @RequestBody ProductStatusRequest request,
+            Authentication authentication
     ) throws SQLException {
-        Product updated = repository.setActive(id, request.active());
-        if (updated == null) {
+        Product before = repository.findById(id);
+        if (before == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado");
         }
+
+        Product updated = repository.setActive(id, request.active());
+        historyRepository.record(
+                id,
+                request.active() ? "REACTIVATE" : "DEACTIVATE",
+                actor(authentication),
+                before,
+                updated
+        );
         return updated;
+    }
+
+    private String actor(Authentication authentication) {
+        return authentication == null ? "system" : authentication.getName();
     }
 }
