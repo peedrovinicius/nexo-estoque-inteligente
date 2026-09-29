@@ -6,5 +6,6 @@ public record BatchReturnRequest(
         Long productId,
         Long batchId,
         BigDecimal quantity,
-        String reason
+        String reason,
+        String idempotencyKey
 ) {}
