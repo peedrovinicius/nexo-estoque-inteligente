@@ -6,5 +6,6 @@ public record StockMovementRequest(
         Long productId,
         String movementType,
         BigDecimal quantity,
-        String reason
+        String reason,
+        String idempotencyKey
 ) {}
