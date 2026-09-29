@@ -759,7 +759,7 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
   useEffect(()=>{
     (async()=>{
       try{
-        const response=await apiFetch(API_URL+'/api/v1/products');
+        const response=await apiFetch(API_URL+'/api/v1/products?size=200&active=true');
         if(!response.ok) throw new Error();
         const data=await response.json();
         setProducts(productContent(data).map((p:any)=>({
