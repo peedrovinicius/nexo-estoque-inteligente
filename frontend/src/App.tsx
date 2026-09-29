@@ -25,7 +25,7 @@ function BrandImage({
         src={NEXO_LOGO_ORIGINAL}
         alt=""
         aria-hidden="true"
-        className={className+' login-logo-outline'}
+        className={className+' login-logo-blacktext'}
         draggable={false}
         decoding="async"
       />
