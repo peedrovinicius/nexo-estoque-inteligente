@@ -765,10 +765,14 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
         setProducts(productContent(data).map((p:any)=>({
           id:Number(p.id),
           sku:String(p.sku||''),
+          barcode:String(p.barcode||''),
           name:String(p.name||''),
           category:String(p.category||''),
+          costPrice:Number(p.costPrice||0),
+          salePrice:Number(p.salePrice||0),
           stock:Number(p.currentStock||0),
           min:Number(p.minimumStock||0),
+          active:p.active!==false,
           lot:'—',
           expiry:'—'
         })));
