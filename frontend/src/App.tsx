@@ -8,9 +8,30 @@ const DEMO_PASSWORD='Nexo@2026';
 type Theme='light'|'dark';
 
 function BrandImage({
+  theme,
   className,
   alt
 }:{theme:Theme;className:string;alt:string}){
+  if(theme==='light' && className.includes('login-logo')){
+    return <span className="login-logo-wordmark" role="img" aria-label={alt}>
+      <img
+        src={NEXO_LOGO_ORIGINAL}
+        alt=""
+        className={className+' login-logo-base'}
+        draggable={false}
+        decoding="async"
+      />
+      <img
+        src={NEXO_LOGO_ORIGINAL}
+        alt=""
+        aria-hidden="true"
+        className={className+' login-logo-blackword'}
+        draggable={false}
+        decoding="async"
+      />
+    </span>;
+  }
+
   return <img
     src={NEXO_LOGO_ORIGINAL}
     alt={alt}
