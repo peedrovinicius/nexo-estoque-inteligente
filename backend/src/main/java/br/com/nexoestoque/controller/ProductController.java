@@ -50,6 +50,15 @@ public class ProductController {
         return repository.search(page, size, q, category, active, sort, direction);
     }
 
+    @GetMapping("/barcode/{barcode}")
+    public Product getByBarcode(@PathVariable String barcode) throws SQLException {
+        Product product = repository.findByBarcode(barcode);
+        if (product == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado para o código de barras");
+        }
+        return product;
+    }
+
     @GetMapping("/{id}")
     public Product get(@PathVariable @Min(1) long id) throws SQLException {
         Product product = repository.findById(id);
