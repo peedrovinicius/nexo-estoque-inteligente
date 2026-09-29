@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, ArrowRightLeft, Boxes, BrainCircuit, Camera, ChevronRight, ClipboardCheck, LayoutDashboard, LogOut, MapPin, Moon, PackageSearch, ScanLine, ShieldCheck, ShoppingCart, Sparkles, Sun, TrendingUp, Truck } from 'lucide-react';
+import { AlertTriangle, ArrowRightLeft, Boxes, BrainCircuit, Camera, ChevronRight, ClipboardCheck, Download, LayoutDashboard, LogOut, MapPin, Moon, PackageSearch, ScanLine, ShieldCheck, ShoppingCart, Sparkles, Sun, TrendingUp, Truck } from 'lucide-react';
 import { NEXO_LOGO_ORIGINAL } from './nexoLogoOriginal';
 import { apiFetch, clearAuthSession, isReadOnlySession, newIdempotencyKey, readAuthSession, saveAuthSession, type AuthRole, type AuthSession } from './auth';
 
@@ -2621,10 +2621,13 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
   const [dashboardError,setDashboardError]=useState('');
   const [dashboard,setDashboard]=useState<{
     totalStock:number;
+    stockValue:number;
     activeProducts:number;
     criticalProducts:number;
     outOfStockProducts:number;
     expiryRiskBatches:number;
+    expiredBatches:number;
+    expiryWarningBatches:number;
     expiryRiskValue:number;
     inventoryAccuracy:number|null;
     inventoryDivergences:number|null;
@@ -2648,58 +2651,12 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
       setDashboardError('');
 
       try{
-        const [productsResponse,batchesResponse,inventoryResponse]=await Promise.all([
-          apiFetch(API_URL+'/api/v1/products?size=200&active=true'),
-          apiFetch(API_URL+'/api/v1/stock/batches'),
-          apiFetch(API_URL+'/api/v1/inventory/blind')
-        ]);
-
-        if(!productsResponse.ok||!batchesResponse.ok||!inventoryResponse.ok){
-          throw new Error('Não foi possível carregar os indicadores operacionais.');
+        const response=await apiFetch(API_URL+'/api/v1/operations/dashboard');
+        if(!response.ok){
+          throw new Error(await apiErrorMessage(response,'Não foi possível carregar os indicadores operacionais.'));
         }
 
-        const [productsRaw,batchesRaw,sessionsRaw]=await Promise.all([
-          productsResponse.json(),
-          batchesResponse.json(),
-          inventoryResponse.json()
-        ]);
-
-        const products=productContent(productsRaw).filter((item:any)=>item.active!==false);
-        const batches=(Array.isArray(batchesRaw)?batchesRaw:[]).filter((item:any)=>Number(item.quantity||0)>0);
-        const sessions=Array.isArray(sessionsRaw)?sessionsRaw:[];
-
-        const totalStock=products.reduce((sum:number,item:any)=>sum+Number(item.currentStock||0),0);
-        const critical=products
-          .filter((item:any)=>Number(item.currentStock||0)<Number(item.minimumStock||0))
-          .sort((a:any,b:any)=>{
-            const deficitA=Number(a.minimumStock||0)-Number(a.currentStock||0);
-            const deficitB=Number(b.minimumStock||0)-Number(b.currentStock||0);
-            return deficitB-deficitA;
-          });
-        const outOfStock=products.filter((item:any)=>Number(item.currentStock||0)<=0);
-
-        const expiryRisk=batches
-          .filter((item:any)=>item.expiresAt&&Number(item.daysToExpiry)<=30)
-          .sort((a:any,b:any)=>Number(a.daysToExpiry)-Number(b.daysToExpiry));
-        const expiryRiskValue=expiryRisk.reduce(
-          (sum:number,item:any)=>sum+(Number(item.quantity||0)*Number(item.unitCost||0)),
-          0
-        );
-
-        const latestClosed=sessions
-          .filter((item:any)=>item.status==='CLOSED')
-          .sort((a:any,b:any)=>new Date(b.closedAt||b.startedAt||0).getTime()-new Date(a.closedAt||a.startedAt||0).getTime())[0];
-
-        const countedItems=Number(latestClosed?.countedItems||0);
-        const divergentItems=Number(latestClosed?.divergentItems||0);
-        const inventoryAccuracy=countedItems>0
-          ? Math.max(0,((countedItems-divergentItems)/countedItems)*100)
-          : null;
-
-        const openInventory=sessions
-          .filter((item:any)=>item.status==='OPEN')
-          .sort((a:any,b:any)=>new Date(a.startedAt||0).getTime()-new Date(b.startedAt||0).getTime())[0];
-
+        const data=await response.json();
         const attention:Array<{
           key:string;
           kind:'danger'|'warning'|'neutral';
@@ -2709,57 +2666,60 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
           value:string;
         }>=[];
 
-        if(critical[0]){
-          const product=critical[0];
-          const stock=Number(product.currentStock||0);
-          const minimum=Number(product.minimumStock||0);
-          const deficit=Math.max(0,minimum-stock);
+        const critical=data?.topCritical;
+        if(critical){
+          const stock=Number(critical.currentStock||0);
+          const minimum=Number(critical.minimumStock||0);
+          const deficit=Number(critical.deficit||0);
           attention.push({
-            key:'stock-'+product.id,
+            key:'stock-'+critical.productId,
             kind:'danger',
             icon:'stock',
-            title:String(product.name||'Produto crítico'),
+            title:String(critical.name||'Produto crítico'),
             description:`Saldo ${formatQuantity(stock)} · mínimo ${formatQuantity(minimum)}`,
             value:stock<=0?'sem estoque':`${formatQuantity(deficit)} abaixo`
           });
         }
 
-        if(expiryRisk[0]){
-          const batch=expiryRisk[0];
-          const days=Number(batch.daysToExpiry);
+        const expiry=data?.topExpiry;
+        if(expiry){
+          const days=Number(expiry.daysToExpiry);
           attention.push({
-            key:'expiry-'+batch.id,
+            key:'expiry-'+expiry.batchId,
             kind:days<0?'danger':'warning',
             icon:'expiry',
-            title:String(batch.productName||'Lote em risco'),
-            description:`Lote ${batch.lotCode||'—'} · ${formatQuantity(Number(batch.quantity||0))} un.`,
+            title:String(expiry.productName||'Lote em risco'),
+            description:`Lote ${expiry.lotCode||'—'} · ${expiry.warehouseName||'—'}/${expiry.locationCode||'—'} · ${formatQuantity(Number(expiry.quantity||0))} un.`,
             value:days<0?`${Math.abs(days)} d vencido`:days===0?'vence hoje':`${days} dias`
           });
         }
 
-        if(openInventory){
-          const counted=Number(openInventory.countedItems||0);
-          const pending=Math.max(0,products.length-counted);
+        if(data?.openInventoryId){
+          const counted=Number(data.openInventoryCountedItems||0);
+          const products=Number(data.activeProducts||0);
           attention.push({
-            key:'inventory-'+openInventory.id,
+            key:'inventory-'+data.openInventoryId,
             kind:'neutral',
             icon:'inventory',
-            title:String(openInventory.name||'Inventário aberto'),
-            description:`${counted} de ${products.length} produtos contados`,
-            value:`${pending} pendentes`
+            title:String(data.openInventoryName||'Inventário aberto'),
+            description:`${counted} de ${products} produtos contados`,
+            value:`${Math.max(0,products-counted)} pendentes`
           });
         }
 
         if(active){
           setDashboard({
-            totalStock,
-            activeProducts:products.length,
-            criticalProducts:critical.length,
-            outOfStockProducts:outOfStock.length,
-            expiryRiskBatches:expiryRisk.length,
-            expiryRiskValue,
-            inventoryAccuracy,
-            inventoryDivergences:latestClosed?divergentItems:null,
+            totalStock:Number(data.totalStock||0),
+            stockValue:Number(data.stockValue||0),
+            activeProducts:Number(data.activeProducts||0),
+            criticalProducts:Number(data.criticalProducts||0),
+            outOfStockProducts:Number(data.outOfStockProducts||0),
+            expiryRiskBatches:Number(data.expiryRiskBatches||0),
+            expiredBatches:Number(data.expiredBatches||0),
+            expiryWarningBatches:Number(data.expiryWarningBatches||0),
+            expiryRiskValue:Number(data.expiryRiskValue||0),
+            inventoryAccuracy:data.inventoryAccuracy==null?null:Number(data.inventoryAccuracy),
+            inventoryDivergences:data.inventoryDivergences==null?null:Number(data.inventoryDivergences),
             attention
           });
         }
@@ -2776,6 +2736,25 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
     void loadDashboard();
     return ()=>{active=false};
   },[page,movementRefresh]);
+
+  async function exportStockPosition(){
+    try{
+      setDashboardError('');
+      const response=await apiFetch(API_URL+'/api/v1/operations/stock-position.csv');
+      if(!response.ok) throw new Error(await apiErrorMessage(response,'Não foi possível exportar a posição de estoque.'));
+      const blob=await response.blob();
+      const url=URL.createObjectURL(blob);
+      const anchor=document.createElement('a');
+      anchor.href=url;
+      anchor.download='nexo-posicao-estoque.csv';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    }catch(err){
+      setDashboardError(err instanceof Error?err.message:'Não foi possível exportar a posição de estoque.');
+    }
+  }
 
   function formatQuantity(value:number){
     return new Intl.NumberFormat('pt-BR',{maximumFractionDigits:3}).format(value);
@@ -2795,7 +2774,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
       value:dashboard?formatQuantity(dashboard.totalStock):'—',
       Icon:Boxes,
       tone:'blue',
-      detail:dashboard?`${dashboard.activeProducts} produtos ativos`:(dashboardLoading?'carregando...':'indisponível')
+      detail:dashboard?`${dashboard.activeProducts} ativos · ${formatMoney(dashboard.stockValue)}`:(dashboardLoading?'carregando...':'indisponível')
     },
     {
       title:'Estoque crítico',
@@ -2809,7 +2788,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
       value:dashboard?String(dashboard.expiryRiskBatches):'—',
       Icon:PackageSearch,
       tone:'amber',
-      detail:dashboard?formatMoney(dashboard.expiryRiskValue):(dashboardLoading?'carregando...':'indisponível')
+      detail:dashboard?`${formatMoney(dashboard.expiryRiskValue)} · ${dashboard.expiredBatches} vencidos`:(dashboardLoading?'carregando...':'indisponível')
     },
     {
       title:'Precisão inventário',
@@ -2877,10 +2856,13 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
                   : 'Os indicadores operacionais estão temporariamente indisponíveis.'}</p>
               <div className="dashboard-hero-tags">
                 <span><Boxes size={14}/>{dashboard?dashboard.activeProducts:'—'} produtos ativos</span>
-                <span><PackageSearch size={14}/>{dashboard?dashboard.expiryRiskBatches:'—'} lotes em atenção</span>
+                <span><PackageSearch size={14}/>{dashboard?dashboard.expiryRiskBatches:'—'} até 30 dias</span><span><AlertTriangle size={14}/>{dashboard?dashboard.expiryWarningBatches:'—'} entre 31 e 90 dias</span>
               </div>
             </div>
-            <button className="new-action dashboard-primary-action" disabled={readOnly} title={readOnly?'Disponível para Admin e Operador':undefined} onClick={()=>setShowMovement(true)}>+ Nova movimentação</button>
+            <div className="dashboard-actions">
+              <button className="ghost dashboard-export" onClick={()=>void exportStockPosition()}><Download size={16}/> Exportar estoque</button>
+              <button className="new-action dashboard-primary-action" disabled={readOnly} title={readOnly?'Disponível para Admin e Operador':undefined} onClick={()=>setShowMovement(true)}>+ Nova movimentação</button>
+            </div>
           </header>
 
           {dashboardError&&<div className="product-feedback warning">{dashboardError}</div>}
