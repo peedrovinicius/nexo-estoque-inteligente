@@ -1585,6 +1585,14 @@ function BlindInventoryPanel(){
 type BatchView={
   id:number;
   productId:number;
+  locationId:number;
+  warehouseId:number;
+  warehouseName:string;
+  branchName?:string|null;
+  locationCode:string;
+  aisle?:string|null;
+  shelf?:string|null;
+  binCode?:string|null;
   sku:string;
   productName:string;
   lotCode:string;
@@ -1616,6 +1624,14 @@ function BatchesPanel(){
         setItems((Array.isArray(data)?data:[]).map((item:any)=>({
           id:Number(item.id),
           productId:Number(item.productId),
+          locationId:Number(item.locationId),
+          warehouseId:Number(item.warehouseId),
+          warehouseName:String(item.warehouseName||'Depósito'),
+          branchName:item.branchName||null,
+          locationCode:String(item.locationCode||'GERAL'),
+          aisle:item.aisle||null,
+          shelf:item.shelf||null,
+          binCode:item.binCode||null,
           sku:String(item.sku||''),
           productName:String(item.productName||'Produto'),
           lotCode:String(item.lotCode||''),
@@ -1636,7 +1652,7 @@ function BatchesPanel(){
   },[]);
 
   const filtered=items.filter(item=>{
-    const matchesQuery=(item.productName+' '+item.sku+' '+item.lotCode).toLowerCase().includes(query.toLowerCase());
+    const matchesQuery=(item.productName+' '+item.sku+' '+item.lotCode+' '+item.warehouseName+' '+item.locationCode).toLowerCase().includes(query.toLowerCase());
     const matchesStatus=status==='all'||item.expiryStatus===status;
     return matchesQuery&&matchesStatus;
   });
@@ -1670,7 +1686,7 @@ function BatchesPanel(){
     </section>
 
     <section className="batch-toolbar">
-      <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar produto, SKU ou lote"/>
+      <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar produto, SKU, lote, depósito ou posição"/>
       <select value={status} onChange={e=>setStatus(e.target.value as typeof status)}>
         <option value="all">Todas as situações</option>
         <option value="EXPIRED">Vencidos</option>
@@ -1685,11 +1701,15 @@ function BatchesPanel(){
 
     <section className="batch-table-wrap">
       <table className="batch-table">
-        <thead><tr><th>Produto</th><th>Lote</th><th>Validade</th><th>Saldo</th><th>Custo</th><th>FEFO</th><th>Situação</th></tr></thead>
+        <thead><tr><th>Produto</th><th>Lote</th><th>Local físico</th><th>Validade</th><th>Saldo</th><th>Custo</th><th>FEFO</th><th>Situação</th></tr></thead>
         <tbody>
           {filtered.map(item=><tr key={item.id}>
             <td><strong>{item.productName}</strong><small>{item.sku}</small></td>
             <td><b>{item.lotCode}</b></td>
+            <td>
+              <strong>{item.warehouseName}</strong>
+              <small>{item.branchName?item.branchName+' · ':''}{item.locationCode}{[item.aisle,item.shelf,item.binCode].filter(Boolean).length?' · '+[item.aisle,item.shelf,item.binCode].filter(Boolean).join('/') : ''}</small>
+            </td>
             <td>
               <strong>{item.expiresAt?new Date(item.expiresAt+'T12:00:00').toLocaleDateString('pt-BR'):'Sem validade'}</strong>
               <small>{item.daysToExpiry===null?'—':item.daysToExpiry<0?`${Math.abs(item.daysToExpiry)} dias vencido`:`${item.daysToExpiry} dias`}</small>
@@ -1699,8 +1719,8 @@ function BatchesPanel(){
             <td>{item.fefoPosition===1?<span className="fefo-next">Próximo</span>:'#'+item.fefoPosition}</td>
             <td><span className={'expiry-pill '+item.expiryStatus.toLowerCase()}>{statusLabel(item.expiryStatus)}</span></td>
           </tr>)}
-          {!filtered.length&&!loading&&<tr><td colSpan={7} className="empty-state">Nenhum lote encontrado.</td></tr>}
-          {loading&&<tr><td colSpan={7} className="empty-state">Carregando lotes...</td></tr>}
+          {!filtered.length&&!loading&&<tr><td colSpan={8} className="empty-state">Nenhum lote encontrado.</td></tr>}
+          {loading&&<tr><td colSpan={8} className="empty-state">Carregando lotes...</td></tr>}
         </tbody>
       </table>
     </section>
