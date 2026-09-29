@@ -5,6 +5,7 @@ import br.com.nexoestoque.dto.BlindInventorySessionRequest;
 import br.com.nexoestoque.model.BlindInventoryItem;
 import br.com.nexoestoque.model.BlindInventorySession;
 import br.com.nexoestoque.repository.BlindInventoryProcedureRepository;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -29,7 +30,7 @@ public class BlindInventoryController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public BlindInventorySession create(@RequestBody BlindInventorySessionRequest request) throws SQLException {
+    public BlindInventorySession create(@Valid @RequestBody BlindInventorySessionRequest request) throws SQLException {
         String name = request.name() == null ? "" : request.name().trim();
         if (name.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe um nome para o inventário");
@@ -46,7 +47,7 @@ public class BlindInventoryController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void count(
             @PathVariable long sessionId,
-            @RequestBody BlindInventoryCountRequest request
+            @Valid @RequestBody BlindInventoryCountRequest request
     ) throws SQLException {
         if (request.productId() == null || request.productId() <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Produto inválido");
