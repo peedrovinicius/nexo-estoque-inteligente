@@ -20,12 +20,14 @@ public record ReplenishmentOrderRequest(
         @DecimalMin(value = "0.01", message = "Demanda média deve ser maior que zero")
         BigDecimal averageDailyDemand,
 
+        @NotNull(message = "Variação de demanda é obrigatória")
         @DecimalMin(value = "0.0", message = "Variação de demanda não pode ser negativa")
         BigDecimal demandVariationPercent,
 
         @Min(value = 0, message = "Atraso do fornecedor não pode ser negativo")
         int supplierDelayDays,
 
+        @NotNull(message = "Compra planejada é obrigatória")
         @DecimalMin(value = "0.0", message = "Compra planejada não pode ser negativa")
         BigDecimal plannedPurchase
 ) {}
