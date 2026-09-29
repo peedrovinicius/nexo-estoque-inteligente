@@ -595,6 +595,7 @@ main: BEGIN
   DECLARE v_existing_balance_after DECIMAL(12,3) DEFAULT NULL;
   DECLARE v_existing_movement_batch BIGINT DEFAULT NULL;
   DECLARE v_existing_batch BIGINT;
+  DECLARE v_default_location BIGINT DEFAULT NULL;
 
   IF p_quantity IS NULL OR p_quantity <= 0 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A quantidade da entrada deve ser maior que zero';
@@ -672,18 +673,35 @@ main: BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado ou inativo';
   END IF;
 
+  SELECT sl.id
+    INTO v_default_location
+    FROM stock_locations sl
+    JOIN warehouses w ON w.id = sl.warehouse_id
+   WHERE w.code = 'MAIN'
+     AND sl.code = 'GERAL'
+     AND w.active = TRUE
+     AND sl.active = TRUE
+   LIMIT 1;
+
+  IF v_default_location IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Local padrão de estoque não configurado';
+  END IF;
+
   SELECT MAX(id)
     INTO v_existing_batch
     FROM stock_batches
    WHERE product_id = p_product_id
-     AND lot_code = TRIM(p_lot_code);
+     AND lot_code = TRIM(p_lot_code)
+     AND location_id = v_default_location;
 
   IF v_existing_batch IS NULL THEN
     INSERT INTO stock_batches(
-      product_id, lot_code, expires_at, quantity, unit_cost
+      product_id, location_id, lot_code, expires_at, quantity, unit_cost
     )
     VALUES(
       p_product_id,
+      v_default_location,
       TRIM(p_lot_code),
       p_expires_at,
       p_quantity,
@@ -761,6 +779,7 @@ main: BEGIN
   DECLARE v_batch_id BIGINT;
   DECLARE v_batch_quantity DECIMAL(12,3);
   DECLARE v_take DECIMAL(12,3);
+  DECLARE v_default_location BIGINT DEFAULT NULL;
 
   IF p_quantity IS NULL OR p_quantity <= 0 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A quantidade da saída deve ser maior que zero';
@@ -839,14 +858,22 @@ main: BEGIN
     FROM stock_batches
    WHERE product_id = p_product_id;
 
+  SELECT sl.id
+    INTO v_default_location
+    FROM stock_locations sl
+    JOIN warehouses w ON w.id = sl.warehouse_id
+   WHERE w.code = 'MAIN'
+     AND sl.code = 'GERAL'
+   LIMIT 1;
+
   SET v_legacy_gap = p_balance_before - v_batch_total;
 
   IF v_legacy_gap > 0 THEN
     INSERT INTO stock_batches(
-      product_id, lot_code, expires_at, quantity, unit_cost
+      product_id, location_id, lot_code, expires_at, quantity, unit_cost
     )
     VALUES(
-      p_product_id, 'SALDO-LEGADO', NULL, v_legacy_gap, 0
+      p_product_id, v_default_location, 'SALDO-LEGADO', NULL, v_legacy_gap, 0
     )
     ON DUPLICATE KEY UPDATE
       quantity = quantity + VALUES(quantity);
@@ -926,6 +953,15 @@ BEGIN
   SELECT
     b.id,
     b.product_id,
+    b.location_id,
+    w.id AS warehouse_id,
+    w.code AS warehouse_code,
+    w.name AS warehouse_name,
+    w.branch_name,
+    sl.code AS location_code,
+    sl.aisle,
+    sl.shelf,
+    sl.bin_code,
     p.sku,
     p.name AS product_name,
     b.lot_code,
@@ -951,6 +987,8 @@ BEGIN
     ) AS fefo_position
   FROM stock_batches b
   JOIN products p ON p.id = b.product_id
+  JOIN stock_locations sl ON sl.id = b.location_id
+  JOIN warehouses w ON w.id = sl.warehouse_id
   WHERE b.quantity > 0
     AND (p_product_id IS NULL OR b.product_id = p_product_id)
   ORDER BY
