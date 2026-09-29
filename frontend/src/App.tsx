@@ -25,7 +25,15 @@ function BrandImage({
         src={NEXO_LOGO_ORIGINAL}
         alt=""
         aria-hidden="true"
-        className={className+' login-logo-blacktext'}
+        className={className+' login-logo-blackword'}
+        draggable={false}
+        decoding="async"
+      />
+      <img
+        src={NEXO_LOGO_ORIGINAL}
+        alt=""
+        aria-hidden="true"
+        className={className+' login-logo-blacktagline'}
         draggable={false}
         decoding="async"
       />
