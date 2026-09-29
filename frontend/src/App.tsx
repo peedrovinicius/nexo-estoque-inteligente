@@ -535,6 +535,7 @@ function ProductsPanel(){
   const [source,setSource]=useState<'loading'|'api'|'offline'>('loading');
   const [saving,setSaving]=useState(false);
   const [feedback,setFeedback]=useState('');
+  const [scannerTarget,setScannerTarget]=useState<'search'|'form'|null>(null);
   const [form,setForm]=useState({
     sku:'',
     barcode:'',
@@ -632,6 +633,18 @@ function ProductsPanel(){
     setShowForm(true);
   }
 
+  function handleBarcodeDetected(value:string){
+    if(scannerTarget==='form'){
+      setForm(current=>({...current,barcode:value}));
+      setFeedback('Código de barras lido e preenchido no cadastro.');
+    }else{
+      setStatusFilter('all');
+      setQuery(value);
+      setFeedback('Código de barras lido. Buscando produto correspondente.');
+    }
+    setScannerTarget(null);
+  }
+
   async function saveProduct(e:React.FormEvent){
     e.preventDefault();
     if(readOnly){setFeedback('Modo demonstração: alterações de cadastro estão bloqueadas.');return;}
@@ -711,7 +724,10 @@ function ProductsPanel(){
     </header>
 
     <section className="product-toolbar">
-      <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar por produto, SKU ou código de barras"/>
+      <div className="product-search-with-scan">
+        <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar por produto, SKU ou código de barras"/>
+        <button type="button" className="ghost compact barcode-trigger" onClick={()=>setScannerTarget('search')}><Camera size={15}/> Ler código</button>
+      </div>
       <div className="product-toolbar-filters">
         <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value as 'all'|'active'|'inactive')}>
           <option value="active">Ativos</option>
@@ -744,7 +760,12 @@ function ProductsPanel(){
       </div>
       <div className="form-grid">
         <label>SKU<input maxLength={50} value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="Ex.: MED-102"/></label>
-        <label>Código de barras<input maxLength={32} value={form.barcode} onChange={e=>setForm({...form,barcode:e.target.value})} placeholder="Opcional"/></label>
+        <label>Código de barras
+          <div className="field-with-action">
+            <input maxLength={32} value={form.barcode} onChange={e=>setForm({...form,barcode:e.target.value})} placeholder="Opcional"/>
+            <button type="button" className="ghost compact" onClick={()=>setScannerTarget('form')}><ScanLine size={15}/> Ler</button>
+          </div>
+        </label>
         <label>Nome<input maxLength={160} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Nome do produto"/></label>
         <label>Categoria<input maxLength={100} value={form.category} onChange={e=>setForm({...form,category:e.target.value})} placeholder="Categoria"/></label>
         <label>Custo unitário<input type="number" min="0" step="0.01" value={form.cost} onChange={e=>setForm({...form,cost:e.target.value})}/></label>
@@ -784,6 +805,8 @@ function ProductsPanel(){
         </tbody>
       </table>
     </section>
+
+    {scannerTarget&&<BarcodeScanner onDetected={handleBarcodeDetected} onClose={()=>setScannerTarget(null)}/>}
 
     <div className="product-pagination">
       <button className="ghost compact" disabled={page<=0||source==='loading'} onClick={()=>setPage(current=>Math.max(0,current-1))}>Anterior</button>
