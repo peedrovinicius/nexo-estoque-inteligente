@@ -90,6 +90,10 @@ public class ProductProcedureRepository {
         return null;
     }
 
+    public List<Product> findAll() throws SQLException {
+        return search(0, 200, null, null, true, "name", "asc").content();
+    }
+
     public ProductPage search(
             int page,
             int size,
