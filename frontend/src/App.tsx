@@ -2226,6 +2226,9 @@ function PurchasingPanel(){
   const [suppliers,setSuppliers]=useState<SupplierView[]>([]);
   const [orders,setOrders]=useState<PurchaseOrderView[]>([]);
   const [products,setProducts]=useState<any[]>([]);
+  const [locations,setLocations]=useState<StockLocationView[]>([]);
+  const [receiptOrder,setReceiptOrder]=useState<any|null>(null);
+  const [receipt,setReceipt]=useState({itemId:'',locationId:'',quantity:'',lotCode:'',expiresAt:''});
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState(false);
   const [feedback,setFeedback]=useState('');
@@ -2248,24 +2251,27 @@ function PurchasingPanel(){
     setLoading(true);
     setFeedback('');
     try{
-      const [suppliersResponse,ordersResponse,productsResponse]=await Promise.all([
+      const [suppliersResponse,ordersResponse,productsResponse,locationsResponse]=await Promise.all([
         apiFetch(API_URL+'/api/v1/suppliers'),
         apiFetch(API_URL+'/api/v1/purchase-orders'),
-        apiFetch(API_URL+'/api/v1/products?size=200&active=true')
+        apiFetch(API_URL+'/api/v1/products?size=200&active=true'),
+        apiFetch(API_URL+'/api/v1/stock/locations?active=true')
       ]);
-      if(!suppliersResponse.ok||!ordersResponse.ok||!productsResponse.ok){
+      if(!suppliersResponse.ok||!ordersResponse.ok||!productsResponse.ok||!locationsResponse.ok){
         throw new Error('Não foi possível carregar o módulo de compras.');
       }
 
-      const [supplierData,orderData,productData]=await Promise.all([
+      const [supplierData,orderData,productData,locationData]=await Promise.all([
         suppliersResponse.json(),
         ordersResponse.json(),
-        productsResponse.json()
+        productsResponse.json(),
+        locationsResponse.json()
       ]);
 
       setSuppliers(Array.isArray(supplierData)?supplierData:[]);
       setOrders(Array.isArray(orderData)?orderData:[]);
       setProducts(productContent(productData));
+      setLocations(Array.isArray(locationData)?locationData:[]);
     }catch(err){
       setFeedback(err instanceof Error?err.message:'Módulo de compras indisponível.');
     }finally{
@@ -2378,6 +2384,89 @@ function PurchasingPanel(){
     }
   }
 
+  async function openReceipt(order:PurchaseOrderView){
+    if(readOnly) return;
+    setSaving(true);
+    setFeedback('');
+    try{
+      const response=await apiFetch(API_URL+'/api/v1/purchase-orders/'+order.id);
+      if(!response.ok) throw new Error(await apiErrorMessage(response,'Não foi possível carregar o pedido.'));
+      const details=await response.json();
+      const pending=(Array.isArray(details?.items)?details.items:[])
+        .filter((item:any)=>Number(item.receivedQuantity||0)<Number(item.quantity||0));
+      if(!pending.length){
+        setFeedback('Este pedido não possui itens pendentes de recebimento.');
+        return;
+      }
+      const first=pending[0];
+      const remaining=Math.max(0,Number(first.quantity||0)-Number(first.receivedQuantity||0));
+      setReceiptOrder(details);
+      setReceipt({
+        itemId:String(first.id),
+        locationId:locations[0]?String(locations[0].id):'',
+        quantity:String(remaining),
+        lotCode:'',
+        expiresAt:''
+      });
+    }catch(err){
+      setFeedback(err instanceof Error?err.message:'Não foi possível preparar o recebimento.');
+    }finally{
+      setSaving(false);
+    }
+  }
+
+  function changeReceiptItem(itemId:string){
+    const item=(Array.isArray(receiptOrder?.items)?receiptOrder.items:[])
+      .find((candidate:any)=>String(candidate.id)===itemId);
+    const remaining=item
+      ? Math.max(0,Number(item.quantity||0)-Number(item.receivedQuantity||0))
+      : 0;
+    setReceipt(current=>({...current,itemId,quantity:String(remaining)}));
+  }
+
+  async function receiveOrder(e:React.FormEvent){
+    e.preventDefault();
+    if(readOnly||!receiptOrder?.order?.id) return;
+    if(!receipt.itemId||!receipt.locationId||!receipt.lotCode.trim()||Number(receipt.quantity)<=0){
+      setFeedback('Preencha item, posição, lote e quantidade recebida.');
+      return;
+    }
+
+    setSaving(true);
+    setFeedback('');
+    try{
+      const response=await apiFetch(
+        API_URL+'/api/v1/purchase-orders/'+receiptOrder.order.id+'/receipts',
+        {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            purchaseOrderItemId:Number(receipt.itemId),
+            locationId:Number(receipt.locationId),
+            lotCode:receipt.lotCode.trim(),
+            expiresAt:receipt.expiresAt||null,
+            quantity:Number(receipt.quantity),
+            idempotencyKey:newIdempotencyKey()
+          })
+        }
+      );
+      if(!response.ok) throw new Error(await apiErrorMessage(response,'Não foi possível registrar o recebimento.'));
+      const data=await response.json();
+      setReceiptOrder(null);
+      setReceipt({itemId:'',locationId:'',quantity:'',lotCode:'',expiresAt:''});
+      await load();
+      setFeedback(
+        data.orderStatus==='RECEIVED'
+          ? 'Pedido recebido por completo e estoque atualizado.'
+          : 'Recebimento parcial registrado. O saldo pendente permanece no pedido.'
+      );
+    }catch(err){
+      setFeedback(err instanceof Error?err.message:'Não foi possível registrar o recebimento.');
+    }finally{
+      setSaving(false);
+    }
+  }
+
   async function sendOrder(order:PurchaseOrderView){
     if(readOnly||order.status!=='DRAFT') return;
     setSaving(true);
@@ -2442,6 +2531,38 @@ function PurchasingPanel(){
       <div className="form-actions"><span>O pedido nasce como rascunho e não altera estoque.</span><button className="primary compact" disabled={saving}>{saving?'Criando...':'Criar pedido'}</button></div>
     </form>}
 
+    {receiptOrder&&<form className="product-form purchase-form receipt-form" onSubmit={receiveOrder}>
+      <div className="form-title">
+        <div><span className="eyebrow">RECEBIMENTO VINCULADO</span><h2>Pedido #{receiptOrder.order?.id}</h2></div>
+        <button type="button" onClick={()=>setReceiptOrder(null)}>Fechar</button>
+      </div>
+      <div className="form-grid">
+        <label>Item do pedido
+          <select value={receipt.itemId} onChange={e=>changeReceiptItem(e.target.value)}>
+            {(Array.isArray(receiptOrder.items)?receiptOrder.items:[])
+              .filter((item:any)=>Number(item.receivedQuantity||0)<Number(item.quantity||0))
+              .map((item:any)=>{
+                const remaining=Math.max(0,Number(item.quantity||0)-Number(item.receivedQuantity||0));
+                return <option key={item.id} value={item.id}>{item.productName} · pendente {remaining}</option>;
+              })}
+          </select>
+        </label>
+        <label>Posição de recebimento
+          <select value={receipt.locationId} onChange={e=>setReceipt({...receipt,locationId:e.target.value})}>
+            <option value="">Selecione</option>
+            {locations.filter(location=>location.active).map(location=><option key={location.id} value={location.id}>{location.warehouseName} · {location.code}{location.branchName?' · '+location.branchName:''}</option>)}
+          </select>
+        </label>
+        <label>Lote<input value={receipt.lotCode} onChange={e=>setReceipt({...receipt,lotCode:e.target.value})} placeholder="Lote do fornecedor"/></label>
+        <label>Validade<input type="date" value={receipt.expiresAt} onChange={e=>setReceipt({...receipt,expiresAt:e.target.value})}/></label>
+        <label>Quantidade recebida<input type="number" min="0.001" step="0.001" value={receipt.quantity} onChange={e=>setReceipt({...receipt,quantity:e.target.value})}/></label>
+      </div>
+      <div className="form-actions">
+        <span>O recebimento atualiza item do pedido, lote, posição física e saldo em uma única transação.</span>
+        <button className="primary compact" disabled={saving}>{saving?'Recebendo...':'Confirmar recebimento'}</button>
+      </div>
+    </form>}
+
     {showSuggestion&&<form className="product-form purchase-form" onSubmit={createSuggestedOrder}>
       <div className="form-title"><div><span className="eyebrow">REPOSIÇÃO ASSISTIDA</span><h2>Gerar pedido sugerido</h2></div><button type="button" onClick={()=>setShowSuggestion(false)}>Fechar</button></div>
       <div className="form-grid">
@@ -2479,6 +2600,7 @@ function PurchasingPanel(){
               <b>{money(Number(order.totalAmount||0))}</b>
               <span className={'purchase-status '+order.status.toLowerCase()}>{order.status}</span>
               {order.status==='DRAFT'&&!readOnly&&<button className="ghost compact" disabled={saving} onClick={()=>void sendOrder(order)}>Enviar</button>}
+              {(order.status==='SENT'||order.status==='PARTIALLY_RECEIVED')&&!readOnly&&<button className="ghost compact receipt-action" disabled={saving} onClick={()=>void openReceipt(order)}>Receber</button>}
             </div>
           </div>)}
           {!loading&&orders.length===0&&<div className="empty-state">Nenhum pedido de compra ainda.</div>}
