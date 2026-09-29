@@ -10,6 +10,7 @@ import java.time.LocalDate;
 
 @Service
 public class SimulationService {
+    public static final String RULE_VERSION = "simulation-v1.0.0";
     private static final BigDecimal HUNDRED = new BigDecimal("100");
 
     public SimulationResult simulate(SimulationRequest request) {
