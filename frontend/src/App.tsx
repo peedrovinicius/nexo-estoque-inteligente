@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, ArrowRightLeft, Boxes, BrainCircuit, Camera, ChevronRight, ClipboardCheck, Download, LayoutDashboard, LogOut, MapPin, Moon, PackageSearch, ScanLine, ShieldCheck, ShoppingCart, Sparkles, Sun, TrendingUp, Truck } from 'lucide-react';
 import { NEXO_LOGO_ORIGINAL } from './nexoLogoOriginal';
+import InventoryIntelligencePanel from './InventoryIntelligencePanel';
 import { apiFetch, clearAuthSession, isReadOnlySession, newIdempotencyKey, readAuthSession, saveAuthSession, type AuthRole, type AuthSession } from './auth';
 
 const DEMO_USER='demo';
@@ -2614,7 +2615,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const authSession=readAuthSession();
   const readOnly=authSession?.role==='VIEWER';
-  const [page,setPage]=useState<'dashboard'|'products'|'batches'|'locations'|'inventory'|'simulator'|'purchasing'|'assistant'>('dashboard');
+  const [page,setPage]=useState<'dashboard'|'products'|'batches'|'locations'|'inventory'|'simulator'|'purchasing'|'intelligence'|'assistant'>('dashboard');
   const [showMovement,setShowMovement]=useState(false);
   const [movementRefresh,setMovementRefresh]=useState(0);
   const [dashboardLoading,setDashboardLoading]=useState(true);
@@ -2821,6 +2822,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
         <a className={page==='inventory'?'active':''} onClick={()=>setPage('inventory')}><ClipboardCheck size={19}/> Inventário cego</a>
         <a className={page==='simulator'?'active':''} onClick={()=>setPage('simulator')}><TrendingUp size={19}/> Simulador</a>
         <a className={page==='purchasing'?'active':''} onClick={()=>setPage('purchasing')}><ShoppingCart size={19}/> Compras</a>
+        <a className={page==='intelligence'?'active':''} onClick={()=>setPage('intelligence')}><TrendingUp size={19}/> Inteligência</a>
         <a className={page==='assistant'?'active':''} onClick={()=>setPage('assistant')}><BrainCircuit size={19}/> Assistente</a>
       </nav>
       <div className="sidebar-bottom"><ThemeToggle theme={theme} onToggle={onToggleTheme}/><button className="logout" onClick={logout}><LogOut size={18}/> Sair</button></div>
@@ -2840,6 +2842,8 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
               ? <Simulator/>
               : page==='purchasing'
                 ? <PurchasingPanel/>
+                : page==='intelligence'
+                ? <InventoryIntelligencePanel/>
                 : page==='assistant'
                 ? <AdvisorPanel/>
                 : <>
