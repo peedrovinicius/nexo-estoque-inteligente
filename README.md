@@ -52,6 +52,11 @@ O Nexo concentra operação, rastreabilidade e apoio à decisão em uma única a
 - livro de movimentações pesquisável com exportação CSV
 - rastreabilidade de lote desde recebimento, transferências e consumo FEFO
 - diagnóstico de integridade entre saldos, lotes e recebimentos
+- reposição automática baseada em consumo, saldo reservado, estoque a caminho e fornecedor histórico
+- criação de pedidos de compra em lote agrupados por fornecedor
+- aprovação administrativa obrigatória para envio de pedidos gerados por reposição assistida
+- reserva de estoque sem alteração do saldo físico, com validade e liberação controlada
+- fila diária de decisões combinando reposição, aprovações, reservas e compras atrasadas
 - workspace de inteligência operacional no frontend
 - workspace dedicado de rastreabilidade no frontend
 
@@ -84,11 +89,24 @@ GET /api/v1/traceability/movements
 GET /api/v1/traceability/movements.csv
 GET /api/v1/traceability/lots/{lotCode}
 GET /api/v1/traceability/integrity
+
+GET /api/v1/action-center/replenishment
+POST /api/v1/action-center/replenishment/batch-drafts
+GET /api/v1/action-center/purchase-approvals
+POST /api/v1/action-center/purchase-approvals/{orderId}/request
+POST /api/v1/action-center/purchase-approvals/{orderId}/approve
+POST /api/v1/action-center/purchase-approvals/{orderId}/reject
+GET /api/v1/action-center/reservations
+POST /api/v1/action-center/reservations
+POST /api/v1/action-center/reservations/{id}/cancel
+GET /api/v1/action-center/daily-actions
 ```
 
 Filtros de produto/SKU e categoria são aplicados no backend. A central de alertas combina ruptura, validade, cobertura, ausência de giro e compras atrasadas usando limiares persistidos no MySQL.
 
 A camada de rastreabilidade consolida movimentos correntes e arquivados, mede desempenho de fornecedores, reconstrói a linha do tempo de lotes e reconcilia automaticamente o saldo mestre contra lotes e recebimentos.
+
+A Central de Ação transforma os diagnósticos em operação. As sugestões de reposição consideram consumo real, reservas ativas, compras em aberto, estoque mínimo e o fornecedor mais recente do produto. Pedidos assistidos exigem aprovação de Admin antes do envio.
 
 ## Segurança e consistência
 
@@ -96,6 +114,7 @@ A camada de rastreabilidade consolida movimentos correntes e arquivados, mede de
 - credenciais administrativas mantidas fora do repositório
 - operações de escrita bloqueadas para o perfil de consulta
 - configuração de alertas alterável somente por Admin
+- pedidos gerados por reposição assistida não podem ser enviados sem aprovação administrativa
 - chaves de idempotência persistidas
 - travas de banco em saídas FEFO
 - histórico operacional preservado
@@ -114,4 +133,4 @@ senha: Nexo@2026
 
 ## Estado
 
-Em desenvolvimento ativo. A versão da API neste bloco é 0.6.0.
+Em desenvolvimento ativo. A versão da API neste bloco é 0.7.0.

@@ -127,7 +127,7 @@ class ActionCenterIntegrationTest {
         assertThat(queue.items()).anyMatch(item ->
                 item.key().equals("reservation-" + reservation.id())
                         && "RESERVATION".equals(item.type()));
-        assertThat(queue.items()).anyMatch(item ->
+        assertThat(queue.items()).noneMatch(item ->
                 item.key().equals("replenishment-" + productId)
                         && "REPLENISHMENT".equals(item.type()));
 
