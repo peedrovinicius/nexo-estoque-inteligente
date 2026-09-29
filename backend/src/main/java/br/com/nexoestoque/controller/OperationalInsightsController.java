@@ -61,7 +61,7 @@ public class OperationalInsightsController {
                     .append(cell(item.barcode())).append(';')
                     .append(cell(item.productName())).append(';')
                     .append(cell(item.category())).append(';')
-                    .append(cell(item.batchId())).append(';')
+                    .append(cell(item.lotCode())).append(';')
                     .append(cell(item.expiresAt())).append(';')
                     .append(cell(item.daysToExpiry())).append(';')
                     .append(cell(item.quantity())).append(';')
