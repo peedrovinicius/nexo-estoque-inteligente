@@ -2054,27 +2054,17 @@ html:not([data-theme="dark"]) .login-logo-wordmark .login-logo{
 
 html:not([data-theme="dark"]) .login-logo-wordmark .login-logo-base{
   position:relative;
-  z-index:2;
+  z-index:1;
   filter:none!important;
 }
 
-html:not([data-theme="dark"]) .login-logo-wordmark .login-logo-outline{
+html:not([data-theme="dark"]) .login-logo-wordmark .login-logo-blacktext{
   position:absolute!important;
   inset:0!important;
-  z-index:1;
+  z-index:2;
   pointer-events:none;
-  opacity:.92;
+  filter:brightness(0)!important;
   clip-path:inset(4% 0 7% 34%);
-  filter:
-    brightness(0)
-    drop-shadow(1px 0 0 #000)
-    drop-shadow(-1px 0 0 #000)
-    drop-shadow(0 1px 0 #000)
-    drop-shadow(0 -1px 0 #000)
-    drop-shadow(.7px .7px 0 #000)
-    drop-shadow(-.7px .7px 0 #000)
-    drop-shadow(.7px -.7px 0 #000)
-    drop-shadow(-.7px -.7px 0 #000)!important;
 }
 
 @media(max-width:700px){
