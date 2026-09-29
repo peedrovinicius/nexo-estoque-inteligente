@@ -20,6 +20,8 @@
   },
   "devDependencies": {
     "vitest": "latest",
-    "jsdom": "latest"
+    "jsdom": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest"
   }
 }
