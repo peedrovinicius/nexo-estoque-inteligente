@@ -4,6 +4,10 @@ import br.com.nexoestoque.model.OperationalDashboard;
 import br.com.nexoestoque.model.OperationalDashboard.CriticalStockItem;
 import br.com.nexoestoque.model.OperationalDashboard.ExpiryRiskItem;
 import br.com.nexoestoque.model.OperationalDashboard.StockPositionItem;
+import br.com.nexoestoque.model.InventoryIntelligence.AbcItem;
+import br.com.nexoestoque.model.InventoryIntelligence.SlowMovingItem;
+import br.com.nexoestoque.model.InventoryIntelligence.CoverageItem;
+import br.com.nexoestoque.model.InventoryIntelligence.OpenPurchaseAgingItem;
 import br.com.nexoestoque.repository.OperationalInsightsRepository;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -46,6 +50,33 @@ public class OperationalInsightsController {
             @RequestParam(defaultValue = "1000") int limit
     ) throws SQLException {
         return repository.stockPosition(warehouseId, limit);
+    }
+
+
+    @GetMapping("/abc")
+    public List<AbcItem> abc(@RequestParam(defaultValue = "200") int limit) throws SQLException {
+        return repository.abcAnalysis(limit);
+    }
+
+    @GetMapping("/slow-moving")
+    public List<SlowMovingItem> slowMoving(
+            @RequestParam(defaultValue = "90") int days,
+            @RequestParam(defaultValue = "200") int limit
+    ) throws SQLException {
+        return repository.slowMoving(days, limit);
+    }
+
+    @GetMapping("/coverage")
+    public List<CoverageItem> coverage(
+            @RequestParam(defaultValue = "30") int windowDays,
+            @RequestParam(defaultValue = "200") int limit
+    ) throws SQLException {
+        return repository.coverage(windowDays, limit);
+    }
+
+    @GetMapping("/open-purchases")
+    public List<OpenPurchaseAgingItem> openPurchases(@RequestParam(defaultValue = "200") int limit) throws SQLException {
+        return repository.openPurchaseAging(limit);
     }
 
     @GetMapping(value = "/stock-position.csv", produces = "text/csv;charset=UTF-8")
