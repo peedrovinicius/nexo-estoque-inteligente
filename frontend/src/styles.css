@@ -2058,13 +2058,23 @@ html:not([data-theme="dark"]) .login-logo-wordmark .login-logo-base{
   filter:none!important;
 }
 
-html:not([data-theme="dark"]) .login-logo-wordmark .login-logo-blacktext{
+html:not([data-theme="dark"]) .login-logo-wordmark .login-logo-blackword,
+html:not([data-theme="dark"]) .login-logo-wordmark .login-logo-blacktagline{
   position:absolute!important;
   inset:0!important;
   z-index:2;
   pointer-events:none;
   filter:brightness(0)!important;
-  clip-path:inset(4% 0 7% 29%);
+}
+
+/* Main Nexo wordmark only. Keeps the colored symbol completely outside the mask. */
+html:not([data-theme="dark"]) .login-logo-wordmark .login-logo-blackword{
+  clip-path:inset(4% 0 27% 34%);
+}
+
+/* Tagline only. Starts below the colored symbol, so Sistema can be black without touching the mark. */
+html:not([data-theme="dark"]) .login-logo-wordmark .login-logo-blacktagline{
+  clip-path:inset(76% 0 6% 26%);
 }
 
 @media(max-width:700px){
