@@ -59,6 +59,11 @@ O Nexo concentra operação, rastreabilidade e apoio à decisão em uma única a
 - fila diária de decisões combinando reposição, aprovações, reservas e compras atrasadas
 - workspace de inteligência operacional no frontend
 - workspace dedicado de rastreabilidade no frontend
+- previsão ponderada de demanda usando histórico de 7, 30 e 90 dias
+- estoque de segurança baseado na variabilidade diária observada
+- ponto de reposição e estoque-alvo por produto
+- projeção de ruptura considerando reservas, compras em aberto e lead time
+- workspace dedicado de planejamento de demanda no frontend
 
 ## Inteligência operacional
 
@@ -100,6 +105,10 @@ GET /api/v1/action-center/reservations
 POST /api/v1/action-center/reservations
 POST /api/v1/action-center/reservations/{id}/cancel
 GET /api/v1/action-center/daily-actions
+
+GET /api/v1/planning
+GET /api/v1/planning/summary
+GET /api/v1/planning/rule
 ```
 
 Filtros de produto/SKU e categoria são aplicados no backend. A central de alertas combina ruptura, validade, cobertura, ausência de giro e compras atrasadas usando limiares persistidos no MySQL.
@@ -133,4 +142,4 @@ senha: Nexo@2026
 
 ## Estado
 
-Em desenvolvimento ativo. A versão da API neste bloco é 0.7.0.
+Em desenvolvimento ativo. A versão da API neste bloco é 0.8.0.
