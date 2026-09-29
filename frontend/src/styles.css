@@ -1926,3 +1926,167 @@ html:not([data-theme="dark"]) .theme-toggle{
     box-shadow:0 20px 48px rgba(20,44,84,.10)!important;
   }
 }
+
+
+/* Deeper light theme — stronger contrast without becoming dark */
+html:not([data-theme="dark"]){
+  --nexo-bg:#e9eef5;
+  --nexo-surface:#f8fafc;
+  --nexo-surface-soft:#eef3f8;
+  --nexo-surface-strong:#e2e9f1;
+  --nexo-border:#d2dbe6;
+  --nexo-border-strong:#c3cfdd;
+  --nexo-text:#0d2248;
+  --nexo-muted:#596b85;
+  --nexo-primary:#1769ff;
+  --nexo-primary-deep:#0b1f4d;
+}
+
+html:not([data-theme="dark"]) body{
+  background:
+    radial-gradient(circle at 4% 0%,rgba(33,201,122,.07),transparent 22%),
+    radial-gradient(circle at 96% 2%,rgba(23,105,255,.09),transparent 26%),
+    linear-gradient(180deg,#edf2f7 0%,#e7edf4 48%,#e2e9f1 100%)!important;
+}
+
+html:not([data-theme="dark"]) .login-shell{
+  background:
+    radial-gradient(circle at 5% 6%,rgba(33,201,122,.09),transparent 22%),
+    radial-gradient(circle at 98% 0%,rgba(23,105,255,.10),transparent 26%),
+    linear-gradient(135deg,#eef3f8 0%,#e7edf4 58%,#e1e8f0 100%)!important;
+}
+
+html:not([data-theme="dark"]) .login-card{
+  background:#f8fafc!important;
+  border-color:#ccd7e3!important;
+  box-shadow:0 28px 70px rgba(16,34,74,.15)!important;
+}
+
+html:not([data-theme="dark"]) .login-card input{
+  background:#eef3f8!important;
+  border-color:#c9d5e2!important;
+}
+
+html:not([data-theme="dark"]) .hero-feature-grid>div{
+  background:rgba(244,248,252,.94)!important;
+  border-color:#cdd8e5!important;
+  box-shadow:0 14px 32px rgba(16,34,74,.09)!important;
+}
+
+html:not([data-theme="dark"]) .app-shell{
+  background:
+    radial-gradient(circle at 100% 0%,rgba(23,105,255,.055),transparent 22%),
+    linear-gradient(180deg,#edf2f7,#e6ecf3)!important;
+}
+
+html:not([data-theme="dark"]) .app-shell>aside{
+  background:linear-gradient(180deg,#eaf0f6 0%,#e3eaf2 100%)!important;
+  border-right:1px solid #ccd6e1!important;
+  box-shadow:10px 0 30px rgba(16,34,74,.065)!important;
+}
+
+html:not([data-theme="dark"]) nav a{
+  color:#52657f!important;
+}
+
+html:not([data-theme="dark"]) nav a:hover,
+html:not([data-theme="dark"]) .logout:hover{
+  background:#dbe5ef!important;
+  color:#125fd8!important;
+}
+
+html:not([data-theme="dark"]) .dashboard-hero{
+  background:
+    radial-gradient(circle at 88% 14%,rgba(33,201,122,.075),transparent 24%),
+    radial-gradient(circle at 70% 0%,rgba(23,105,255,.085),transparent 30%),
+    #f4f7fa!important;
+  border-color:#cfd9e5!important;
+  box-shadow:0 18px 44px rgba(16,34,74,.10)!important;
+}
+
+html:not([data-theme="dark"]) .dashboard-hero-tags span{
+  background:#eaf0f6!important;
+  border-color:#ccd8e4!important;
+  color:#52647f!important;
+}
+
+html:not([data-theme="dark"]) .metric,
+html:not([data-theme="dark"]) .action-card,
+html:not([data-theme="dark"]) .product-toolbar,
+html:not([data-theme="dark"]) .product-form,
+html:not([data-theme="dark"]) .product-table-wrap,
+html:not([data-theme="dark"]) .batch-kpis article,
+html:not([data-theme="dark"]) .batch-toolbar,
+html:not([data-theme="dark"]) .batch-table-wrap,
+html:not([data-theme="dark"]) .inventory-work,
+html:not([data-theme="dark"]) .inventory-sessions,
+html:not([data-theme="dark"]) .advisor-context,
+html:not([data-theme="dark"]) .advisor-chat,
+html:not([data-theme="dark"]) .simulator,
+html:not([data-theme="dark"]) .movement-list{
+  background:#f5f8fb!important;
+  border-color:#cfd9e5!important;
+  box-shadow:0 14px 34px rgba(16,34,74,.085)!important;
+}
+
+html:not([data-theme="dark"]) .metric{
+  background:linear-gradient(180deg,#f8fafc 0%,#eef3f7 100%)!important;
+}
+
+html:not([data-theme="dark"]) .product-table th,
+html:not([data-theme="dark"]) .batch-table th,
+html:not([data-theme="dark"]) .blind-table th{
+  background:#e8eef4!important;
+  color:#5a6b84!important;
+  border-bottom-color:#cfd9e3!important;
+}
+
+html:not([data-theme="dark"]) .product-table td,
+html:not([data-theme="dark"]) .batch-table td,
+html:not([data-theme="dark"]) .blind-table td{
+  background:#f7f9fb!important;
+}
+
+html:not([data-theme="dark"]) .product-table tr:hover td,
+html:not([data-theme="dark"]) .batch-table tr:hover td,
+html:not([data-theme="dark"]) .blind-table tr:hover td{
+  background:#edf3f8!important;
+}
+
+html:not([data-theme="dark"]) .product-toolbar>input,
+html:not([data-theme="dark"]) .form-grid input,
+html:not([data-theme="dark"]) .form-grid select,
+html:not([data-theme="dark"]) .movement-form input,
+html:not([data-theme="dark"]) .movement-form select,
+html:not([data-theme="dark"]) .movement-form textarea,
+html:not([data-theme="dark"]) .advisor-composer textarea{
+  background:#edf2f7!important;
+  border-color:#c8d4e1!important;
+}
+
+html:not([data-theme="dark"]) .advisor-messages{
+  background:linear-gradient(180deg,#edf2f7,#e6edf4)!important;
+}
+
+html:not([data-theme="dark"]) .advisor-message.assistant{
+  background:#f6f8fa!important;
+  border-color:#cfd9e4!important;
+}
+
+html:not([data-theme="dark"]) .advisor-suggestions button,
+html:not([data-theme="dark"]) .ghost{
+  background:#e6edf4!important;
+  border-color:#c8d4e0!important;
+  color:#425a78!important;
+}
+
+html:not([data-theme="dark"]) .system-readiness{
+  background:#eef3f7!important;
+  border-color:#ccd7e2!important;
+}
+
+html:not([data-theme="dark"]) .theme-toggle{
+  background:#edf2f7!important;
+  border-color:#cbd6e1!important;
+  color:#3f5573!important;
+}
