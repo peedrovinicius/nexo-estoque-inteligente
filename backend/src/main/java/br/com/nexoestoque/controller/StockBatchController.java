@@ -4,11 +4,13 @@ import br.com.nexoestoque.dto.BatchAdjustmentRequest;
 import br.com.nexoestoque.dto.BatchEntryRequest;
 import br.com.nexoestoque.dto.BatchReturnRequest;
 import br.com.nexoestoque.dto.FefoExitRequest;
+import br.com.nexoestoque.dto.FefoPreviewRequest;
 import br.com.nexoestoque.dto.FefoPreviewResponse;
 import br.com.nexoestoque.model.MovementAllocation;
 import br.com.nexoestoque.model.StockBatch;
 import br.com.nexoestoque.model.StockOperationResult;
 import br.com.nexoestoque.repository.StockBatchProcedureRepository;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -33,7 +35,7 @@ public class StockBatchController {
 
     @PostMapping("/entry")
     @ResponseStatus(HttpStatus.CREATED)
-    public StockOperationResult entry(@RequestBody BatchEntryRequest request) throws SQLException {
+    public StockOperationResult entry(@Valid @RequestBody BatchEntryRequest request) throws SQLException {
         validateProductAndQuantity(request.productId(), request.quantity());
 
         if (request.lotCode() == null || request.lotCode().trim().isEmpty()) {
@@ -56,7 +58,7 @@ public class StockBatchController {
     }
 
     @PostMapping("/exit-fefo/preview")
-    public FefoPreviewResponse previewExit(@RequestBody FefoExitRequest request) throws SQLException {
+    public FefoPreviewResponse previewExit(@Valid @RequestBody FefoPreviewRequest request) throws SQLException {
         validateProductAndQuantity(request.productId(), request.quantity());
 
         try {
@@ -68,7 +70,7 @@ public class StockBatchController {
 
     @PostMapping("/exit-fefo")
     @ResponseStatus(HttpStatus.CREATED)
-    public StockOperationResult exitFefo(@RequestBody FefoExitRequest request) throws SQLException {
+    public StockOperationResult exitFefo(@Valid @RequestBody FefoExitRequest request) throws SQLException {
         validateProductAndQuantity(request.productId(), request.quantity());
 
         try {
@@ -86,7 +88,7 @@ public class StockBatchController {
 
     @PostMapping("/return")
     @ResponseStatus(HttpStatus.CREATED)
-    public StockOperationResult returnToBatch(@RequestBody BatchReturnRequest request) throws SQLException {
+    public StockOperationResult returnToBatch(@Valid @RequestBody BatchReturnRequest request) throws SQLException {
         validateProductAndQuantity(request.productId(), request.quantity());
 
         if (request.batchId() == null || request.batchId() <= 0) {
@@ -108,7 +110,7 @@ public class StockBatchController {
 
     @PostMapping("/adjustment")
     @ResponseStatus(HttpStatus.CREATED)
-    public StockOperationResult adjustBatch(@RequestBody BatchAdjustmentRequest request) throws SQLException {
+    public StockOperationResult adjustBatch(@Valid @RequestBody BatchAdjustmentRequest request) throws SQLException {
         if (request.productId() == null || request.productId() <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Produto inválido");
         }
