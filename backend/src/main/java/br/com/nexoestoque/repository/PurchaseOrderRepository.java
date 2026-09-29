@@ -53,7 +53,7 @@ public class PurchaseOrderRepository {
                     else statement.setString(3, ruleVersion);
                     statement.setString(4, createdBy);
                     if (request.expectedAt() == null) statement.setNull(5, Types.DATE);
-                    else statement.setDate(5, Date.valueOf(request.expectedAt()));
+                    else statement.setDate(5, java.sql.Date.valueOf(request.expectedAt()));
                     String notes = request.notes() == null ? "" : request.notes().trim();
                     if (notes.isEmpty()) statement.setNull(6, Types.VARCHAR);
                     else statement.setString(6, notes);
@@ -267,7 +267,7 @@ public class PurchaseOrderRepository {
     }
 
     private PurchaseOrderSummary mapSummary(ResultSet rs) throws SQLException {
-        Date expected = rs.getDate("expected_at");
+        java.sql.Date expected = rs.getDate("expected_at");
         Timestamp created = rs.getTimestamp("created_at");
         Timestamp updated = rs.getTimestamp("updated_at");
         return new PurchaseOrderSummary(
