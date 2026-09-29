@@ -22,8 +22,14 @@ public class ProductHistoryRepository {
 
     public void record(long productId, String actionType, String actor, Product before, Product after)
             throws SQLException {
-        String beforeJson = before == null ? null : objectMapper.writeValueAsString(before);
-        String afterJson = after == null ? null : objectMapper.writeValueAsString(after);
+        String beforeJson;
+        String afterJson;
+        try {
+            beforeJson = before == null ? null : objectMapper.writeValueAsString(before);
+            afterJson = after == null ? null : objectMapper.writeValueAsString(after);
+        } catch (Exception exception) {
+            throw new SQLException("Não foi possível serializar o histórico do produto", exception);
+        }
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
