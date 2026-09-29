@@ -109,7 +109,7 @@ function Login({onLogin,theme,onToggleTheme}:{onLogin:()=>void;theme:Theme;onTog
 
     try{
       const authorization='Basic '+btoa(user+':'+password);
-      const response=await apiFetch(API_URL+'/api/v1/auth/login',{
+      const response=await fetch(API_URL+'/api/v1/auth/login',{
         method:'POST',
         headers:{Authorization:authorization}
       });
