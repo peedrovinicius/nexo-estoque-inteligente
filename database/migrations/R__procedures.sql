@@ -1,5 +1,3 @@
-USE nexo_estoque;
-
 DROP PROCEDURE IF EXISTS sp_product_create;
 DELIMITER //
 CREATE PROCEDURE sp_product_create(
