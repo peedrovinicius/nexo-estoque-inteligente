@@ -47,7 +47,8 @@ public class StockBatchController {
                     request.expiresAt(),
                     request.quantity(),
                     request.unitCost() == null ? BigDecimal.ZERO : request.unitCost(),
-                    request.reason() == null ? "" : request.reason().trim()
+                    request.reason() == null ? "" : request.reason().trim(),
+                    requireIdempotencyKey(request.idempotencyKey())
             ));
         } catch (SQLException exception) {
             throw translate(exception);
@@ -74,7 +75,8 @@ public class StockBatchController {
             return repository.exitFefo(new FefoExitRequest(
                     request.productId(),
                     request.quantity(),
-                    request.reason() == null ? "" : request.reason().trim()
+                    request.reason() == null ? "" : request.reason().trim(),
+                    requireIdempotencyKey(request.idempotencyKey())
             ));
         } catch (SQLException exception) {
             throw translate(exception);
@@ -96,7 +98,8 @@ public class StockBatchController {
                     request.productId(),
                     request.batchId(),
                     request.quantity(),
-                    request.reason() == null ? "" : request.reason().trim()
+                    request.reason() == null ? "" : request.reason().trim(),
+                    requireIdempotencyKey(request.idempotencyKey())
             ));
         } catch (SQLException exception) {
             throw translate(exception);
@@ -121,7 +124,8 @@ public class StockBatchController {
                     request.productId(),
                     request.batchId(),
                     request.quantityDelta(),
-                    request.reason() == null ? "" : request.reason().trim()
+                    request.reason() == null ? "" : request.reason().trim(),
+                    requireIdempotencyKey(request.idempotencyKey())
             ));
         } catch (SQLException exception) {
             throw translate(exception);
@@ -142,9 +146,20 @@ public class StockBatchController {
         }
     }
 
+    private String requireIdempotencyKey(String key) {
+        String normalized = key == null ? "" : key.trim();
+        if (normalized.length() < 8 || normalized.length() > 64) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe uma chave de idempotência válida");
+        }
+        return normalized;
+    }
+
     private ResponseStatusException translate(SQLException exception) throws SQLException {
         if ("45000".equals(exception.getSQLState())) {
             return new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
+        }
+        if ("23000".equals(exception.getSQLState())) {
+            return new ResponseStatusException(HttpStatus.CONFLICT, "Chave de idempotência já utilizada", exception);
         }
         throw exception;
     }
