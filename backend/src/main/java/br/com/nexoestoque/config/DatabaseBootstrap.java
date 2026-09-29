@@ -47,15 +47,13 @@ public class DatabaseBootstrap implements ApplicationRunner {
 
         for (int attempt = 1; attempt <= 8; attempt++) {
             try (Connection connection = dataSource.getConnection()) {
-                executeScript(connection, Path.of("/app/database/schema.sql"));
-                executeScript(connection, Path.of("/app/database/procedures.sql"));
-
-                if (demoSeedEnabled) {
-                    executeScript(connection, Path.of("/app/database/seed-demo.sql"));
-                    log.info("Demo seed checked on attempt {}", attempt);
+                if (!demoSeedEnabled) {
+                    log.info("Flyway owns schema/procedure migrations; demo seed disabled");
+                    return;
                 }
 
-                log.info("Database schema and procedures synchronized on attempt {}", attempt);
+                executeScript(connection, Path.of("/app/database/seed-demo.sql"));
+                log.info("Demo seed checked after Flyway migration on attempt {}", attempt);
                 return;
             } catch (Exception exception) {
                 lastError = exception;
