@@ -6,6 +6,21 @@ import { apiFetch, clearAuthSession, isReadOnlySession, newIdempotencyKey, readA
 const DEMO_USER='demo';
 const DEMO_PASSWORD='Nexo@2026';
 
+function productContent(data:any):any[]{
+  if(Array.isArray(data)) return data;
+  return Array.isArray(data?.content)?data.content:[];
+}
+
+async function apiErrorMessage(response:Response,fallback:string){
+  const data=await response.json().catch(()=>null);
+  if(data?.fieldErrors && typeof data.fieldErrors==='object'){
+    const first=Object.values(data.fieldErrors)[0];
+    if(typeof first==='string'&&first) return first;
+  }
+  return String(data?.message||data?.detail||fallback);
+}
+
+
 type Theme='light'|'dark';
 function BrandImage({
   theme,
@@ -178,12 +193,12 @@ function Simulator(){
 
     (async()=>{
       try{
-        const response=await apiFetch(API_URL+'/api/v1/products');
+        const response=await apiFetch(API_URL+'/api/v1/products?size=200&active=true');
         if(!response.ok) throw new Error();
         const data=await response.json();
         if(!active) return;
 
-        const rows=(Array.isArray(data)?data:[])
+        const rows=productContent(data)
           .filter((item:any)=>item.active!==false)
           .map((item:any)=>({
             id:Number(item.id),
@@ -404,107 +419,197 @@ function Simulator(){
 type ProductView={
   id?:number;
   sku:string;
+  barcode:string;
   name:string;
   category:string;
+  costPrice:number;
+  salePrice:number;
   stock:number;
   min:number;
+  active:boolean;
   lot:string;
   expiry:string;
 };
-
 
 function ProductsPanel(){
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const readOnly=isReadOnlySession();
   const [query,setQuery]=useState('');
+  const [statusFilter,setStatusFilter]=useState<'all'|'active'|'inactive'>('active');
+  const [sort,setSort]=useState('name');
+  const [page,setPage]=useState(0);
+  const [totalPages,setTotalPages]=useState(0);
+  const [totalElements,setTotalElements]=useState(0);
   const [showForm,setShowForm]=useState(false);
+  const [editing,setEditing]=useState<ProductView|null>(null);
   const [products,setProducts]=useState<ProductView[]>([]);
   const [source,setSource]=useState<'loading'|'api'|'offline'>('loading');
   const [saving,setSaving]=useState(false);
   const [feedback,setFeedback]=useState('');
-  const [form,setForm]=useState({sku:'',name:'',category:'',min:''});
+  const [form,setForm]=useState({
+    sku:'',
+    barcode:'',
+    name:'',
+    category:'',
+    cost:'',
+    sale:'',
+    min:''
+  });
 
   function normalizeProduct(product:any):ProductView{
     return {
       id:Number(product.id),
       sku:String(product.sku||''),
+      barcode:String(product.barcode||''),
       name:String(product.name||''),
       category:String(product.category||'Sem categoria'),
+      costPrice:Number(product.costPrice||0),
+      salePrice:Number(product.salePrice||0),
       stock:Number(product.currentStock||0),
       min:Number(product.minimumStock||0),
+      active:product.active!==false,
       lot:'—',
       expiry:'—'
     };
   }
 
-  async function loadProducts(){
+  async function loadProducts(targetPage=page){
+    setSource('loading');
     try{
-      const response=await apiFetch(API_URL+'/api/v1/products');
-      if(!response.ok) throw new Error('API de produtos indisponível');
+      const params=new URLSearchParams({
+        page:String(targetPage),
+        size:'20',
+        sort,
+        direction:'asc'
+      });
+      if(query.trim()) params.set('q',query.trim());
+      if(statusFilter==='active') params.set('active','true');
+      if(statusFilter==='inactive') params.set('active','false');
+
+      const response=await apiFetch(API_URL+'/api/v1/products?'+params.toString());
+      if(!response.ok) throw new Error(await apiErrorMessage(response,'API de produtos indisponível'));
       const data=await response.json();
-      if(!Array.isArray(data)) throw new Error('Resposta inválida');
-      setProducts(data.map(normalizeProduct));
+      const rows=productContent(data);
+      setProducts(rows.map(normalizeProduct));
+      setTotalPages(Number(data?.totalPages||0));
+      setTotalElements(Number(data?.totalElements??rows.length));
       setSource('api');
-      setFeedback('');
-    }catch{
+    }catch(err){
       setProducts([]);
+      setTotalPages(0);
+      setTotalElements(0);
       setSource('offline');
-      setFeedback('API/MySQL indisponível. Nenhum dado local foi usado como substituto.');
+      setFeedback(err instanceof Error?err.message:'API/MySQL indisponível.');
     }
   }
 
   useEffect(()=>{
-    void loadProducts();
-  },[]);
+    const timer=window.setTimeout(()=>{
+      setPage(0);
+      void loadProducts(0);
+    },250);
+    return ()=>window.clearTimeout(timer);
+  },[query,statusFilter,sort]);
 
-  const filtered=products.filter(p=>(p.name+' '+p.sku+' '+p.category).toLowerCase().includes(query.toLowerCase()));
+  useEffect(()=>{
+    void loadProducts(page);
+  },[page]);
 
-  async function addProduct(e:React.FormEvent){
+  function resetForm(){
+    setForm({sku:'',barcode:'',name:'',category:'',cost:'',sale:'',min:''});
+    setEditing(null);
+    setShowForm(false);
+  }
+
+  function openCreate(){
+    setEditing(null);
+    setForm({sku:'',barcode:'',name:'',category:'',cost:'',sale:'',min:''});
+    setFeedback('');
+    setShowForm(true);
+  }
+
+  function openEdit(product:ProductView){
+    setEditing(product);
+    setForm({
+      sku:product.sku,
+      barcode:product.barcode,
+      name:product.name,
+      category:product.category,
+      cost:String(product.costPrice),
+      sale:String(product.salePrice),
+      min:String(product.min)
+    });
+    setFeedback('');
+    setShowForm(true);
+  }
+
+  async function saveProduct(e:React.FormEvent){
     e.preventDefault();
     if(readOnly){setFeedback('Modo demonstração: alterações de cadastro estão bloqueadas.');return;}
-    if(!form.sku||!form.name||!form.category) {
+    if(!form.sku.trim()||!form.name.trim()||!form.category.trim()){
       setFeedback('Preencha SKU, nome e categoria.');
       return;
     }
 
-    setSaving(true);
-    setFeedback('');
-    const draft:ProductView={
+    const payload={
       sku:form.sku.trim().toUpperCase(),
+      barcode:form.barcode.trim(),
       name:form.name.trim(),
       category:form.category.trim(),
-      stock:0,
-      min:Number(form.min||0),
-      lot:'—',
-      expiry:'—'
+      costPrice:Number(form.cost||0),
+      salePrice:Number(form.sale||0),
+      minimumStock:Number(form.min||0)
     };
 
+    setSaving(true);
+    setFeedback('');
     try{
-      const response=await apiFetch(API_URL+'/api/v1/products',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          id:null,
-          sku:draft.sku,
-          barcode:'',
-          name:draft.name,
-          category:draft.category,
-          costPrice:0,
-          salePrice:0,
-          currentStock:draft.stock,
-          minimumStock:draft.min,
-          active:true
-        })
-      });
-      if(!response.ok) throw new Error('Não foi possível persistir o produto');
+      const isEdit=Boolean(editing?.id);
+      const response=await apiFetch(
+        isEdit
+          ? API_URL+'/api/v1/products/'+editing!.id
+          : API_URL+'/api/v1/products',
+        {
+          method:isEdit?'PUT':'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(isEdit?payload:{...payload,currentStock:0})
+        }
+      );
 
-      setForm({sku:'',name:'',category:'',min:''});
-      setShowForm(false);
-      await loadProducts();
-      setFeedback('Produto salvo na base MySQL.');
-    }catch{
-      setSource('offline');
-      setFeedback('API/MySQL indisponível. O produto não foi salvo.');
+      if(!response.ok){
+        throw new Error(await apiErrorMessage(response,isEdit?'Não foi possível atualizar o produto':'Não foi possível salvar o produto'));
+      }
+
+      resetForm();
+      await loadProducts(page);
+      setFeedback(isEdit?'Produto atualizado com segurança.':'Produto salvo na base MySQL.');
+      setSource('api');
+    }catch(err){
+      setFeedback(err instanceof Error?err.message:'Não foi possível salvar o produto.');
+    }finally{
+      setSaving(false);
+    }
+  }
+
+  async function toggleActive(product:ProductView){
+    if(readOnly||!product.id) return;
+    const next=!product.active;
+    setSaving(true);
+    setFeedback('');
+    try{
+      const response=await apiFetch(API_URL+'/api/v1/products/'+product.id+'/active',{
+        method:'PATCH',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({active:next})
+      });
+      if(!response.ok){
+        throw new Error(await apiErrorMessage(response,next?'Não foi possível reativar o produto':'Não foi possível inativar o produto'));
+      }
+      await loadProducts(page);
+      setFeedback(next?'Produto reativado.':'Produto inativado sem apagar o histórico.');
+      setSource('api');
+    }catch(err){
+      setFeedback(err instanceof Error?err.message:'Não foi possível alterar o status do produto.');
     }finally{
       setSaving(false);
     }
@@ -512,56 +617,90 @@ function ProductsPanel(){
 
   return <>
     <header className="page-header">
-      <div><span className="eyebrow">CATÁLOGO E SALDOS</span><h1>Produtos</h1><p>Consulte estoque, lote e validade em uma única visão operacional.</p></div>
-      <button className="new-action" disabled={readOnly} title={readOnly?'Disponível para Admin e Operador':undefined} onClick={()=>{setShowForm(true);setFeedback('')}}>+ Novo produto</button>
+      <div><span className="eyebrow">CATÁLOGO E SALDOS</span><h1>Produtos</h1><p>Cadastre, edite e controle o ciclo de vida do catálogo sem alterar saldo fora das movimentações.</p></div>
+      <button className="new-action" disabled={readOnly} title={readOnly?'Disponível para Admin e Operador':undefined} onClick={openCreate}>+ Novo produto</button>
     </header>
 
     <section className="product-toolbar">
-      <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar por produto, SKU ou categoria"/>
-      <div>
-        <span>{filtered.length} produtos exibidos</span>
+      <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar por produto, SKU ou código de barras"/>
+      <div className="product-toolbar-filters">
+        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value as 'all'|'active'|'inactive')}>
+          <option value="active">Ativos</option>
+          <option value="inactive">Inativos</option>
+          <option value="all">Todos</option>
+        </select>
+        <select value={sort} onChange={e=>setSort(e.target.value)}>
+          <option value="name">Nome</option>
+          <option value="sku">SKU</option>
+          <option value="category">Categoria</option>
+          <option value="stock">Estoque</option>
+          <option value="minimumStock">Estoque mínimo</option>
+        </select>
+        <span>{totalElements} produto{totalElements===1?'':'s'}</span>
         <span className={'data-source '+source}>
-          {source==='loading'?'conectando...':source==='api'?'API + MySQL':'API indisponível'}
+          {source==='loading'?'carregando...':source==='api'?'API + MySQL':'API indisponível'}
         </span>
       </div>
     </section>
 
-    {feedback&&<div className={'product-feedback '+(source==='api'?'success':'warning')}>{feedback}</div>}
+    {feedback&&<div className={'product-feedback '+(source==='offline'?'warning':'success')}>{feedback}</div>}
 
-    {showForm&&<form className="product-form" onSubmit={addProduct}>
-      <div className="form-title"><div><span className="eyebrow">CADASTRO RÁPIDO</span><h2>Novo produto</h2></div><button type="button" onClick={()=>setShowForm(false)}>Fechar</button></div>
+    {showForm&&<form className="product-form" onSubmit={saveProduct}>
+      <div className="form-title">
+        <div>
+          <span className="eyebrow">{editing?'EDIÇÃO SEGURA':'CADASTRO RÁPIDO'}</span>
+          <h2>{editing?'Editar produto':'Novo produto'}</h2>
+        </div>
+        <button type="button" onClick={resetForm}>Fechar</button>
+      </div>
       <div className="form-grid">
-        <label>SKU<input value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="Ex.: MED-102"/></label>
-        <label>Nome<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Nome do produto"/></label>
-        <label>Categoria<input value={form.category} onChange={e=>setForm({...form,category:e.target.value})} placeholder="Categoria"/></label>
+        <label>SKU<input maxLength={50} value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="Ex.: MED-102"/></label>
+        <label>Código de barras<input maxLength={32} value={form.barcode} onChange={e=>setForm({...form,barcode:e.target.value})} placeholder="Opcional"/></label>
+        <label>Nome<input maxLength={160} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Nome do produto"/></label>
+        <label>Categoria<input maxLength={100} value={form.category} onChange={e=>setForm({...form,category:e.target.value})} placeholder="Categoria"/></label>
+        <label>Custo unitário<input type="number" min="0" step="0.01" value={form.cost} onChange={e=>setForm({...form,cost:e.target.value})}/></label>
+        <label>Preço de venda<input type="number" min="0" step="0.01" value={form.sale} onChange={e=>setForm({...form,sale:e.target.value})}/></label>
         <label>Estoque mínimo<input type="number" min="0" step="0.001" value={form.min} onChange={e=>setForm({...form,min:e.target.value})}/></label>
       </div>
       <div className="form-actions">
-        <span>{source==='api'?'O produto inicia com saldo zero. Depois, registre a entrada por lote.':'Aguarde a API voltar para salvar dados reais.'}</span>
-        <button className="primary compact" disabled={saving}>{saving?'Salvando...':'Salvar produto'}</button>
+        <span>O saldo não é editável aqui. Entradas, saídas e ajustes continuam auditáveis pelas movimentações.</span>
+        <button className="primary compact" disabled={saving}>{saving?'Salvando...':editing?'Salvar alterações':'Salvar produto'}</button>
       </div>
     </form>}
 
     <section className="product-table-wrap">
       <table className="product-table">
-        <thead><tr><th>Produto</th><th>Categoria</th><th>Estoque</th><th>Mínimo</th><th>Lote</th><th>Validade</th><th>Situação</th></tr></thead>
+        <thead><tr><th>Produto</th><th>Categoria</th><th>Estoque</th><th>Mínimo</th><th>Situação</th><th>Status</th><th>Ações</th></tr></thead>
         <tbody>
-          {filtered.map(p=>{
-            const critical=p.stock<p.min;
-            return <tr key={p.id??p.sku}>
-              <td><strong>{p.name}</strong><small>{p.sku}</small></td>
-              <td>{p.category}</td>
-              <td><b>{p.stock}</b></td>
-              <td>{p.min}</td>
-              <td>{p.lot}</td>
-              <td>{p.expiry}</td>
-              <td><span className={'stock-pill '+(critical?'critical':'healthy')}>{critical?'Crítico':'Saudável'}</span></td>
+          {products.map(product=>{
+            const critical=product.active&&product.stock<product.min;
+            return <tr key={product.id??product.sku} className={product.active?'':'product-inactive'}>
+              <td><strong>{product.name}</strong><small>{product.sku}{product.barcode?' · '+product.barcode:''}</small></td>
+              <td>{product.category}</td>
+              <td><b>{product.stock}</b></td>
+              <td>{product.min}</td>
+              <td><span className={'stock-pill '+(!product.active?'neutral':critical?'critical':'healthy')}>{!product.active?'Inativo':critical?'Crítico':'Saudável'}</span></td>
+              <td>{product.active?'Ativo':'Inativo'}</td>
+              <td>
+                <div className="product-row-actions">
+                  <button type="button" className="ghost compact" disabled={readOnly||saving} onClick={()=>openEdit(product)}>Editar</button>
+                  <button type="button" className="ghost compact" disabled={readOnly||saving} onClick={()=>void toggleActive(product)}>
+                    {product.active?'Inativar':'Reativar'}
+                  </button>
+                </div>
+              </td>
             </tr>;
           })}
-          {filtered.length===0&&<tr><td colSpan={7} className="empty-state">Nenhum produto encontrado.</td></tr>}
+          {products.length===0&&<tr><td colSpan={7} className="empty-state">Nenhum produto encontrado.</td></tr>}
         </tbody>
       </table>
     </section>
+
+    <div className="product-pagination">
+      <button className="ghost compact" disabled={page<=0||source==='loading'} onClick={()=>setPage(current=>Math.max(0,current-1))}>Anterior</button>
+      <span>Página {totalPages===0?0:page+1} de {totalPages}</span>
+      <button className="ghost compact" disabled={page+1>=totalPages||source==='loading'} onClick={()=>setPage(current=>current+1)}>Próxima</button>
+    </div>
   </>;
 }
 
@@ -623,7 +762,7 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
         const response=await apiFetch(API_URL+'/api/v1/products');
         if(!response.ok) throw new Error();
         const data=await response.json();
-        setProducts((Array.isArray(data)?data:[]).map((p:any)=>({
+        setProducts(productContent(data).map((p:any)=>({
           id:Number(p.id),
           sku:String(p.sku||''),
           name:String(p.name||''),
@@ -1689,7 +1828,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
 
       try{
         const [productsResponse,batchesResponse,inventoryResponse]=await Promise.all([
-          apiFetch(API_URL+'/api/v1/products'),
+          apiFetch(API_URL+'/api/v1/products?size=200&active=true'),
           apiFetch(API_URL+'/api/v1/stock/batches'),
           apiFetch(API_URL+'/api/v1/inventory/blind')
         ]);
@@ -1704,7 +1843,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
           inventoryResponse.json()
         ]);
 
-        const products=(Array.isArray(productsRaw)?productsRaw:[]).filter((item:any)=>item.active!==false);
+        const products=productContent(productsRaw).filter((item:any)=>item.active!==false);
         const batches=(Array.isArray(batchesRaw)?batchesRaw:[]).filter((item:any)=>Number(item.quantity||0)>0);
         const sessions=Array.isArray(sessionsRaw)?sessionsRaw:[];
 
