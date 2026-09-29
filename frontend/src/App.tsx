@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Boxes, BrainCircuit, ChevronRight, ClipboardCheck, LayoutDashboard, LogOut, Moon, PackageSearch, ScanLine, ShieldCheck, Sparkles, Sun, TrendingUp } from 'lucide-react';
+import { AlertTriangle, Boxes, BrainCircuit, ChevronRight, ClipboardCheck, LayoutDashboard, LogOut, Moon, PackageSearch, ScanLine, ShieldCheck, ShoppingCart, Sparkles, Sun, TrendingUp, Truck } from 'lucide-react';
 import { NEXO_LOGO_ORIGINAL } from './nexoLogoOriginal';
 import { apiFetch, clearAuthSession, isReadOnlySession, newIdempotencyKey, readAuthSession, saveAuthSession, type AuthRole, type AuthSession } from './auth';
 
@@ -1793,11 +1793,306 @@ function SystemReadiness(){
   </div>;
 }
 
+
+type SupplierView={
+  id:number;
+  name:string;
+  taxId?:string|null;
+  contactName?:string|null;
+  email?:string|null;
+  phone?:string|null;
+  leadTimeDays:number;
+  active:boolean;
+};
+
+type PurchaseOrderView={
+  id:number;
+  supplierId:number;
+  supplierName:string;
+  status:string;
+  source:string;
+  ruleVersion?:string|null;
+  createdBy:string;
+  expectedAt?:string|null;
+  notes?:string|null;
+  itemCount:number;
+  totalAmount:number;
+  createdAt:string;
+};
+
+function PurchasingPanel(){
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const readOnly=isReadOnlySession();
+  const [suppliers,setSuppliers]=useState<SupplierView[]>([]);
+  const [orders,setOrders]=useState<PurchaseOrderView[]>([]);
+  const [products,setProducts]=useState<any[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [saving,setSaving]=useState(false);
+  const [feedback,setFeedback]=useState('');
+  const [showSupplier,setShowSupplier]=useState(false);
+  const [showManual,setShowManual]=useState(false);
+  const [showSuggestion,setShowSuggestion]=useState(false);
+
+  const [supplierForm,setSupplierForm]=useState({
+    name:'',taxId:'',contactName:'',email:'',phone:'',leadTimeDays:'5'
+  });
+  const [manual,setManual]=useState({
+    supplierId:'',productId:'',quantity:'',unitCost:'',expectedAt:'',notes:''
+  });
+  const [suggestion,setSuggestion]=useState({
+    supplierId:'',productId:'',averageDailyDemand:'',demandVariationPercent:'0',
+    supplierDelayDays:'0',plannedPurchase:'0'
+  });
+
+  async function load(){
+    setLoading(true);
+    setFeedback('');
+    try{
+      const [suppliersResponse,ordersResponse,productsResponse]=await Promise.all([
+        apiFetch(API_URL+'/api/v1/suppliers'),
+        apiFetch(API_URL+'/api/v1/purchase-orders'),
+        apiFetch(API_URL+'/api/v1/products?size=200&active=true')
+      ]);
+      if(!suppliersResponse.ok||!ordersResponse.ok||!productsResponse.ok){
+        throw new Error('Não foi possível carregar o módulo de compras.');
+      }
+
+      const [supplierData,orderData,productData]=await Promise.all([
+        suppliersResponse.json(),
+        ordersResponse.json(),
+        productsResponse.json()
+      ]);
+
+      setSuppliers(Array.isArray(supplierData)?supplierData:[]);
+      setOrders(Array.isArray(orderData)?orderData:[]);
+      setProducts(productContent(productData));
+    }catch(err){
+      setFeedback(err instanceof Error?err.message:'Módulo de compras indisponível.');
+    }finally{
+      setLoading(false);
+    }
+  }
+
+  useEffect(()=>{void load()},[]);
+
+  async function createSupplier(e:React.FormEvent){
+    e.preventDefault();
+    if(readOnly) return;
+    setSaving(true);
+    setFeedback('');
+    try{
+      const response=await apiFetch(API_URL+'/api/v1/suppliers',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          ...supplierForm,
+          leadTimeDays:Number(supplierForm.leadTimeDays||0)
+        })
+      });
+      if(!response.ok) throw new Error(await apiErrorMessage(response,'Não foi possível cadastrar o fornecedor.'));
+      setSupplierForm({name:'',taxId:'',contactName:'',email:'',phone:'',leadTimeDays:'5'});
+      setShowSupplier(false);
+      await load();
+      setFeedback('Fornecedor cadastrado.');
+    }catch(err){
+      setFeedback(err instanceof Error?err.message:'Não foi possível cadastrar o fornecedor.');
+    }finally{
+      setSaving(false);
+    }
+  }
+
+  function selectedProduct(id:string){
+    return products.find((p:any)=>String(p.id)===id);
+  }
+
+  async function createManualOrder(e:React.FormEvent){
+    e.preventDefault();
+    if(readOnly) return;
+    const product=selectedProduct(manual.productId);
+    if(!product||!manual.supplierId||Number(manual.quantity)<=0){
+      setFeedback('Selecione fornecedor, produto e quantidade.');
+      return;
+    }
+
+    setSaving(true);
+    setFeedback('');
+    try{
+      const response=await apiFetch(API_URL+'/api/v1/purchase-orders',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          supplierId:Number(manual.supplierId),
+          expectedAt:manual.expectedAt||null,
+          notes:manual.notes,
+          items:[{
+            productId:Number(manual.productId),
+            quantity:Number(manual.quantity),
+            unitCost:Number(manual.unitCost||product.costPrice||0)
+          }]
+        })
+      });
+      if(!response.ok) throw new Error(await apiErrorMessage(response,'Não foi possível criar o pedido.'));
+      setManual({supplierId:'',productId:'',quantity:'',unitCost:'',expectedAt:'',notes:''});
+      setShowManual(false);
+      await load();
+      setFeedback('Pedido de compra criado como rascunho.');
+    }catch(err){
+      setFeedback(err instanceof Error?err.message:'Não foi possível criar o pedido.');
+    }finally{
+      setSaving(false);
+    }
+  }
+
+  async function createSuggestedOrder(e:React.FormEvent){
+    e.preventDefault();
+    if(readOnly) return;
+    if(!suggestion.supplierId||!suggestion.productId||Number(suggestion.averageDailyDemand)<=0){
+      setFeedback('Selecione fornecedor, produto e informe a demanda média diária.');
+      return;
+    }
+
+    setSaving(true);
+    setFeedback('');
+    try{
+      const response=await apiFetch(API_URL+'/api/v1/purchase-orders/from-recommendation',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          productId:Number(suggestion.productId),
+          supplierId:Number(suggestion.supplierId),
+          averageDailyDemand:Number(suggestion.averageDailyDemand),
+          demandVariationPercent:Number(suggestion.demandVariationPercent||0),
+          supplierDelayDays:Number(suggestion.supplierDelayDays||0),
+          plannedPurchase:Number(suggestion.plannedPurchase||0)
+        })
+      });
+      if(!response.ok) throw new Error(await apiErrorMessage(response,'Não foi possível gerar a sugestão.'));
+      const data=await response.json();
+      setShowSuggestion(false);
+      await load();
+      setFeedback('Pedido #'+data.purchaseOrderId+' criado com '+data.recommendedQuantity+' unidades recomendadas.');
+    }catch(err){
+      setFeedback(err instanceof Error?err.message:'Não foi possível gerar a sugestão.');
+    }finally{
+      setSaving(false);
+    }
+  }
+
+  async function sendOrder(order:PurchaseOrderView){
+    if(readOnly||order.status!=='DRAFT') return;
+    setSaving(true);
+    setFeedback('');
+    try{
+      const response=await apiFetch(API_URL+'/api/v1/purchase-orders/'+order.id+'/status',{
+        method:'PATCH',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({status:'SENT'})
+      });
+      if(!response.ok) throw new Error(await apiErrorMessage(response,'Não foi possível enviar o pedido.'));
+      await load();
+      setFeedback('Pedido #'+order.id+' marcado como enviado.');
+    }catch(err){
+      setFeedback(err instanceof Error?err.message:'Não foi possível atualizar o pedido.');
+    }finally{
+      setSaving(false);
+    }
+  }
+
+  const money=(value:number)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value||0);
+
+  return <>
+    <header className="page-header">
+      <div>
+        <span className="eyebrow">ABASTECIMENTO</span>
+        <h1>Compras</h1>
+        <p>Fornecedores, pedidos e reposição sugerida pelo motor determinístico do Nexo.</p>
+      </div>
+      <div className="purchase-header-actions">
+        <button className="ghost" disabled={readOnly} onClick={()=>setShowSupplier(value=>!value)}><Truck size={16}/> Fornecedor</button>
+        <button className="ghost" disabled={readOnly} onClick={()=>setShowManual(value=>!value)}><ShoppingCart size={16}/> Pedido manual</button>
+        <button className="new-action" disabled={readOnly} onClick={()=>setShowSuggestion(value=>!value)}><TrendingUp size={16}/> Sugerir reposição</button>
+      </div>
+    </header>
+
+    {feedback&&<div className="product-feedback success">{feedback}</div>}
+
+    {showSupplier&&<form className="product-form purchase-form" onSubmit={createSupplier}>
+      <div className="form-title"><div><span className="eyebrow">FORNECEDOR</span><h2>Novo fornecedor</h2></div><button type="button" onClick={()=>setShowSupplier(false)}>Fechar</button></div>
+      <div className="form-grid">
+        <label>Nome<input value={supplierForm.name} onChange={e=>setSupplierForm({...supplierForm,name:e.target.value})}/></label>
+        <label>Documento<input value={supplierForm.taxId} onChange={e=>setSupplierForm({...supplierForm,taxId:e.target.value})}/></label>
+        <label>Contato<input value={supplierForm.contactName} onChange={e=>setSupplierForm({...supplierForm,contactName:e.target.value})}/></label>
+        <label>E-mail<input type="email" value={supplierForm.email} onChange={e=>setSupplierForm({...supplierForm,email:e.target.value})}/></label>
+        <label>Telefone<input value={supplierForm.phone} onChange={e=>setSupplierForm({...supplierForm,phone:e.target.value})}/></label>
+        <label>Prazo médio (dias)<input type="number" min="0" value={supplierForm.leadTimeDays} onChange={e=>setSupplierForm({...supplierForm,leadTimeDays:e.target.value})}/></label>
+      </div>
+      <div className="form-actions"><span>O prazo médio alimenta as recomendações de reposição.</span><button className="primary compact" disabled={saving}>{saving?'Salvando...':'Salvar fornecedor'}</button></div>
+    </form>}
+
+    {showManual&&<form className="product-form purchase-form" onSubmit={createManualOrder}>
+      <div className="form-title"><div><span className="eyebrow">PEDIDO MANUAL</span><h2>Novo rascunho</h2></div><button type="button" onClick={()=>setShowManual(false)}>Fechar</button></div>
+      <div className="form-grid">
+        <label>Fornecedor<select value={manual.supplierId} onChange={e=>setManual({...manual,supplierId:e.target.value})}><option value="">Selecione</option>{suppliers.filter(s=>s.active).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+        <label>Produto<select value={manual.productId} onChange={e=>{const p=selectedProduct(e.target.value);setManual({...manual,productId:e.target.value,unitCost:p?String(p.costPrice||0):''})}}><option value="">Selecione</option>{products.map((p:any)=><option key={p.id} value={p.id}>{p.name} · {p.sku}</option>)}</select></label>
+        <label>Quantidade<input type="number" min="0.001" step="0.001" value={manual.quantity} onChange={e=>setManual({...manual,quantity:e.target.value})}/></label>
+        <label>Custo unitário<input type="number" min="0" step="0.01" value={manual.unitCost} onChange={e=>setManual({...manual,unitCost:e.target.value})}/></label>
+        <label>Previsão<input type="date" value={manual.expectedAt} onChange={e=>setManual({...manual,expectedAt:e.target.value})}/></label>
+        <label>Observação<input value={manual.notes} onChange={e=>setManual({...manual,notes:e.target.value})}/></label>
+      </div>
+      <div className="form-actions"><span>O pedido nasce como rascunho e não altera estoque.</span><button className="primary compact" disabled={saving}>{saving?'Criando...':'Criar pedido'}</button></div>
+    </form>}
+
+    {showSuggestion&&<form className="product-form purchase-form" onSubmit={createSuggestedOrder}>
+      <div className="form-title"><div><span className="eyebrow">REPOSIÇÃO ASSISTIDA</span><h2>Gerar pedido sugerido</h2></div><button type="button" onClick={()=>setShowSuggestion(false)}>Fechar</button></div>
+      <div className="form-grid">
+        <label>Fornecedor<select value={suggestion.supplierId} onChange={e=>setSuggestion({...suggestion,supplierId:e.target.value})}><option value="">Selecione</option>{suppliers.filter(s=>s.active).map(s=><option key={s.id} value={s.id}>{s.name} · {s.leadTimeDays} d</option>)}</select></label>
+        <label>Produto<select value={suggestion.productId} onChange={e=>setSuggestion({...suggestion,productId:e.target.value})}><option value="">Selecione</option>{products.map((p:any)=><option key={p.id} value={p.id}>{p.name} · saldo {p.currentStock}</option>)}</select></label>
+        <label>Demanda média/dia<input type="number" min="0.01" step="0.01" value={suggestion.averageDailyDemand} onChange={e=>setSuggestion({...suggestion,averageDailyDemand:e.target.value})}/></label>
+        <label>Variação de demanda (%)<input type="number" min="0" step="0.1" value={suggestion.demandVariationPercent} onChange={e=>setSuggestion({...suggestion,demandVariationPercent:e.target.value})}/></label>
+        <label>Atraso adicional (dias)<input type="number" min="0" value={suggestion.supplierDelayDays} onChange={e=>setSuggestion({...suggestion,supplierDelayDays:e.target.value})}/></label>
+        <label>Compra já planejada<input type="number" min="0" step="0.001" value={suggestion.plannedPurchase} onChange={e=>setSuggestion({...suggestion,plannedPurchase:e.target.value})}/></label>
+      </div>
+      <div className="form-actions"><span>A quantidade é calculada com a regra simulation-v1.0.0 e fica auditada.</span><button className="primary compact" disabled={saving}>{saving?'Calculando...':'Gerar rascunho'}</button></div>
+    </form>}
+
+    <section className="purchase-grid">
+      <article className="purchase-panel">
+        <div className="section-head"><div><span className="eyebrow">FORNECEDORES</span><h2>Base ativa</h2></div><strong>{suppliers.filter(s=>s.active).length}</strong></div>
+        <div className="purchase-list">
+          {suppliers.map(s=><div className="purchase-list-row" key={s.id}>
+            <div><strong>{s.name}</strong><small>{s.contactName||s.email||'Sem contato informado'}</small></div>
+            <span>{s.leadTimeDays} d</span>
+          </div>)}
+          {!loading&&suppliers.length===0&&<div className="empty-state">Nenhum fornecedor cadastrado.</div>}
+        </div>
+      </article>
+
+      <article className="purchase-panel purchase-orders-panel">
+        <div className="section-head"><div><span className="eyebrow">PEDIDOS</span><h2>Fluxo de compras</h2></div><strong>{orders.length}</strong></div>
+        <div className="purchase-list">
+          {orders.map(order=><div className="purchase-order-row" key={order.id}>
+            <div className="purchase-order-main">
+              <strong>#{order.id} · {order.supplierName}</strong>
+              <small>{order.itemCount} item{order.itemCount===1?'':'s'} · {order.source==='REPLENISHMENT_RECOMMENDATION'?'reposição sugerida':'manual'} · por {order.createdBy}</small>
+            </div>
+            <div className="purchase-order-meta">
+              <b>{money(Number(order.totalAmount||0))}</b>
+              <span className={'purchase-status '+order.status.toLowerCase()}>{order.status}</span>
+              {order.status==='DRAFT'&&!readOnly&&<button className="ghost compact" disabled={saving} onClick={()=>void sendOrder(order)}>Enviar</button>}
+            </div>
+          </div>)}
+          {!loading&&orders.length===0&&<div className="empty-state">Nenhum pedido de compra ainda.</div>}
+        </div>
+      </article>
+    </section>
+  </>;
+}
+
 function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onToggleTheme:()=>void}){
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const authSession=readAuthSession();
   const readOnly=authSession?.role==='VIEWER';
-  const [page,setPage]=useState<'dashboard'|'products'|'batches'|'inventory'|'simulator'|'assistant'>('dashboard');
+  const [page,setPage]=useState<'dashboard'|'products'|'batches'|'inventory'|'simulator'|'purchasing'|'assistant'>('dashboard');
   const [showMovement,setShowMovement]=useState(false);
   const [movementRefresh,setMovementRefresh]=useState(0);
   const [dashboardLoading,setDashboardLoading]=useState(true);
@@ -2023,13 +2318,14 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
         <a className={page==='batches'?'active':''} onClick={()=>setPage('batches')}><PackageSearch size={19}/> Lotes & validade</a>
         <a className={page==='inventory'?'active':''} onClick={()=>setPage('inventory')}><ClipboardCheck size={19}/> Inventário cego</a>
         <a className={page==='simulator'?'active':''} onClick={()=>setPage('simulator')}><TrendingUp size={19}/> Simulador</a>
+        <a className={page==='purchasing'?'active':''} onClick={()=>setPage('purchasing')}><ShoppingCart size={19}/> Compras</a>
         <a className={page==='assistant'?'active':''} onClick={()=>setPage('assistant')}><BrainCircuit size={19}/> Assistente</a>
       </nav>
       <div className="sidebar-bottom"><ThemeToggle theme={theme} onToggle={onToggleTheme}/><button className="logout" onClick={logout}><LogOut size={18}/> Sair</button></div>
     </aside>
     <main className="workspace">
       <SystemReadiness/>
-      {readOnly&&<div className="demo-readonly-banner"><ShieldCheck size={16}/><span>Modo demonstração: consulta, FEFO, simulador e assistente liberados. Alterações de estoque estão bloqueadas.</span></div>}
+      {readOnly&&<div className="demo-readonly-banner"><ShieldCheck size={16}/><span>Modo demonstração: consultas, FEFO, simulador, compras e assistente liberados. Alterações operacionais estão bloqueadas.</span></div>}
       {page==='products'
         ? <ProductsPanel/>
         : page==='batches'
@@ -2038,7 +2334,9 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
             ? <BlindInventoryPanel/>
             : page==='simulator'
               ? <Simulator/>
-              : page==='assistant'
+              : page==='purchasing'
+                ? <PurchasingPanel/>
+                : page==='assistant'
                 ? <AdvisorPanel/>
                 : <>
           <header className="dashboard-hero">
