@@ -2558,3 +2558,29 @@ html[data-theme="dark"] .location-list{
     align-items:stretch;
   }
 }
+
+
+/* Operational intelligence */
+.dashboard-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.dashboard-export{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  white-space:nowrap;
+}
+@media(max-width:720px){
+  .dashboard-actions{
+    width:100%;
+    justify-content:stretch;
+  }
+  .dashboard-actions button{
+    flex:1 1 180px;
+  }
+}
