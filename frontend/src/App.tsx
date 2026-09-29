@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Boxes, BrainCircuit, ChevronRight, ClipboardCheck, LayoutDashboard, LogOut, Moon, PackageSearch, ScanLine, ShieldCheck, Sparkles, Sun, TrendingUp } from 'lucide-react';
+import { NEXO_LOGO_ORIGINAL } from './nexoLogoOriginal';
 
 const DEMO_USER='admin';
 const DEMO_PASSWORD='Nexo@2026';
@@ -7,12 +8,11 @@ const DEMO_PASSWORD='Nexo@2026';
 type Theme='light'|'dark';
 
 function BrandImage({
-  theme,
   className,
   alt
 }:{theme:Theme;className:string;alt:string}){
   return <img
-    src="/nexo-logo.png?v=official-20260928-3"
+    src={NEXO_LOGO_ORIGINAL}
     alt={alt}
     className={className}
     draggable={false}
