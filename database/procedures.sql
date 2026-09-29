@@ -84,11 +84,20 @@ CREATE PROCEDURE sp_stock_move(
   IN p_movement_type VARCHAR(20),
   IN p_quantity DECIMAL(12,3),
   IN p_reason VARCHAR(255),
+  IN p_idempotency_key VARCHAR(64),
   OUT p_movement_id BIGINT,
   OUT p_balance_before DECIMAL(12,3),
   OUT p_balance_after DECIMAL(12,3)
 )
-BEGIN
+main: BEGIN
+  DECLARE v_product_lock BIGINT DEFAULT NULL;
+  DECLARE v_existing_movement BIGINT DEFAULT NULL;
+  DECLARE v_existing_product BIGINT DEFAULT NULL;
+  DECLARE v_existing_type VARCHAR(20) DEFAULT NULL;
+  DECLARE v_existing_quantity DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_balance_before DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_balance_after DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_movement_batch BIGINT DEFAULT NULL;
   DECLARE v_delta DECIMAL(12,3);
   DECLARE v_type VARCHAR(20);
   DECLARE v_batch_count INT DEFAULT 0;
@@ -113,7 +122,46 @@ BEGIN
     ELSE p_quantity
   END;
 
+  IF p_idempotency_key IS NULL OR CHAR_LENGTH(TRIM(p_idempotency_key)) < 8 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Informe uma chave de idempotência válida';
+  END IF;
+
   START TRANSACTION;
+
+  SET v_product_lock = NULL;
+  SELECT id
+    INTO v_product_lock
+    FROM products
+   WHERE id = p_product_id
+   FOR UPDATE;
+
+  IF v_product_lock IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado';
+  END IF;
+
+  SET v_existing_movement = NULL;
+  SELECT id, product_id, movement_type, quantity, balance_before, balance_after, batch_id
+    INTO v_existing_movement, v_existing_product, v_existing_type, v_existing_quantity,
+         v_existing_balance_before, v_existing_balance_after, v_existing_movement_batch
+    FROM stock_movements
+   WHERE idempotency_key = TRIM(p_idempotency_key)
+   LIMIT 1;
+
+  IF v_existing_movement IS NOT NULL THEN
+    IF v_existing_product <> p_product_id
+       OR v_existing_type <> v_type
+       OR v_existing_quantity <> ABS(p_quantity) THEN
+      ROLLBACK;
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Chave de idempotência já utilizada por outra operação';
+    END IF;
+
+    SET p_movement_id = v_existing_movement;
+    SET p_balance_before = v_existing_balance_before;
+    SET p_balance_after = v_existing_balance_after;
+    COMMIT;
+    LEAVE main;
+  END IF;
 
   SELECT current_stock
     INTO p_balance_before
@@ -148,7 +196,7 @@ BEGIN
    WHERE id = p_product_id;
 
   INSERT INTO stock_movements(
-    product_id, movement_type, quantity, balance_before, balance_after, reason
+    product_id, movement_type, quantity, balance_before, balance_after, reason, idempotency_key
   )
   VALUES(
     p_product_id,
@@ -156,7 +204,8 @@ BEGIN
     ABS(p_quantity),
     p_balance_before,
     p_balance_after,
-    NULLIF(TRIM(p_reason),'')
+    NULLIF(TRIM(p_reason),''),
+    TRIM(p_idempotency_key)
   );
 
   SET p_movement_id = LAST_INSERT_ID();
@@ -419,12 +468,21 @@ CREATE PROCEDURE sp_stock_batch_entry(
   IN p_quantity DECIMAL(12,3),
   IN p_unit_cost DECIMAL(12,2),
   IN p_reason VARCHAR(255),
+  IN p_idempotency_key VARCHAR(64),
   OUT p_movement_id BIGINT,
   OUT p_batch_id BIGINT,
   OUT p_balance_before DECIMAL(12,3),
   OUT p_balance_after DECIMAL(12,3)
 )
-BEGIN
+main: BEGIN
+  DECLARE v_product_lock BIGINT DEFAULT NULL;
+  DECLARE v_existing_movement BIGINT DEFAULT NULL;
+  DECLARE v_existing_product BIGINT DEFAULT NULL;
+  DECLARE v_existing_type VARCHAR(20) DEFAULT NULL;
+  DECLARE v_existing_quantity DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_balance_before DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_balance_after DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_movement_batch BIGINT DEFAULT NULL;
   DECLARE v_existing_batch BIGINT;
 
   IF p_quantity IS NULL OR p_quantity <= 0 THEN
@@ -439,7 +497,47 @@ BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Não é permitido receber lote já vencido';
   END IF;
 
+  IF p_idempotency_key IS NULL OR CHAR_LENGTH(TRIM(p_idempotency_key)) < 8 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Informe uma chave de idempotência válida';
+  END IF;
+
   START TRANSACTION;
+
+  SET v_product_lock = NULL;
+  SELECT id
+    INTO v_product_lock
+    FROM products
+   WHERE id = p_product_id
+   FOR UPDATE;
+
+  IF v_product_lock IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado';
+  END IF;
+
+  SET v_existing_movement = NULL;
+  SELECT id, product_id, movement_type, quantity, balance_before, balance_after, batch_id
+    INTO v_existing_movement, v_existing_product, v_existing_type, v_existing_quantity,
+         v_existing_balance_before, v_existing_balance_after, v_existing_movement_batch
+    FROM stock_movements
+   WHERE idempotency_key = TRIM(p_idempotency_key)
+   LIMIT 1;
+
+  IF v_existing_movement IS NOT NULL THEN
+    IF v_existing_product <> p_product_id
+       OR v_existing_type <> 'ENTRY'
+       OR v_existing_quantity <> ABS(p_quantity) THEN
+      ROLLBACK;
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Chave de idempotência já utilizada por outra operação';
+    END IF;
+
+    SET p_movement_id = v_existing_movement;
+    SET p_balance_before = v_existing_balance_before;
+    SET p_balance_after = v_existing_balance_after;
+    SET p_batch_id = v_existing_movement_batch;
+    COMMIT;
+    LEAVE main;
+  END IF;
 
   SET p_balance_before = NULL;
   SELECT current_stock
@@ -491,7 +589,7 @@ BEGIN
    WHERE id = p_product_id;
 
   INSERT INTO stock_movements(
-    product_id, batch_id, movement_type, quantity, balance_before, balance_after, reason
+    product_id, batch_id, movement_type, quantity, balance_before, balance_after, reason, idempotency_key
   )
   VALUES(
     p_product_id,
@@ -500,7 +598,8 @@ BEGIN
     p_quantity,
     p_balance_before,
     p_balance_after,
-    NULLIF(TRIM(p_reason),'')
+    NULLIF(TRIM(p_reason),''),
+    TRIM(p_idempotency_key)
   );
 
   SET p_movement_id = LAST_INSERT_ID();
@@ -522,11 +621,20 @@ CREATE PROCEDURE sp_stock_exit_fefo(
   IN p_product_id BIGINT,
   IN p_quantity DECIMAL(12,3),
   IN p_reason VARCHAR(255),
+  IN p_idempotency_key VARCHAR(64),
   OUT p_movement_id BIGINT,
   OUT p_balance_before DECIMAL(12,3),
   OUT p_balance_after DECIMAL(12,3)
 )
-BEGIN
+main: BEGIN
+  DECLARE v_product_lock BIGINT DEFAULT NULL;
+  DECLARE v_existing_movement BIGINT DEFAULT NULL;
+  DECLARE v_existing_product BIGINT DEFAULT NULL;
+  DECLARE v_existing_type VARCHAR(20) DEFAULT NULL;
+  DECLARE v_existing_quantity DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_balance_before DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_balance_after DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_movement_batch BIGINT DEFAULT NULL;
   DECLARE v_batch_total DECIMAL(12,3) DEFAULT 0;
   DECLARE v_legacy_gap DECIMAL(12,3) DEFAULT 0;
   DECLARE v_remaining DECIMAL(12,3) DEFAULT 0;
@@ -538,7 +646,46 @@ BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A quantidade da saída deve ser maior que zero';
   END IF;
 
+  IF p_idempotency_key IS NULL OR CHAR_LENGTH(TRIM(p_idempotency_key)) < 8 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Informe uma chave de idempotência válida';
+  END IF;
+
   START TRANSACTION;
+
+  SET v_product_lock = NULL;
+  SELECT id
+    INTO v_product_lock
+    FROM products
+   WHERE id = p_product_id
+   FOR UPDATE;
+
+  IF v_product_lock IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado';
+  END IF;
+
+  SET v_existing_movement = NULL;
+  SELECT id, product_id, movement_type, quantity, balance_before, balance_after, batch_id
+    INTO v_existing_movement, v_existing_product, v_existing_type, v_existing_quantity,
+         v_existing_balance_before, v_existing_balance_after, v_existing_movement_batch
+    FROM stock_movements
+   WHERE idempotency_key = TRIM(p_idempotency_key)
+   LIMIT 1;
+
+  IF v_existing_movement IS NOT NULL THEN
+    IF v_existing_product <> p_product_id
+       OR v_existing_type <> 'EXIT'
+       OR v_existing_quantity <> ABS(p_quantity) THEN
+      ROLLBACK;
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Chave de idempotência já utilizada por outra operação';
+    END IF;
+
+    SET p_movement_id = v_existing_movement;
+    SET p_balance_before = v_existing_balance_before;
+    SET p_balance_after = v_existing_balance_after;
+    COMMIT;
+    LEAVE main;
+  END IF;
 
   SET p_balance_before = NULL;
   SELECT current_stock
@@ -583,7 +730,7 @@ BEGIN
    WHERE id = p_product_id;
 
   INSERT INTO stock_movements(
-    product_id, batch_id, movement_type, quantity, balance_before, balance_after, reason
+    product_id, batch_id, movement_type, quantity, balance_before, balance_after, reason, idempotency_key
   )
   VALUES(
     p_product_id,
@@ -592,7 +739,8 @@ BEGIN
     p_quantity,
     p_balance_before,
     p_balance_after,
-    NULLIF(TRIM(p_reason),'')
+    NULLIF(TRIM(p_reason),''),
+    TRIM(p_idempotency_key)
   );
 
   SET p_movement_id = LAST_INSERT_ID();
@@ -717,18 +865,66 @@ CREATE PROCEDURE sp_stock_batch_return(
   IN p_batch_id BIGINT,
   IN p_quantity DECIMAL(12,3),
   IN p_reason VARCHAR(255),
+  IN p_idempotency_key VARCHAR(64),
   OUT p_movement_id BIGINT,
   OUT p_balance_before DECIMAL(12,3),
   OUT p_balance_after DECIMAL(12,3)
 )
-BEGIN
+main: BEGIN
+  DECLARE v_product_lock BIGINT DEFAULT NULL;
+  DECLARE v_existing_movement BIGINT DEFAULT NULL;
+  DECLARE v_existing_product BIGINT DEFAULT NULL;
+  DECLARE v_existing_type VARCHAR(20) DEFAULT NULL;
+  DECLARE v_existing_quantity DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_balance_before DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_balance_after DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_movement_batch BIGINT DEFAULT NULL;
   DECLARE v_batch_quantity DECIMAL(12,3);
 
   IF p_quantity IS NULL OR p_quantity <= 0 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A quantidade da devolução deve ser maior que zero';
   END IF;
 
+  IF p_idempotency_key IS NULL OR CHAR_LENGTH(TRIM(p_idempotency_key)) < 8 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Informe uma chave de idempotência válida';
+  END IF;
+
   START TRANSACTION;
+
+  SET v_product_lock = NULL;
+  SELECT id
+    INTO v_product_lock
+    FROM products
+   WHERE id = p_product_id
+   FOR UPDATE;
+
+  IF v_product_lock IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado';
+  END IF;
+
+  SET v_existing_movement = NULL;
+  SELECT id, product_id, movement_type, quantity, balance_before, balance_after, batch_id
+    INTO v_existing_movement, v_existing_product, v_existing_type, v_existing_quantity,
+         v_existing_balance_before, v_existing_balance_after, v_existing_movement_batch
+    FROM stock_movements
+   WHERE idempotency_key = TRIM(p_idempotency_key)
+   LIMIT 1;
+
+  IF v_existing_movement IS NOT NULL THEN
+    IF v_existing_product <> p_product_id
+       OR v_existing_type <> 'RETURN'
+       OR v_existing_quantity <> ABS(p_quantity) THEN
+      ROLLBACK;
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Chave de idempotência já utilizada por outra operação';
+    END IF;
+
+    SET p_movement_id = v_existing_movement;
+    SET p_balance_before = v_existing_balance_before;
+    SET p_balance_after = v_existing_balance_after;
+    COMMIT;
+    LEAVE main;
+  END IF;
 
   SET p_balance_before = NULL;
   SELECT current_stock
@@ -767,7 +963,7 @@ BEGIN
    WHERE id = p_product_id;
 
   INSERT INTO stock_movements(
-    product_id, batch_id, movement_type, quantity, balance_before, balance_after, reason
+    product_id, batch_id, movement_type, quantity, balance_before, balance_after, reason, idempotency_key
   )
   VALUES(
     p_product_id,
@@ -776,7 +972,8 @@ BEGIN
     p_quantity,
     p_balance_before,
     p_balance_after,
-    NULLIF(TRIM(p_reason),'')
+    NULLIF(TRIM(p_reason),''),
+    TRIM(p_idempotency_key)
   );
 
   SET p_movement_id = LAST_INSERT_ID();
@@ -799,11 +996,20 @@ CREATE PROCEDURE sp_stock_batch_adjustment(
   IN p_batch_id BIGINT,
   IN p_quantity_delta DECIMAL(12,3),
   IN p_reason VARCHAR(255),
+  IN p_idempotency_key VARCHAR(64),
   OUT p_movement_id BIGINT,
   OUT p_balance_before DECIMAL(12,3),
   OUT p_balance_after DECIMAL(12,3)
 )
-BEGIN
+main: BEGIN
+  DECLARE v_product_lock BIGINT DEFAULT NULL;
+  DECLARE v_existing_movement BIGINT DEFAULT NULL;
+  DECLARE v_existing_product BIGINT DEFAULT NULL;
+  DECLARE v_existing_type VARCHAR(20) DEFAULT NULL;
+  DECLARE v_existing_quantity DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_balance_before DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_balance_after DECIMAL(12,3) DEFAULT NULL;
+  DECLARE v_existing_movement_batch BIGINT DEFAULT NULL;
   DECLARE v_batch_before DECIMAL(12,3);
   DECLARE v_batch_after DECIMAL(12,3);
 
@@ -811,7 +1017,46 @@ BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'O ajuste deve ser diferente de zero';
   END IF;
 
+  IF p_idempotency_key IS NULL OR CHAR_LENGTH(TRIM(p_idempotency_key)) < 8 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Informe uma chave de idempotência válida';
+  END IF;
+
   START TRANSACTION;
+
+  SET v_product_lock = NULL;
+  SELECT id
+    INTO v_product_lock
+    FROM products
+   WHERE id = p_product_id
+   FOR UPDATE;
+
+  IF v_product_lock IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado';
+  END IF;
+
+  SET v_existing_movement = NULL;
+  SELECT id, product_id, movement_type, quantity, balance_before, balance_after, batch_id
+    INTO v_existing_movement, v_existing_product, v_existing_type, v_existing_quantity,
+         v_existing_balance_before, v_existing_balance_after, v_existing_movement_batch
+    FROM stock_movements
+   WHERE idempotency_key = TRIM(p_idempotency_key)
+   LIMIT 1;
+
+  IF v_existing_movement IS NOT NULL THEN
+    IF v_existing_product <> p_product_id
+       OR v_existing_type <> 'ADJUSTMENT'
+       OR v_existing_quantity <> ABS(p_quantity_delta) THEN
+      ROLLBACK;
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Chave de idempotência já utilizada por outra operação';
+    END IF;
+
+    SET p_movement_id = v_existing_movement;
+    SET p_balance_before = v_existing_balance_before;
+    SET p_balance_after = v_existing_balance_after;
+    COMMIT;
+    LEAVE main;
+  END IF;
 
   SET p_balance_before = NULL;
   SELECT current_stock
@@ -861,7 +1106,7 @@ BEGIN
    WHERE id = p_product_id;
 
   INSERT INTO stock_movements(
-    product_id, batch_id, movement_type, quantity, balance_before, balance_after, reason
+    product_id, batch_id, movement_type, quantity, balance_before, balance_after, reason, idempotency_key
   )
   VALUES(
     p_product_id,
@@ -870,7 +1115,8 @@ BEGIN
     ABS(p_quantity_delta),
     p_balance_before,
     p_balance_after,
-    NULLIF(TRIM(p_reason),'')
+    NULLIF(TRIM(p_reason),''),
+    TRIM(p_idempotency_key)
   );
 
   SET p_movement_id = LAST_INSERT_ID();
