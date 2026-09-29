@@ -2083,3 +2083,34 @@ html:not([data-theme="dark"]) .login-logo-wordmark .login-logo-blacktagline{
     max-width:100%;
   }
 }
+
+
+/* Authenticated public demo */
+.demo-readonly-banner{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin:0 0 18px;
+  padding:11px 13px;
+  border:1px solid #d7e3f2;
+  border-radius:12px;
+  background:#f3f7fc;
+  color:#405877;
+  font-size:12px;
+  font-weight:600;
+}
+html[data-theme="dark"] .demo-readonly-banner{
+  background:#111f31;
+  border-color:#263b55;
+  color:#b9c8da;
+}
+button:disabled{
+  cursor:not-allowed;
+}
+.new-action:disabled,
+.primary:disabled,
+.close-inventory:disabled,
+.count-save:disabled{
+  opacity:.52;
+  box-shadow:none!important;
+}
