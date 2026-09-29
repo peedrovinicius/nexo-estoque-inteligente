@@ -3164,3 +3164,109 @@ html[data-theme="dark"] .intelligence-row{background:#14253a;border-color:#263b5
   .reservation-inline{grid-template-columns:1fr}
   .action-batch-summary{justify-content:flex-start}
 }
+
+/* Demand planning block 56-60 */
+.planning-head{margin-bottom:14px}
+.planning-refresh{display:inline-flex;align-items:center;gap:6px}
+.planning-kpis{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  margin-bottom:16px;
+}
+.planning-kpis article{
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--surface);
+  padding:16px;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:4px 10px;
+  align-items:center;
+}
+.planning-kpis article>svg{grid-row:1/4;color:var(--muted)}
+.planning-kpis span,.planning-kpis small{font-size:11px;color:var(--muted)}
+.planning-kpis strong{font-size:21px;line-height:1.1}
+.planning-toolbar{
+  display:grid;
+  grid-template-columns:minmax(240px,1fr) 190px auto;
+  gap:10px;
+  align-items:center;
+  margin-bottom:12px;
+}
+.planning-toolbar input,.planning-toolbar select{
+  width:100%;
+  min-height:40px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--surface);
+  color:var(--text);
+  padding:0 11px;
+  font:inherit;
+}
+.planning-toolbar span{font-size:11px;color:var(--muted);text-align:right}
+.planning-table-wrap{
+  overflow:auto;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--surface);
+}
+.planning-table{
+  width:100%;
+  min-width:1180px;
+  border-collapse:collapse;
+}
+.planning-table th{
+  padding:10px 9px;
+  border-bottom:1px solid var(--line);
+  color:var(--muted);
+  font-size:10px;
+  text-align:left;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.planning-table td{
+  padding:12px 9px;
+  border-bottom:1px solid var(--line);
+  vertical-align:top;
+  font-size:11px;
+}
+.planning-table tbody tr:last-child td{border-bottom:0}
+.planning-table td strong,.planning-table td small{display:block}
+.planning-table td small{margin-top:3px;color:var(--muted);line-height:1.35}
+.planning-risk{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:72px;
+  border-radius:999px;
+  padding:5px 8px;
+  font-size:9px;
+  font-weight:900;
+}
+.planning-risk.critical{background:rgba(184,52,52,.12);color:#b83434}
+.planning-risk.high{background:rgba(201,82,41,.12);color:#b85525}
+.planning-risk.attention{background:rgba(191,126,28,.12);color:#9a6518}
+.planning-risk.low{background:rgba(37,123,77,.12);color:#257b4d}
+.planning-method{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-top:14px;
+}
+.planning-method>div{
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--surface-soft);
+  padding:12px;
+}
+.planning-method strong,.planning-method span{display:block}
+.planning-method strong{font-size:11px}
+.planning-method span{margin-top:4px;color:var(--muted);font-size:10px;line-height:1.45}
+@media(max-width:1100px){
+  .planning-kpis,.planning-method{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:720px){
+  .planning-kpis,.planning-method,.planning-toolbar{grid-template-columns:1fr}
+  .planning-toolbar span{text-align:left}
+}
