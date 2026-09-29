@@ -56,6 +56,7 @@ public record OperationalDashboard(
             String barcode,
             String productName,
             String category,
+            String lotCode,
             long warehouseId,
             String warehouseCode,
             String warehouseName,
