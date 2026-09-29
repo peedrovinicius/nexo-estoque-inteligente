@@ -9,5 +9,6 @@ public record BatchEntryRequest(
         LocalDate expiresAt,
         BigDecimal quantity,
         BigDecimal unitCost,
-        String reason
+        String reason,
+        String idempotencyKey
 ) {}
