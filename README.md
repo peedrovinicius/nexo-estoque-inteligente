@@ -38,6 +38,11 @@ O Nexo concentra operação, rastreabilidade e apoio à decisão em uma única a
 - classificação de risco de validade
 - posição de estoque por depósito, posição e lote
 - exportação CSV segura da posição de estoque
+- curva ABC por valor imobilizado
+- análise de estoque sem giro
+- cobertura de estoque baseada em consumo real
+- envelhecimento e atraso de pedidos de compra abertos
+- workspace de inteligência operacional no frontend
 
 ## Inteligência operacional
 
@@ -49,6 +54,10 @@ GET /api/v1/operations/critical
 GET /api/v1/operations/expiry
 GET /api/v1/operations/stock-position
 GET /api/v1/operations/stock-position.csv
+GET /api/v1/operations/abc
+GET /api/v1/operations/slow-moving
+GET /api/v1/operations/coverage
+GET /api/v1/operations/open-purchases
 ```
 
 O dashboard não recalcula as regras críticas no navegador. Totais, valor em estoque, ruptura, produtos abaixo do mínimo, lotes vencidos ou próximos do vencimento e precisão do último inventário são consolidados pelo backend.
@@ -76,4 +85,4 @@ senha: Nexo@2026
 
 ## Estado
 
-Em desenvolvimento ativo. A versão da API neste bloco é 0.3.0.
+Em desenvolvimento ativo. A versão da API neste bloco é 0.4.0.
