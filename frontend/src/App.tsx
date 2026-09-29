@@ -2492,7 +2492,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const authSession=readAuthSession();
   const readOnly=authSession?.role==='VIEWER';
-  const [page,setPage]=useState<'dashboard'|'products'|'batches'|'inventory'|'simulator'|'purchasing'|'assistant'>('dashboard');
+  const [page,setPage]=useState<'dashboard'|'products'|'batches'|'locations'|'inventory'|'simulator'|'purchasing'|'assistant'>('dashboard');
   const [showMovement,setShowMovement]=useState(false);
   const [movementRefresh,setMovementRefresh]=useState(0);
   const [dashboardLoading,setDashboardLoading]=useState(true);
@@ -2716,6 +2716,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
         <a className={page==='dashboard'?'active':''} onClick={()=>setPage('dashboard')}><LayoutDashboard size={19}/> Visão geral</a>
         <a className={page==='products'?'active':''} onClick={()=>setPage('products')}><Boxes size={19}/> Produtos</a>
         <a className={page==='batches'?'active':''} onClick={()=>setPage('batches')}><PackageSearch size={19}/> Lotes & validade</a>
+        <a className={page==='locations'?'active':''} onClick={()=>setPage('locations')}><MapPin size={19}/> Locais</a>
         <a className={page==='inventory'?'active':''} onClick={()=>setPage('inventory')}><ClipboardCheck size={19}/> Inventário cego</a>
         <a className={page==='simulator'?'active':''} onClick={()=>setPage('simulator')}><TrendingUp size={19}/> Simulador</a>
         <a className={page==='purchasing'?'active':''} onClick={()=>setPage('purchasing')}><ShoppingCart size={19}/> Compras</a>
@@ -2725,12 +2726,14 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
     </aside>
     <main className="workspace">
       <SystemReadiness/>
-      {readOnly&&<div className="demo-readonly-banner"><ShieldCheck size={16}/><span>Modo demonstração: consultas, FEFO, simulador, compras e assistente liberados. Alterações operacionais estão bloqueadas.</span></div>}
+      {readOnly&&<div className="demo-readonly-banner"><ShieldCheck size={16}/><span>Modo demonstração: consultas, FEFO, locais, simulador, compras e assistente liberados. Alterações operacionais estão bloqueadas.</span></div>}
       {page==='products'
         ? <ProductsPanel/>
         : page==='batches'
           ? <BatchesPanel/>
-          : page==='inventory'
+          : page==='locations'
+            ? <LogisticsPanel/>
+            : page==='inventory'
             ? <BlindInventoryPanel/>
             : page==='simulator'
               ? <Simulator/>
