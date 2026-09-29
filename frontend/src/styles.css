@@ -2064,7 +2064,7 @@ html:not([data-theme="dark"]) .login-logo-wordmark .login-logo-blacktext{
   z-index:2;
   pointer-events:none;
   filter:brightness(0)!important;
-  clip-path:inset(4% 0 7% 34%);
+  clip-path:inset(4% 0 7% 29%);
 }
 
 @media(max-width:700px){
