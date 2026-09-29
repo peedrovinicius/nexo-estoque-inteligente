@@ -92,6 +92,15 @@ jobs:
           cd backend
           mvn -B -Dtest=OperationalInsightsIntegrationTest test
 
+      - name: Verify inventory intelligence
+        env:
+          NEXO_DB_INTEGRATION_URL: jdbc:mysql://127.0.0.1:3306/nexo_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+          NEXO_DB_INTEGRATION_USER: root
+          NEXO_DB_INTEGRATION_PASSWORD: root
+        run: |
+          cd backend
+          mvn -B -Dtest=InventoryIntelligenceIntegrationTest test
+
       - name: Verify idempotent stock write
         shell: bash
         run: |
