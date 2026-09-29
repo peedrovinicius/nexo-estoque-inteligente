@@ -65,6 +65,7 @@ jobs:
         run: |
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V1__baseline_schema.sql
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V2__stock_idempotency.sql
+          mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V3__audit_history_and_indexes.sql
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/R__procedures.sql
       - name: Verify idempotent stock write
         shell: bash
@@ -121,6 +122,65 @@ jobs:
           "
           ACTIVE_AFTER=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT active FROM products WHERE id=$PRODUCT_ID;")
           test "$ACTIVE_AFTER" = "0"
+
+      - name: Verify audit history actors decisions and indexes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mysql -h 127.0.0.1 -uroot -proot nexo_test -e "
+            INSERT INTO products(sku,name,category,current_stock,minimum_stock,active)
+            VALUES('AUDIT-001','Produto auditado','Auditoria',0,0,TRUE);
+          "
+          PRODUCT_ID=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT id FROM products WHERE sku='AUDIT-001';")
+
+          mysql -h 127.0.0.1 -uroot -proot nexo_test -e "
+            CALL sp_stock_batch_entry($PRODUCT_ID,'LOT-AUDIT',NULL,2,3,'ci','ci-audit-entry-001',@m,@b,@before,@after);
+            UPDATE stock_movements SET performed_by='ci-operator' WHERE id=@m;
+            INSERT INTO product_change_history(
+              product_id, action_type, actor_username, before_snapshot, after_snapshot
+            ) VALUES(
+              $PRODUCT_ID,
+              'UPDATE',
+              'ci-admin',
+              JSON_OBJECT('name','Produto auditado'),
+              JSON_OBJECT('name','Produto auditado 2')
+            );
+            INSERT INTO decision_audit(
+              product_id, decision_type, input_snapshot, output_snapshot, rule_version, actor_username
+            ) VALUES(
+              $PRODUCT_ID,
+              'STOCK_SIMULATION',
+              JSON_OBJECT('currentStock',2),
+              JSON_OBJECT('riskLevel','BAIXO'),
+              'simulation-v1.0.0',
+              'ci-viewer'
+            );
+          "
+
+          ACTOR=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT performed_by FROM stock_movements WHERE product_id=$PRODUCT_ID LIMIT 1;")
+          HISTORY=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT COUNT(*) FROM product_change_history WHERE product_id=$PRODUCT_ID AND actor_username='ci-admin';")
+          DECISIONS=$(mysql -N -h 127.0.0.1 -uroot -proot nexo_test -e "SELECT COUNT(*) FROM decision_audit WHERE product_id=$PRODUCT_ID AND rule_version='simulation-v1.0.0' AND actor_username='ci-viewer';")
+          INDEXES=$(mysql -N -h 127.0.0.1 -uroot -proot -e "
+            SELECT COUNT(DISTINCT INDEX_NAME)
+            FROM information_schema.statistics
+            WHERE TABLE_SCHEMA='nexo_test'
+              AND INDEX_NAME IN (
+                'idx_products_active_name',
+                'idx_products_category_active',
+                'idx_stock_batches_fefo',
+                'idx_stock_movements_product_created',
+                'idx_stock_movements_created',
+                'idx_blind_inventory_status_started',
+                'idx_decision_audit_type_created',
+                'idx_decision_audit_product_created',
+                'idx_product_history_product_created'
+              );
+          ")
+
+          test "$ACTOR" = "ci-operator"
+          test "$HISTORY" = "1"
+          test "$DECISIONS" = "1"
+          test "$INDEXES" = "9"
 
       - name: Verify concurrent FEFO exits cannot oversell
         shell: bash
