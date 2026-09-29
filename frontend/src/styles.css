@@ -1503,3 +1503,75 @@ html[data-theme="dark"] .sidebar-brand{
   .official-brand .brand-logo-full{width:220px!important}
   .login-title .login-logo{width:168px!important;max-width:100%!important}
 }
+
+
+/* Definitive original logo rendering */
+.official-brand{
+  box-sizing:border-box!important;
+  width:296px!important;
+  max-width:100%!important;
+  min-height:0!important;
+  height:auto!important;
+  padding:16px 18px!important;
+  overflow:visible!important;
+  background:#09172f!important;
+  border:1px solid rgba(76,151,255,.16)!important;
+  border-radius:16px!important;
+}
+.official-brand .brand-logo-full{
+  box-sizing:border-box!important;
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  max-height:none!important;
+  aspect-ratio:auto!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  overflow:visible!important;
+  filter:none!important;
+}
+.login-title{
+  align-items:center!important;
+  overflow:visible!important;
+}
+.login-title .login-logo{
+  box-sizing:border-box!important;
+  display:block!important;
+  width:194px!important;
+  max-width:48%!important;
+  height:auto!important;
+  max-height:none!important;
+  aspect-ratio:auto!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  padding:12px 13px!important;
+  overflow:visible!important;
+  background:#09172f!important;
+  border:1px solid rgba(76,151,255,.14)!important;
+  border-radius:12px!important;
+  filter:none!important;
+}
+.sidebar-brand{
+  box-sizing:border-box!important;
+  height:auto!important;
+  min-height:68px!important;
+  overflow:visible!important;
+  background:#09172f!important;
+}
+.sidebar-brand .sidebar-logo-full{
+  display:block!important;
+  width:170px!important;
+  max-width:100%!important;
+  height:auto!important;
+  max-height:none!important;
+  aspect-ratio:auto!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  overflow:visible!important;
+  filter:none!important;
+}
+@media(max-width:700px){
+  .official-brand{width:270px!important}
+  .login-title .login-logo{width:190px!important;max-width:100%!important}
+}
