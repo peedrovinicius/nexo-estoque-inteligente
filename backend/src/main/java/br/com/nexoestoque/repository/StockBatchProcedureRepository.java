@@ -27,7 +27,7 @@ public class StockBatchProcedureRepository {
 
     public StockOperationResult entry(BatchEntryRequest request) throws SQLException {
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall("{call sp_stock_batch_entry(?,?,?,?,?,?,?,?,?,?)}")) {
+             CallableStatement statement = connection.prepareCall("{call sp_stock_batch_entry(?,?,?,?,?,?,?,?,?,?,?)}")) {
             statement.setLong(1, request.productId());
             statement.setString(2, request.lotCode());
             if (request.expiresAt() == null) statement.setNull(3, Types.DATE);
@@ -35,20 +35,21 @@ public class StockBatchProcedureRepository {
             statement.setBigDecimal(4, request.quantity());
             statement.setBigDecimal(5, request.unitCost());
             statement.setString(6, request.reason());
-            statement.registerOutParameter(7, Types.BIGINT);
+            statement.setString(7, request.idempotencyKey());
             statement.registerOutParameter(8, Types.BIGINT);
-            statement.registerOutParameter(9, Types.DECIMAL);
+            statement.registerOutParameter(9, Types.BIGINT);
             statement.registerOutParameter(10, Types.DECIMAL);
+            statement.registerOutParameter(11, Types.DECIMAL);
             statement.execute();
 
-            long movementId = statement.getLong(7);
-            long batchId = statement.getLong(8);
+            long movementId = statement.getLong(8);
+            long batchId = statement.getLong(9);
 
             return new StockOperationResult(
                     movementId,
                     batchId,
-                    statement.getBigDecimal(9),
                     statement.getBigDecimal(10),
+                    statement.getBigDecimal(11),
                     findAllocations(connection, movementId)
             );
         }
@@ -56,21 +57,22 @@ public class StockBatchProcedureRepository {
 
     public StockOperationResult exitFefo(FefoExitRequest request) throws SQLException {
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall("{call sp_stock_exit_fefo(?,?,?,?,?,?)}")) {
+             CallableStatement statement = connection.prepareCall("{call sp_stock_exit_fefo(?,?,?,?,?,?,?)}")) {
             statement.setLong(1, request.productId());
             statement.setBigDecimal(2, request.quantity());
             statement.setString(3, request.reason());
-            statement.registerOutParameter(4, Types.BIGINT);
-            statement.registerOutParameter(5, Types.DECIMAL);
+            statement.setString(4, request.idempotencyKey());
+            statement.registerOutParameter(5, Types.BIGINT);
             statement.registerOutParameter(6, Types.DECIMAL);
+            statement.registerOutParameter(7, Types.DECIMAL);
             statement.execute();
 
-            long movementId = statement.getLong(4);
+            long movementId = statement.getLong(5);
             return new StockOperationResult(
                     movementId,
                     null,
-                    statement.getBigDecimal(5),
                     statement.getBigDecimal(6),
+                    statement.getBigDecimal(7),
                     findAllocations(connection, movementId)
             );
         }
@@ -79,22 +81,23 @@ public class StockBatchProcedureRepository {
 
     public StockOperationResult returnToBatch(BatchReturnRequest request) throws SQLException {
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall("{call sp_stock_batch_return(?,?,?,?,?,?,?)}")) {
+             CallableStatement statement = connection.prepareCall("{call sp_stock_batch_return(?,?,?,?,?,?,?,?)}")) {
             statement.setLong(1, request.productId());
             statement.setLong(2, request.batchId());
             statement.setBigDecimal(3, request.quantity());
             statement.setString(4, request.reason());
-            statement.registerOutParameter(5, Types.BIGINT);
-            statement.registerOutParameter(6, Types.DECIMAL);
+            statement.setString(5, request.idempotencyKey());
+            statement.registerOutParameter(6, Types.BIGINT);
             statement.registerOutParameter(7, Types.DECIMAL);
+            statement.registerOutParameter(8, Types.DECIMAL);
             statement.execute();
 
-            long movementId = statement.getLong(5);
+            long movementId = statement.getLong(6);
             return new StockOperationResult(
                     movementId,
                     request.batchId(),
-                    statement.getBigDecimal(6),
                     statement.getBigDecimal(7),
+                    statement.getBigDecimal(8),
                     findAllocations(connection, movementId)
             );
         }
@@ -102,22 +105,23 @@ public class StockBatchProcedureRepository {
 
     public StockOperationResult adjustBatch(BatchAdjustmentRequest request) throws SQLException {
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall("{call sp_stock_batch_adjustment(?,?,?,?,?,?,?)}")) {
+             CallableStatement statement = connection.prepareCall("{call sp_stock_batch_adjustment(?,?,?,?,?,?,?,?)}")) {
             statement.setLong(1, request.productId());
             statement.setLong(2, request.batchId());
             statement.setBigDecimal(3, request.quantityDelta());
             statement.setString(4, request.reason());
-            statement.registerOutParameter(5, Types.BIGINT);
-            statement.registerOutParameter(6, Types.DECIMAL);
+            statement.setString(5, request.idempotencyKey());
+            statement.registerOutParameter(6, Types.BIGINT);
             statement.registerOutParameter(7, Types.DECIMAL);
+            statement.registerOutParameter(8, Types.DECIMAL);
             statement.execute();
 
-            long movementId = statement.getLong(5);
+            long movementId = statement.getLong(6);
             return new StockOperationResult(
                     movementId,
                     request.batchId(),
-                    statement.getBigDecimal(6),
                     statement.getBigDecimal(7),
+                    statement.getBigDecimal(8),
                     findAllocations(connection, movementId)
             );
         }
