@@ -83,6 +83,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health", "/api/v1/system/health", "/api/v1/system/readiness").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").authenticated()
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/simulations",
+                                "/api/v1/advisor/**",
+                                "/api/v1/stock/batches/exit-fefo/preview"
+                        ).hasAnyRole("ADMIN", "OPERATOR", "VIEWER")
                         .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("ADMIN", "OPERATOR", "VIEWER")
                         .requestMatchers("/api/**").hasAnyRole("ADMIN", "OPERATOR")
                         .anyRequest().permitAll()
