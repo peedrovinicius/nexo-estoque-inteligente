@@ -1906,6 +1906,274 @@ function SystemReadiness(){
 }
 
 
+
+type WarehouseView={
+  id:number;
+  code:string;
+  name:string;
+  branchName?:string|null;
+  address?:string|null;
+  active:boolean;
+};
+
+type StockLocationView={
+  id:number;
+  warehouseId:number;
+  warehouseCode:string;
+  warehouseName:string;
+  branchName?:string|null;
+  warehouseAddress?:string|null;
+  code:string;
+  aisle?:string|null;
+  shelf?:string|null;
+  binCode?:string|null;
+  active:boolean;
+};
+
+type LocationBatchView={
+  id:number;
+  productId:number;
+  productName:string;
+  sku:string;
+  lotCode:string;
+  locationId:number;
+  warehouseName:string;
+  branchName?:string|null;
+  locationCode:string;
+  aisle?:string|null;
+  shelf?:string|null;
+  binCode?:string|null;
+  quantity:number;
+};
+
+function LogisticsPanel(){
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const readOnly=isReadOnlySession();
+  const [warehouses,setWarehouses]=useState<WarehouseView[]>([]);
+  const [locations,setLocations]=useState<StockLocationView[]>([]);
+  const [batches,setBatches]=useState<LocationBatchView[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [saving,setSaving]=useState(false);
+  const [feedback,setFeedback]=useState('');
+  const [showWarehouse,setShowWarehouse]=useState(false);
+  const [showLocation,setShowLocation]=useState(false);
+  const [showTransfer,setShowTransfer]=useState(false);
+  const [warehouseForm,setWarehouseForm]=useState({code:'',name:'',branchName:'',address:''});
+  const [locationForm,setLocationForm]=useState({warehouseId:'',code:'',aisle:'',shelf:'',binCode:''});
+  const [transfer,setTransfer]=useState({sourceBatchId:'',destinationLocationId:'',quantity:'',reason:''});
+
+  async function load(){
+    setLoading(true);
+    setFeedback('');
+    try{
+      const [warehouseResponse,locationResponse,batchResponse]=await Promise.all([
+        apiFetch(API_URL+'/api/v1/warehouses'),
+        apiFetch(API_URL+'/api/v1/stock/locations'),
+        apiFetch(API_URL+'/api/v1/stock/batches')
+      ]);
+
+      if(!warehouseResponse.ok||!locationResponse.ok||!batchResponse.ok){
+        throw new Error('Não foi possível carregar depósitos e posições.');
+      }
+
+      const [warehouseData,locationData,batchData]=await Promise.all([
+        warehouseResponse.json(),
+        locationResponse.json(),
+        batchResponse.json()
+      ]);
+
+      setWarehouses(Array.isArray(warehouseData)?warehouseData:[]);
+      setLocations(Array.isArray(locationData)?locationData:[]);
+      setBatches((Array.isArray(batchData)?batchData:[]).map((item:any)=>({
+        id:Number(item.id),
+        productId:Number(item.productId),
+        productName:String(item.productName||'Produto'),
+        sku:String(item.sku||''),
+        lotCode:String(item.lotCode||''),
+        locationId:Number(item.locationId),
+        warehouseName:String(item.warehouseName||'Depósito'),
+        branchName:item.branchName||null,
+        locationCode:String(item.locationCode||'GERAL'),
+        aisle:item.aisle||null,
+        shelf:item.shelf||null,
+        binCode:item.binCode||null,
+        quantity:Number(item.quantity||0)
+      })));
+    }catch(err){
+      setFeedback(err instanceof Error?err.message:'Módulo de locais indisponível.');
+    }finally{
+      setLoading(false);
+    }
+  }
+
+  useEffect(()=>{void load()},[]);
+
+  async function createWarehouse(e:React.FormEvent){
+    e.preventDefault();
+    if(readOnly) return;
+    setSaving(true);
+    setFeedback('');
+    try{
+      const response=await apiFetch(API_URL+'/api/v1/warehouses',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(warehouseForm)
+      });
+      if(!response.ok) throw new Error(await apiErrorMessage(response,'Não foi possível criar o depósito.'));
+      setWarehouseForm({code:'',name:'',branchName:'',address:''});
+      setShowWarehouse(false);
+      await load();
+      setFeedback('Depósito/filial criado.');
+    }catch(err){
+      setFeedback(err instanceof Error?err.message:'Não foi possível criar o depósito.');
+    }finally{
+      setSaving(false);
+    }
+  }
+
+  async function createLocation(e:React.FormEvent){
+    e.preventDefault();
+    if(readOnly) return;
+    if(!locationForm.warehouseId){
+      setFeedback('Selecione o depósito da posição.');
+      return;
+    }
+    setSaving(true);
+    setFeedback('');
+    try{
+      const response=await apiFetch(API_URL+'/api/v1/stock/locations',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          ...locationForm,
+          warehouseId:Number(locationForm.warehouseId)
+        })
+      });
+      if(!response.ok) throw new Error(await apiErrorMessage(response,'Não foi possível criar a posição.'));
+      setLocationForm({warehouseId:'',code:'',aisle:'',shelf:'',binCode:''});
+      setShowLocation(false);
+      await load();
+      setFeedback('Posição física criada.');
+    }catch(err){
+      setFeedback(err instanceof Error?err.message:'Não foi possível criar a posição.');
+    }finally{
+      setSaving(false);
+    }
+  }
+
+  async function createTransfer(e:React.FormEvent){
+    e.preventDefault();
+    if(readOnly) return;
+    if(!transfer.sourceBatchId||!transfer.destinationLocationId||Number(transfer.quantity)<=0){
+      setFeedback('Selecione lote, destino e quantidade.');
+      return;
+    }
+    setSaving(true);
+    setFeedback('');
+    try{
+      const response=await apiFetch(API_URL+'/api/v1/stock/transfers',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          sourceBatchId:Number(transfer.sourceBatchId),
+          destinationLocationId:Number(transfer.destinationLocationId),
+          quantity:Number(transfer.quantity),
+          reason:transfer.reason,
+          idempotencyKey:newIdempotencyKey()
+        })
+      });
+      if(!response.ok) throw new Error(await apiErrorMessage(response,'Não foi possível transferir o estoque.'));
+      setTransfer({sourceBatchId:'',destinationLocationId:'',quantity:'',reason:''});
+      setShowTransfer(false);
+      await load();
+      setFeedback('Transferência concluída. O saldo global do produto foi preservado.');
+    }catch(err){
+      setFeedback(err instanceof Error?err.message:'Não foi possível transferir o estoque.');
+    }finally{
+      setSaving(false);
+    }
+  }
+
+  const selectedBatch=batches.find(item=>String(item.id)===transfer.sourceBatchId);
+  const activeLocations=locations.filter(item=>item.active);
+
+  return <>
+    <header className="page-header">
+      <div>
+        <span className="eyebrow">ESTOQUE FÍSICO</span>
+        <h1>Locais & filiais</h1>
+        <p>Organize depósitos, posições físicas e transferências internas sem alterar o saldo global.</p>
+      </div>
+      <div className="purchase-header-actions">
+        <button className="ghost" disabled={readOnly} onClick={()=>setShowWarehouse(value=>!value)}><Truck size={16}/> Depósito</button>
+        <button className="ghost" disabled={readOnly} onClick={()=>setShowLocation(value=>!value)}><MapPin size={16}/> Posição</button>
+        <button className="new-action" disabled={readOnly} onClick={()=>setShowTransfer(value=>!value)}><ArrowRightLeft size={16}/> Transferir</button>
+      </div>
+    </header>
+
+    {feedback&&<div className="product-feedback success">{feedback}</div>}
+
+    {showWarehouse&&<form className="product-form purchase-form" onSubmit={createWarehouse}>
+      <div className="form-title"><div><span className="eyebrow">DEPÓSITO / FILIAL</span><h2>Novo local operacional</h2></div><button type="button" onClick={()=>setShowWarehouse(false)}>Fechar</button></div>
+      <div className="form-grid">
+        <label>Código<input value={warehouseForm.code} onChange={e=>setWarehouseForm({...warehouseForm,code:e.target.value})} placeholder="Ex.: FILIAL-SUL"/></label>
+        <label>Nome<input value={warehouseForm.name} onChange={e=>setWarehouseForm({...warehouseForm,name:e.target.value})} placeholder="Depósito Sul"/></label>
+        <label>Filial<input value={warehouseForm.branchName} onChange={e=>setWarehouseForm({...warehouseForm,branchName:e.target.value})} placeholder="Ex.: Fortaleza Sul"/></label>
+        <label>Endereço<input value={warehouseForm.address} onChange={e=>setWarehouseForm({...warehouseForm,address:e.target.value})} placeholder="Endereço operacional"/></label>
+      </div>
+      <div className="form-actions"><span>Cada depósito pode ter várias posições físicas.</span><button className="primary compact" disabled={saving}>{saving?'Salvando...':'Criar depósito'}</button></div>
+    </form>}
+
+    {showLocation&&<form className="product-form purchase-form" onSubmit={createLocation}>
+      <div className="form-title"><div><span className="eyebrow">ENDEREÇAMENTO</span><h2>Nova posição física</h2></div><button type="button" onClick={()=>setShowLocation(false)}>Fechar</button></div>
+      <div className="form-grid">
+        <label>Depósito<select value={locationForm.warehouseId} onChange={e=>setLocationForm({...locationForm,warehouseId:e.target.value})}><option value="">Selecione</option>{warehouses.filter(w=>w.active).map(w=><option key={w.id} value={w.id}>{w.name}{w.branchName?' · '+w.branchName:''}</option>)}</select></label>
+        <label>Código da posição<input value={locationForm.code} onChange={e=>setLocationForm({...locationForm,code:e.target.value})} placeholder="Ex.: A-01-03"/></label>
+        <label>Corredor<input value={locationForm.aisle} onChange={e=>setLocationForm({...locationForm,aisle:e.target.value})} placeholder="A"/></label>
+        <label>Prateleira<input value={locationForm.shelf} onChange={e=>setLocationForm({...locationForm,shelf:e.target.value})} placeholder="01"/></label>
+        <label>Posição / nicho<input value={locationForm.binCode} onChange={e=>setLocationForm({...locationForm,binCode:e.target.value})} placeholder="03"/></label>
+      </div>
+      <div className="form-actions"><span>O código físico aparece nos lotes e nos recebimentos.</span><button className="primary compact" disabled={saving}>{saving?'Salvando...':'Criar posição'}</button></div>
+    </form>}
+
+    {showTransfer&&<form className="product-form purchase-form" onSubmit={createTransfer}>
+      <div className="form-title"><div><span className="eyebrow">TRANSFERÊNCIA INTERNA</span><h2>Mover lote entre posições</h2></div><button type="button" onClick={()=>setShowTransfer(false)}>Fechar</button></div>
+      <div className="form-grid">
+        <label>Lote de origem<select value={transfer.sourceBatchId} onChange={e=>setTransfer({...transfer,sourceBatchId:e.target.value,destinationLocationId:''})}><option value="">Selecione</option>{batches.filter(b=>b.quantity>0).map(b=><option key={b.id} value={b.id}>{b.productName} · {b.lotCode} · {b.warehouseName}/{b.locationCode} · {b.quantity}</option>)}</select></label>
+        <label>Destino<select value={transfer.destinationLocationId} onChange={e=>setTransfer({...transfer,destinationLocationId:e.target.value})}><option value="">Selecione</option>{activeLocations.filter(l=>!selectedBatch||l.id!==selectedBatch.locationId).map(l=><option key={l.id} value={l.id}>{l.warehouseName} · {l.code}</option>)}</select></label>
+        <label>Quantidade<input type="number" min="0.001" step="0.001" max={selectedBatch?.quantity} value={transfer.quantity} onChange={e=>setTransfer({...transfer,quantity:e.target.value})}/></label>
+        <label>Motivo<input value={transfer.reason} onChange={e=>setTransfer({...transfer,reason:e.target.value})} placeholder="Ex.: reposição da filial"/></label>
+      </div>
+      <div className="form-actions"><span>Transferências mudam somente a posição física; o total do produto não muda.</span><button className="primary compact" disabled={saving}>{saving?'Transferindo...':'Confirmar transferência'}</button></div>
+    </form>}
+
+    <section className="location-kpis">
+      <article><span>Depósitos</span><strong>{warehouses.filter(w=>w.active).length}</strong><small>ativos</small></article>
+      <article><span>Posições</span><strong>{activeLocations.length}</strong><small>endereços físicos</small></article>
+      <article><span>Lotes posicionados</span><strong>{batches.length}</strong><small>com saldo</small></article>
+    </section>
+
+    <section className="location-grid">
+      {warehouses.map(warehouse=><article className="location-card" key={warehouse.id}>
+        <div className="location-card-head">
+          <div><span>{warehouse.code}</span><strong>{warehouse.name}</strong></div>
+          <Truck size={19}/>
+        </div>
+        <p>{warehouse.branchName||'Sem filial informada'}</p>
+        <small>{warehouse.address||'Endereço não informado'}</small>
+        <div className="location-list">
+          {locations.filter(location=>location.warehouseId===warehouse.id).map(location=><div key={location.id}>
+            <MapPin size={14}/>
+            <span><b>{location.code}</b>{[location.aisle,location.shelf,location.binCode].filter(Boolean).length?' · '+[location.aisle,location.shelf,location.binCode].filter(Boolean).join(' / '):''}</span>
+          </div>)}
+          {!locations.some(location=>location.warehouseId===warehouse.id)&&<em>Nenhuma posição cadastrada.</em>}
+        </div>
+      </article>)}
+      {!loading&&warehouses.length===0&&<div className="empty-state">Nenhum depósito cadastrado.</div>}
+    </section>
+  </>;
+}
+
 type SupplierView={
   id:number;
   name:string;
