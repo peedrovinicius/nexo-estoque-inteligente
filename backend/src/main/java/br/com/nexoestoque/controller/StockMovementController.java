@@ -37,11 +37,15 @@ public class StockMovementController {
                     request.productId(),
                     request.movementType().toUpperCase(Locale.ROOT),
                     request.quantity(),
-                    request.reason() == null ? "" : request.reason().trim()
+                    request.reason() == null ? "" : request.reason().trim(),
+                    request.idempotencyKey()
             ));
         } catch (SQLException exception) {
             if ("45000".equals(exception.getSQLState())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
+            }
+            if ("23000".equals(exception.getSQLState())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Chave de idempotência já utilizada", exception);
             }
             throw exception;
         }
@@ -57,6 +61,10 @@ public class StockMovementController {
         }
         if (request.quantity() == null || request.quantity().compareTo(BigDecimal.ZERO) == 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A quantidade não pode ser zero");
+        }
+
+        if (request.idempotencyKey() == null || request.idempotencyKey().trim().length() < 8) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe uma chave de idempotência válida");
         }
 
         String type = request.movementType().toUpperCase(Locale.ROOT);
