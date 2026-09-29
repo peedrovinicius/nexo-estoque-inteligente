@@ -263,7 +263,7 @@ public class DemandPlanningRepository {
     private static final class DemandHistory {
         private final Map<java.time.LocalDate, BigDecimal> byDay = new HashMap<>();
 
-        void add(Date date, BigDecimal quantity) {
+        void add(java.sql.Date date, BigDecimal quantity) {
             byDay.merge(date.toLocalDate(), quantity, BigDecimal::add);
         }
 
