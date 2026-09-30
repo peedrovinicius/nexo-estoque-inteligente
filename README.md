@@ -64,6 +64,11 @@ O Nexo concentra operação, rastreabilidade e apoio à decisão em uma única a
 - ponto de reposição e estoque-alvo por produto
 - projeção de ruptura considerando reservas, compras em aberto e lead time
 - workspace dedicado de planejamento de demanda no frontend
+- políticas de reposição por produto com cobertura, segurança, pedido mínimo, múltiplo e fornecedor preferencial
+- exceções operacionais temporárias com justificativa, validade e autoria
+- contagem cíclica priorizada por valor, classe ABC, divergência e tempo desde a última contagem
+- SLA para ações operacionais com reconhecimento, autoria e histórico de atendimento
+- workspace dedicado de governança operacional no frontend
 
 ## Inteligência operacional
 
@@ -109,6 +114,16 @@ GET /api/v1/action-center/daily-actions
 GET /api/v1/planning
 GET /api/v1/planning/summary
 GET /api/v1/planning/rule
+
+GET /api/v1/governance/policies
+PUT /api/v1/governance/policies/{productId}
+GET /api/v1/governance/exceptions
+POST /api/v1/governance/exceptions
+POST /api/v1/governance/exceptions/{id}/cancel
+GET /api/v1/governance/cycle-counts
+GET /api/v1/governance/actions
+POST /api/v1/governance/actions/{key}/acknowledge
+GET /api/v1/governance/summary
 ```
 
 Filtros de produto/SKU e categoria são aplicados no backend. A central de alertas combina ruptura, validade, cobertura, ausência de giro e compras atrasadas usando limiares persistidos no MySQL.
@@ -117,12 +132,17 @@ A camada de rastreabilidade consolida movimentos correntes e arquivados, mede de
 
 A Central de Ação transforma os diagnósticos em operação. As sugestões de reposição consideram consumo real, reservas ativas, compras em aberto, estoque mínimo e o fornecedor mais recente do produto. Pedidos assistidos exigem aprovação de Admin antes do envio.
 
+A camada de governança permite configurar regras de reposição por produto, registrar pausas operacionais temporárias, priorizar inventários cíclicos e acompanhar ações por SLA. As alterações de política são exclusivas de Admin; exceções e reconhecimentos preservam autoria e validade.
+
 ## Segurança e consistência
 
 - CORS restrito em produção
 - credenciais administrativas mantidas fora do repositório
 - operações de escrita bloqueadas para o perfil de consulta
 - configuração de alertas alterável somente por Admin
+- políticas de reposição alteráveis somente por Admin
+- exceções operacionais com justificativa, validade e autoria
+- reconhecimento de ações com registro do responsável e do SLA
 - pedidos gerados por reposição assistida não podem ser enviados sem aprovação administrativa
 - chaves de idempotência persistidas
 - travas de banco em saídas FEFO
@@ -142,4 +162,4 @@ senha: Nexo@2026
 
 ## Estado
 
-Em desenvolvimento ativo. A versão da API neste bloco é 0.8.0.
+Em desenvolvimento ativo. A versão da API neste bloco é 0.9.0.
