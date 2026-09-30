@@ -3590,3 +3590,25 @@ html[data-theme="dark"] .intelligence-row{background:#14253a;border-color:#263b5
 @media(max-width:680px){
   .quality-kpis,.impact-kpis,.quality-variance-form{grid-template-columns:1fr}
 }
+
+.deferred-panel-loading{
+  min-height:220px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  color:var(--muted);
+  font-size:12px;
+}
+.deferred-panel-loading span{
+  width:14px;
+  height:14px;
+  border:2px solid var(--line);
+  border-top-color:currentColor;
+  border-radius:50%;
+  animation:nexo-spin .75s linear infinite;
+}
+@keyframes nexo-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){
+  .deferred-panel-loading span{animation:none}
+}
