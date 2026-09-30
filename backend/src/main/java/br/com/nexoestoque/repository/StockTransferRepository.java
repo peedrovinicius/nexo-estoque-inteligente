@@ -33,10 +33,11 @@ public class StockTransferRepository {
                 LocalDate expiresAt;
                 BigDecimal sourceQuantity;
                 BigDecimal unitCost;
+                String sourceQualityStatus;
 
                 try (PreparedStatement statement = connection.prepareStatement("""
                         SELECT b.product_id, b.location_id, b.lot_code, b.expires_at,
-                               b.quantity, b.unit_cost
+                               b.quantity, b.unit_cost, b.quality_status
                           FROM stock_batches b
                          WHERE b.id = ?
                          FOR UPDATE
@@ -51,9 +52,13 @@ public class StockTransferRepository {
                         expiresAt = expiry == null ? null : expiry.toLocalDate();
                         sourceQuantity = rs.getBigDecimal("quantity");
                         unitCost = rs.getBigDecimal("unit_cost");
+                        sourceQualityStatus = rs.getString("quality_status");
                     }
                 }
 
+                if (!"AVAILABLE".equals(sourceQualityStatus)) {
+                    throw business("Lote de origem está em quarentena ou bloqueado");
+                }
                 if (sourceLocationId == request.destinationLocationId()) {
                     throw business("Origem e destino devem ser diferentes");
                 }
@@ -64,8 +69,9 @@ public class StockTransferRepository {
                 ensureActiveDestination(connection, request.destinationLocationId());
 
                 Long destinationBatchId = null;
+                String destinationQualityStatus = null;
                 try (PreparedStatement statement = connection.prepareStatement("""
-                        SELECT id
+                        SELECT id, quality_status
                           FROM stock_batches
                          WHERE product_id = ?
                            AND lot_code = ?
@@ -76,8 +82,15 @@ public class StockTransferRepository {
                     statement.setString(2, lotCode);
                     statement.setLong(3, request.destinationLocationId());
                     try (ResultSet rs = statement.executeQuery()) {
-                        if (rs.next()) destinationBatchId = rs.getLong(1);
+                        if (rs.next()) {
+                            destinationBatchId = rs.getLong("id");
+                            destinationQualityStatus = rs.getString("quality_status");
+                        }
                     }
+                }
+
+                if (destinationBatchId != null && !"AVAILABLE".equals(destinationQualityStatus)) {
+                    throw business("Lote no destino está em quarentena ou bloqueado");
                 }
 
                 if (destinationBatchId == null) {
