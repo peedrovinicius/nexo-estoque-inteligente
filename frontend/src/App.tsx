@@ -5,6 +5,7 @@ import InventoryIntelligencePanel from './InventoryIntelligencePanel';
 import TraceabilityPanel from './TraceabilityPanel';
 import ActionCenterPanel from './ActionCenterPanel';
 import DemandPlanningPanel from './DemandPlanningPanel';
+import GovernancePanel from './GovernancePanel';
 import { apiFetch, clearAuthSession, isReadOnlySession, newIdempotencyKey, readAuthSession, saveAuthSession, type AuthRole, type AuthSession } from './auth';
 
 const DEMO_USER='demo';
@@ -2618,7 +2619,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const authSession=readAuthSession();
   const readOnly=authSession?.role==='VIEWER';
-  const [page,setPage]=useState<'dashboard'|'products'|'batches'|'locations'|'inventory'|'simulator'|'purchasing'|'intelligence'|'actions'|'planning'|'traceability'|'assistant'>('dashboard');
+  const [page,setPage]=useState<'dashboard'|'products'|'batches'|'locations'|'inventory'|'simulator'|'purchasing'|'intelligence'|'actions'|'planning'|'governance'|'traceability'|'assistant'>('dashboard');
   const [showMovement,setShowMovement]=useState(false);
   const [movementRefresh,setMovementRefresh]=useState(0);
   const [dashboardLoading,setDashboardLoading]=useState(true);
@@ -2828,6 +2829,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
         <a className={page==='intelligence'?'active':''} onClick={()=>setPage('intelligence')}><TrendingUp size={19}/> Inteligência</a>
         <a className={page==='actions'?'active':''} onClick={()=>setPage('actions')}><Sparkles size={19}/> Central de ação</a>
         <a className={page==='planning'?'active':''} onClick={()=>setPage('planning')}><TrendingUp size={19}/> Planejamento</a>
+        <a className={page==='governance'?'active':''} onClick={()=>setPage('governance')}><ShieldCheck size={19}/> Governança</a>
         <a className={page==='traceability'?'active':''} onClick={()=>setPage('traceability')}><ScanLine size={19}/> Rastreabilidade</a>
         <a className={page==='assistant'?'active':''} onClick={()=>setPage('assistant')}><BrainCircuit size={19}/> Assistente</a>
       </nav>
@@ -2854,6 +2856,8 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
                 ? <ActionCenterPanel/>
                 : page==='planning'
                 ? <DemandPlanningPanel/>
+                : page==='governance'
+                ? <GovernancePanel/>
                 : page==='traceability'
                 ? <TraceabilityPanel/>
                 : page==='assistant'
