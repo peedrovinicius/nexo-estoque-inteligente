@@ -2780,35 +2780,39 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
     ? dashboard.criticalProducts+dashboard.expiryRiskBatches+dashboard.attention.filter(item=>item.icon==='inventory').length
     : 0;
 
-  const cards=[
+  const instruments=[
     {
-      title:'Unidades em estoque',
+      code:'STK',
+      title:'Saldo físico',
       value:dashboard?formatQuantity(dashboard.totalStock):'—',
       Icon:Boxes,
       tone:'blue',
-      detail:dashboard?`${dashboard.activeProducts} ativos · ${formatMoney(dashboard.stockValue)}`:(dashboardLoading?'carregando...':'indisponível')
+      detail:dashboard?`${dashboard.activeProducts} produtos · ${formatMoney(dashboard.stockValue)}`:(dashboardLoading?'carregando...':'indisponível')
     },
     {
-      title:'Estoque crítico',
+      code:'CRT',
+      title:'Pressão de ruptura',
       value:dashboard?String(dashboard.criticalProducts):'—',
       Icon:AlertTriangle,
       tone:'red',
-      detail:dashboard?`${dashboard.outOfStockProducts} sem estoque`:(dashboardLoading?'carregando...':'indisponível')
+      detail:dashboard?`${dashboard.outOfStockProducts} itens já zerados`:(dashboardLoading?'carregando...':'indisponível')
     },
     {
-      title:'Risco de validade',
+      code:'EXP',
+      title:'Pressão de validade',
       value:dashboard?String(dashboard.expiryRiskBatches):'—',
       Icon:PackageSearch,
       tone:'amber',
-      detail:dashboard?`${formatMoney(dashboard.expiryRiskValue)} · ${dashboard.expiredBatches} vencidos`:(dashboardLoading?'carregando...':'indisponível')
+      detail:dashboard?`${formatMoney(dashboard.expiryRiskValue)} expostos · ${dashboard.expiredBatches} vencidos`:(dashboardLoading?'carregando...':'indisponível')
     },
     {
-      title:'Precisão inventário',
+      code:'ACC',
+      title:'Confiabilidade física',
       value:dashboard?.inventoryAccuracy!=null?`${dashboard.inventoryAccuracy.toFixed(1).replace('.',',')}%`:'—',
       Icon:ClipboardCheck,
       tone:'green',
       detail:dashboard?.inventoryAccuracy!=null
-        ? `${dashboard.inventoryDivergences||0} divergências no último inventário`
+        ? `${dashboard.inventoryDivergences||0} divergências na última conferência`
         : (dashboardLoading?'carregando...':'sem inventário fechado')
     }
   ];
@@ -2884,46 +2888,78 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
                 : page==='assistant'
                 ? <AdvisorPanel/>
                 : <>
-          <header className="dashboard-hero">
-            <div className="dashboard-hero-copy">
-              <span className="eyebrow">VISÃO GERAL</span>
-              <h1>Olá, {authSession?.username??'usuário'}.</h1>
+          <header className="control-header">
+            <div className="control-heading">
+              <div className="control-path"><span>NEXO</span><i/>OPERAÇÃO<i/>TEMPO REAL</div>
+              <h1>Estado operacional</h1>
               <p>{dashboard
                 ? actionCount>0
-                  ? `Há ${actionCount} alertas operacionais calculados com dados atuais do estoque.`
-                  : 'Nenhum alerta operacional exige ação imediata neste momento.'
+                  ? `${actionCount} sinais exigem leitura operacional agora.`
+                  : 'Fluxo estável. Nenhum sinal crítico exige intervenção imediata.'
                 : dashboardLoading
-                  ? 'Carregando a situação real do estoque...'
-                  : 'Os indicadores operacionais estão temporariamente indisponíveis.'}</p>
-              <div className="dashboard-hero-tags">
-                <span><Boxes size={14}/>{dashboard?dashboard.activeProducts:'—'} produtos ativos</span>
-                <span><PackageSearch size={14}/>{dashboard?dashboard.expiryRiskBatches:'—'} até 30 dias</span><span><AlertTriangle size={14}/>{dashboard?dashboard.expiryWarningBatches:'—'} entre 31 e 90 dias</span>
-              </div>
+                  ? 'Sincronizando o estado atual do estoque...'
+                  : 'Os sinais operacionais estão temporariamente indisponíveis.'}</p>
             </div>
-            <div className="dashboard-actions">
-              <button className="ghost dashboard-export" onClick={()=>void exportStockPosition()}><Download size={16}/> Exportar estoque</button>
-              <button className="new-action dashboard-primary-action" disabled={readOnly} title={readOnly?'Disponível para Admin e Operador':undefined} onClick={()=>setShowMovement(true)}>+ Nova movimentação</button>
+            <div className="control-actions">
+              <button className="ghost dashboard-export" onClick={()=>void exportStockPosition()}><Download size={16}/> Exportar</button>
+              <button className="new-action dashboard-primary-action" disabled={readOnly} title={readOnly?'Disponível para Admin e Operador':undefined} onClick={()=>setShowMovement(true)}>Registrar movimento</button>
             </div>
           </header>
 
           {dashboardError&&<div className="product-feedback warning">{dashboardError}</div>}
 
-          <section className="cards">
-            {cards.map(({title,value,Icon,detail,tone})=><article className={'metric metric-'+tone} key={title}><div className="metric-top"><span>{title}</span><div className="metric-icon"><Icon size={19}/></div></div><strong>{value}</strong><small>{detail}</small></article>)}
+          <section className="control-deck" aria-label="Pulso operacional">
+            <div className="control-stock">
+              <div className="control-stock-label"><span className="live-indicator"/> SALDO CONSOLIDADO</div>
+              <strong>{dashboard?formatQuantity(dashboard.totalStock):'—'}</strong>
+              <div className="control-stock-meta">
+                <span>{dashboard?dashboard.activeProducts:'—'} SKUs ativos</span>
+                <span>{dashboard?formatMoney(dashboard.stockValue):'—'} imobilizados</span>
+              </div>
+            </div>
+            <div className="control-pressure">
+              <div className={'pressure-line '+((dashboard?.criticalProducts||0)>0?'pressure-danger':'pressure-ok')}>
+                <span>Ruptura</span>
+                <strong>{dashboard?dashboard.criticalProducts:'—'}</strong>
+                <small>{dashboard?`${dashboard.outOfStockProducts} zerados`:'—'}</small>
+              </div>
+              <div className={'pressure-line '+((dashboard?.expiryRiskBatches||0)>0?'pressure-warning':'pressure-ok')}>
+                <span>Validade</span>
+                <strong>{dashboard?dashboard.expiryRiskBatches:'—'}</strong>
+                <small>{dashboard?`${dashboard.expiryWarningBatches} em observação`:'—'}</small>
+              </div>
+              <div className="pressure-line pressure-neutral">
+                <span>Precisão</span>
+                <strong>{dashboard?.inventoryAccuracy!=null?`${dashboard.inventoryAccuracy.toFixed(1).replace('.',',')}%`:'—'}</strong>
+                <small>{dashboard?.inventoryDivergences!=null?`${dashboard.inventoryDivergences} divergências`:'sem leitura recente'}</small>
+              </div>
+            </div>
           </section>
 
-          <section className="attention">
-            <div className="section-head"><div><span className="eyebrow">PRIORIDADE DO DIA</span><h2>O que precisa da sua atenção</h2></div></div>
+          <section className="instrument-strip" aria-label="Instrumentos do estoque">
+            {instruments.map(({code,title,value,Icon,detail,tone})=><article className={'instrument instrument-'+tone} key={code}>
+              <div className="instrument-code"><span>{code}</span><Icon size={15}/></div>
+              <strong>{value}</strong>
+              <div><b>{title}</b><small>{detail}</small></div>
+            </article>)}
+          </section>
+
+          <section className="command-feed">
+            <div className="command-feed-head">
+              <div><span className="eyebrow">FILA OPERACIONAL</span><h2>Sinais que mudam decisão</h2></div>
+              <span className="feed-count">{dashboard?.attention.length||0} ativos</span>
+            </div>
             {dashboard?.attention.length
-              ? <div className="attention-grid">
-                  {dashboard.attention.map(item=><article className={'action-card '+(item.kind==='danger'?'danger':item.kind==='warning'?'warning':'')} key={item.key}>
-                    <div className="icon">{attentionIcon(item.icon)}</div>
-                    <div><strong>{item.title}</strong><span>{item.description}</span></div>
-                    <b>{item.value}</b>
+              ? <div className="signal-feed">
+                  {dashboard.attention.map((item,index)=><article className={'signal-row '+(item.kind==='danger'?'danger':item.kind==='warning'?'warning':'neutral')} key={item.key}>
+                    <span className="signal-index">{String(index+1).padStart(2,'0')}</span>
+                    <div className="signal-icon">{attentionIcon(item.icon)}</div>
+                    <div className="signal-copy"><strong>{item.title}</strong><span>{item.description}</span></div>
+                    <b className="signal-value">{item.value}</b>
                   </article>)}
                 </div>
               : <div className="dashboard-empty">
-                  {dashboardLoading?'Calculando prioridades...':'Nenhuma prioridade crítica encontrada com os dados atuais.'}
+                  {dashboardLoading?'Calculando prioridades...':'Fluxo estável. Nenhum sinal crítico encontrado.'}
                 </div>}
           </section>
 
