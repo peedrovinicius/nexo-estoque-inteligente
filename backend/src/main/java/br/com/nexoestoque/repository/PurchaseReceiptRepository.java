@@ -81,6 +81,7 @@ public class PurchaseReceiptRepository {
                 }
 
                 ensureActiveLocation(connection, request.locationId());
+                ensureLotNotRecalled(connection, productId, request.lotCode());
 
                 BigDecimal balanceBefore;
                 try (PreparedStatement statement = connection.prepareStatement("""
@@ -344,6 +345,23 @@ public class PurchaseReceiptRepository {
                         rs.getString("received_by"),
                         created == null ? null : created.toLocalDateTime()
                 );
+            }
+        }
+    }
+
+    private void ensureLotNotRecalled(Connection connection, long productId, String lotCode) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT id
+                  FROM lot_recalls
+                 WHERE product_id = ?
+                   AND lot_code = ?
+                   AND status = 'OPEN'
+                 LIMIT 1
+                """)) {
+            statement.setLong(1, productId);
+            statement.setString(2, lotCode.trim());
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) throw business("Lote possui recall aberto e não pode ser recebido");
             }
         }
     }
