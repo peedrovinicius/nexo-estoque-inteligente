@@ -673,6 +673,17 @@ main: BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Produto não encontrado ou inativo';
   END IF;
 
+  IF EXISTS (
+    SELECT 1
+      FROM lot_recalls
+     WHERE product_id = p_product_id
+       AND lot_code = TRIM(p_lot_code)
+       AND status = 'OPEN'
+  ) THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lote possui recall aberto e não pode receber nova entrada';
+  END IF;
+
   SELECT sl.id
     INTO v_default_location
     FROM stock_locations sl
@@ -774,6 +785,7 @@ main: BEGIN
   DECLARE v_existing_balance_after DECIMAL(12,3) DEFAULT NULL;
   DECLARE v_existing_movement_batch BIGINT DEFAULT NULL;
   DECLARE v_batch_total DECIMAL(12,3) DEFAULT 0;
+  DECLARE v_available_batch_total DECIMAL(12,3) DEFAULT 0;
   DECLARE v_legacy_gap DECIMAL(12,3) DEFAULT 0;
   DECLARE v_remaining DECIMAL(12,3) DEFAULT 0;
   DECLARE v_batch_id BIGINT;
@@ -879,6 +891,17 @@ main: BEGIN
       quantity = quantity + VALUES(quantity);
   END IF;
 
+  SELECT COALESCE(SUM(quantity),0)
+    INTO v_available_batch_total
+    FROM stock_batches
+   WHERE product_id = p_product_id
+     AND quality_status = 'AVAILABLE';
+
+  IF v_available_batch_total < p_quantity THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Estoque disponível insuficiente: há lote em quarentena ou bloqueado';
+  END IF;
+
   SET p_balance_after = p_balance_before - p_quantity;
 
   UPDATE products
@@ -911,6 +934,7 @@ main: BEGIN
       FROM stock_batches
      WHERE product_id = p_product_id
        AND quantity > 0
+       AND quality_status = 'AVAILABLE'
      ORDER BY
        CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END ASC,
        expires_at ASC,
@@ -968,6 +992,10 @@ BEGIN
     b.expires_at,
     b.quantity,
     b.unit_cost,
+    b.quality_status,
+    b.quality_reason,
+    b.quality_updated_by,
+    b.quality_updated_at,
     b.received_at,
     DATEDIFF(b.expires_at, CURDATE()) AS days_to_expiry,
     CASE
@@ -980,6 +1008,7 @@ BEGIN
     ROW_NUMBER() OVER(
       PARTITION BY b.product_id
       ORDER BY
+        CASE WHEN b.quality_status = 'AVAILABLE' THEN 0 ELSE 1 END ASC,
         CASE WHEN b.expires_at IS NULL THEN 1 ELSE 0 END ASC,
         b.expires_at ASC,
         b.received_at ASC,
@@ -993,6 +1022,7 @@ BEGIN
     AND (p_product_id IS NULL OR b.product_id = p_product_id)
   ORDER BY
     p.name ASC,
+    CASE WHEN b.quality_status = 'AVAILABLE' THEN 0 ELSE 1 END ASC,
     CASE WHEN b.expires_at IS NULL THEN 1 ELSE 0 END ASC,
     b.expires_at ASC,
     b.received_at ASC,
