@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, ArrowRightLeft, Boxes, BrainCircuit, Camera, ChevronRight, ClipboardCheck, Download, LayoutDashboard, LogOut, MapPin, Moon, PackageSearch, ScanLine, ShieldAlert, ShieldCheck, ShoppingCart, Sparkles, Sun, TrendingUp, Truck } from 'lucide-react';
-import { NEXO_LOGO_ORIGINAL } from './nexoLogoOriginal';
 import { apiFetch, clearAuthSession, isReadOnlySession, newIdempotencyKey, readAuthSession, saveAuthSession, type AuthRole, type AuthSession } from './auth';
 
 const InventoryIntelligencePanel=lazy(()=>import('./InventoryIntelligencePanel'));
@@ -126,14 +125,14 @@ function BrandImage({
   if(theme==='light' && className.includes('login-logo')){
     return <span className="login-logo-wordmark" role="img" aria-label={alt}>
       <img
-        src={NEXO_LOGO_ORIGINAL}
+        src="/nexo-logo-original.png"
         alt=""
         className={className+' login-logo-base'}
         draggable={false}
         decoding="async"
       />
       <img
-        src={NEXO_LOGO_ORIGINAL}
+        src="/nexo-logo-original.png"
         alt=""
         aria-hidden="true"
         className={className+' login-logo-blackword'}
@@ -141,7 +140,7 @@ function BrandImage({
         decoding="async"
       />
       <img
-        src={NEXO_LOGO_ORIGINAL}
+        src="/nexo-logo-original.png"
         alt=""
         aria-hidden="true"
         className={className+' login-logo-blacktagline'}
@@ -152,7 +151,7 @@ function BrandImage({
   }
 
   return <img
-    src={NEXO_LOGO_ORIGINAL}
+    src="/nexo-logo-original.png"
     alt={alt}
     className={className}
     draggable={false}
