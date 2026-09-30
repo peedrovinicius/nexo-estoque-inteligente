@@ -226,9 +226,9 @@ function Login({onLogin,theme,onToggleTheme}:{onLogin:()=>void;theme:Theme;onTog
         />
       </div>
       <div className="hero">
-        <span className="eyebrow">GESTÃO QUE ANTECIPA</span>
-        <h1>Controle hoje.<br/><span>Cresça sempre.</span></h1>
-        <p>Gestão de estoque com rastreabilidade, validade, FEFO, simulação de cenários e assistência inteligente sobre dados reais.</p>
+        <span className="eyebrow">GESTÃO INTELIGENTE DE ESTOQUE</span>
+        <h1>Estoque claro.<br/><span>Decisões melhores.</span></h1>
+        <p>Uma visão única para operar estoque, validade, compras e rastreabilidade com precisão, contexto e menos ruído.</p>
         <div className="hero-feature-grid">
           <div><Boxes size={19}/><span>Estoque em tempo real</span></div>
           <div><AlertTriangle size={19}/><span>Alertas operacionais</span></div>
@@ -2825,21 +2825,32 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
         <BrandImage theme={theme} className="sidebar-logo-full" alt="Nexo" />
         <img src="/nexo-symbol.png" alt="Nexo" className="sidebar-logo-symbol" draggable={false} />
       </div>
-      <nav>
-        <a className={page==='dashboard'?'active':''} onClick={()=>setPage('dashboard')}><LayoutDashboard size={19}/> Visão geral</a>
-        <a className={page==='products'?'active':''} onClick={()=>setPage('products')}><Boxes size={19}/> Produtos</a>
-        <a className={page==='batches'?'active':''} onClick={()=>setPage('batches')}><PackageSearch size={19}/> Lotes & validade</a>
-        <a className={page==='locations'?'active':''} onClick={()=>setPage('locations')}><MapPin size={19}/> Locais</a>
-        <a className={page==='inventory'?'active':''} onClick={()=>setPage('inventory')}><ClipboardCheck size={19}/> Inventário cego</a>
-        <a className={page==='simulator'?'active':''} onClick={()=>setPage('simulator')}><TrendingUp size={19}/> Simulador</a>
-        <a className={page==='purchasing'?'active':''} onClick={()=>setPage('purchasing')}><ShoppingCart size={19}/> Compras</a>
-        <a className={page==='intelligence'?'active':''} onClick={()=>setPage('intelligence')}><TrendingUp size={19}/> Inteligência</a>
-        <a className={page==='actions'?'active':''} onClick={()=>setPage('actions')}><Sparkles size={19}/> Central de ação</a>
-        <a className={page==='planning'?'active':''} onClick={()=>setPage('planning')}><TrendingUp size={19}/> Planejamento</a>
-        <a className={page==='governance'?'active':''} onClick={()=>setPage('governance')}><ShieldCheck size={19}/> Governança</a>
-        <a className={page==='quality'?'active':''} onClick={()=>setPage('quality')}><ShieldAlert size={19}/> Qualidade</a>
-        <a className={page==='traceability'?'active':''} onClick={()=>setPage('traceability')}><ScanLine size={19}/> Rastreabilidade</a>
-        <a className={page==='assistant'?'active':''} onClick={()=>setPage('assistant')}><BrainCircuit size={19}/> Assistente</a>
+      <nav className="sidebar-nav" aria-label="Navegação principal">
+        <span className="sidebar-section-title">Principal</span>
+        <button type="button" className={page==='dashboard'?'active':''} aria-current={page==='dashboard'?'page':undefined} onClick={()=>setPage('dashboard')}><LayoutDashboard size={18}/><span>Visão geral</span></button>
+
+        <span className="sidebar-section-title">Estoque</span>
+        <button type="button" className={page==='products'?'active':''} aria-current={page==='products'?'page':undefined} onClick={()=>setPage('products')}><Boxes size={18}/><span>Produtos</span></button>
+        <button type="button" className={page==='batches'?'active':''} aria-current={page==='batches'?'page':undefined} onClick={()=>setPage('batches')}><PackageSearch size={18}/><span>Lotes & validade</span></button>
+        <button type="button" className={page==='locations'?'active':''} aria-current={page==='locations'?'page':undefined} onClick={()=>setPage('locations')}><MapPin size={18}/><span>Locais</span></button>
+        <button type="button" className={page==='inventory'?'active':''} aria-current={page==='inventory'?'page':undefined} onClick={()=>setPage('inventory')}><ClipboardCheck size={18}/><span>Inventário cego</span></button>
+
+        <span className="sidebar-section-title">Operação</span>
+        <button type="button" className={page==='purchasing'?'active':''} aria-current={page==='purchasing'?'page':undefined} onClick={()=>setPage('purchasing')}><ShoppingCart size={18}/><span>Compras</span></button>
+        <button type="button" className={page==='actions'?'active':''} aria-current={page==='actions'?'page':undefined} onClick={()=>setPage('actions')}><Sparkles size={18}/><span>Central de ação</span></button>
+        <button type="button" className={page==='simulator'?'active':''} aria-current={page==='simulator'?'page':undefined} onClick={()=>setPage('simulator')}><TrendingUp size={18}/><span>Simulador</span></button>
+
+        <span className="sidebar-section-title">Análise</span>
+        <button type="button" className={page==='intelligence'?'active':''} aria-current={page==='intelligence'?'page':undefined} onClick={()=>setPage('intelligence')}><TrendingUp size={18}/><span>Inteligência</span></button>
+        <button type="button" className={page==='planning'?'active':''} aria-current={page==='planning'?'page':undefined} onClick={()=>setPage('planning')}><TrendingUp size={18}/><span>Planejamento</span></button>
+
+        <span className="sidebar-section-title">Controle</span>
+        <button type="button" className={page==='governance'?'active':''} aria-current={page==='governance'?'page':undefined} onClick={()=>setPage('governance')}><ShieldCheck size={18}/><span>Governança</span></button>
+        <button type="button" className={page==='quality'?'active':''} aria-current={page==='quality'?'page':undefined} onClick={()=>setPage('quality')}><ShieldAlert size={18}/><span>Qualidade</span></button>
+        <button type="button" className={page==='traceability'?'active':''} aria-current={page==='traceability'?'page':undefined} onClick={()=>setPage('traceability')}><ScanLine size={18}/><span>Rastreabilidade</span></button>
+
+        <span className="sidebar-section-title">Assistência</span>
+        <button type="button" className={page==='assistant'?'active':''} aria-current={page==='assistant'?'page':undefined} onClick={()=>setPage('assistant')}><BrainCircuit size={18}/><span>Assistente</span></button>
       </nav>
       <div className="sidebar-bottom"><ThemeToggle theme={theme} onToggle={onToggleTheme}/><button className="logout" onClick={logout}><LogOut size={18}/> Sair</button></div>
     </aside>
