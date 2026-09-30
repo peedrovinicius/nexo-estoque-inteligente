@@ -4,6 +4,35 @@ Plataforma web de gestão inteligente e auditável de estoque para farmácias, m
 
 O Nexo concentra operação, rastreabilidade e apoio à decisão em uma única aplicação. Os cálculos críticos permanecem determinísticos e auditáveis. A assistência por IA funciona como camada explicativa e não altera saldo nem executa decisões críticas por conta própria.
 
+**Produção:** https://nexo-estoque-web-production.up.railway.app  
+**Versão:** 1.0.0  
+**Status:** escopo funcional concluído e publicado
+
+## Destaques técnicos
+
+- estoque por lote com FEFO transacional, idempotência e proteção contra concorrência
+- rastreabilidade ponta a ponta de recebimento, transferência, consumo, quarentena e recall
+- planejamento de demanda com estoque de segurança, ponto de reposição e projeção de ruptura
+- governança operacional com políticas por produto, exceções temporárias, contagem cíclica e SLA
+- inteligência operacional com ABC, cobertura, capital imobilizado, validade e desempenho de fornecedores
+- assistência por IA restrita à explicação de resultados; decisões críticas permanecem determinísticas
+- migrações versionadas com Flyway, testes de integração com MySQL e CI no GitHub Actions
+
+## Arquitetura
+
+```text
+React + TypeScript + Vite
+          |
+          v
+Spring Boot API (Java 21)
+          |
+          v
+MySQL + Flyway + Stored Procedures
+          |
+          +--> OpenAI apenas como camada explicativa
+```
+
+
 ## Stack
 
 - Java 21 e Spring Boot
