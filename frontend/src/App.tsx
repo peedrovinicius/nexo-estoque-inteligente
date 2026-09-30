@@ -2824,7 +2824,8 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
   };
 
   return <div className="app-shell">
-    <aside>
+    <a className="skip-link" href="#main-content">Pular para o conteúdo</a>
+    <aside aria-label="Navegação do Nexo">
       <div className="brand sidebar-brand">
         <BrandImage theme={theme} className="sidebar-logo-full" alt="Nexo" />
         <img src="/nexo-symbol.png" alt="Nexo" className="sidebar-logo-symbol" draggable={false} />
@@ -2856,11 +2857,11 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
         <span className="sidebar-section-title">Assistência</span>
         <button type="button" className={page==='assistant'?'active':''} aria-current={page==='assistant'?'page':undefined} onClick={()=>setPage('assistant')}><BrainCircuit size={18}/><span>Assistente</span></button>
       </nav>
-      <div className="sidebar-bottom"><ThemeToggle theme={theme} onToggle={onToggleTheme}/><button className="logout" onClick={logout}><LogOut size={18}/> Sair</button></div>
+      <div className="sidebar-bottom"><ThemeToggle theme={theme} onToggle={onToggleTheme}/><button type="button" className="logout" onClick={logout}><LogOut size={18}/> Sair</button></div>
     </aside>
-    <main className="workspace">
+    <main id="main-content" className="workspace" tabIndex={-1}>
       <SystemReadiness/>
-      {readOnly&&<div className="demo-readonly-banner"><ShieldCheck size={16}/><span>Modo demonstração: consultas, FEFO, locais, simulador, compras e assistente liberados. Alterações operacionais estão bloqueadas.</span></div>}
+      {readOnly&&<div className="demo-readonly-banner" role="note"><ShieldCheck size={16}/><span>Modo demonstração: consultas, FEFO, locais, simulador, compras e assistente liberados. Alterações operacionais estão bloqueadas.</span></div>}
       {page==='products'
         ? <ProductsPanel/>
         : page==='batches'
@@ -2906,7 +2907,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
             </div>
           </header>
 
-          {dashboardError&&<div className="product-feedback warning">{dashboardError}</div>}
+          {dashboardError&&<div className="product-feedback warning" role="alert">{dashboardError}</div>}
 
           <section className="control-deck" aria-label="Pulso operacional">
             <div className="control-stock">
