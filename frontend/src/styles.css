@@ -6495,3 +6495,298 @@ canvas {
     max-width: 100% !important;
   }
 }
+
+
+/* =========================================================
+   NEXO POLISH PASS 01 — visual alignment
+   ========================================================= */
+
+/* 1. Status/readiness sits in the flow instead of floating visually */
+.system-readiness {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-height: 30px !important;
+  padding: 6px 9px !important;
+  margin: 0 0 14px 0 !important;
+  border-radius: 4px !important;
+  font-family: var(--nexo-mono);
+  font-size: 9px !important;
+  letter-spacing: .025em;
+}
+
+.demo-readonly-banner {
+  min-height: 38px;
+  padding: 9px 11px !important;
+  margin-bottom: 18px !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  line-height: 1.45;
+}
+
+/* 2. All page heads share one baseline */
+.page-header,
+.products-head,
+.intelligence-head,
+.traceability-head,
+.action-center-head,
+.planning-head,
+.governance-head,
+.quality-head,
+.advisor-page-header {
+  padding: 0 0 16px !important;
+  margin: 0 0 18px !important;
+  border-bottom: 1px solid var(--nx-line) !important;
+}
+
+.page-header h1,
+.products-head h1,
+.intelligence-head h1,
+.traceability-head h1,
+.action-center-head h1,
+.planning-head h1,
+.governance-head h1,
+.quality-head h1,
+.advisor-page-header h1 {
+  margin-bottom: 6px !important;
+}
+
+.page-header p,
+.products-head p,
+.intelligence-head p,
+.traceability-head p,
+.action-center-head p,
+.planning-head p,
+.governance-head p,
+.quality-head p,
+.advisor-page-header p {
+  margin: 0 !important;
+}
+
+.page-header .audit,
+.advisor-page-header .audit {
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
+/* 3. Dense operational rows no longer jump or wrap unpredictably */
+.daily-action,
+.approval-row,
+.reservation-row,
+.governance-action,
+.quality-held,
+.quality-recall {
+  width: 100%;
+  min-height: 52px;
+}
+
+.daily-action {
+  grid-template-columns: 72px minmax(0,1fr) minmax(80px,auto) !important;
+}
+
+.approval-row,
+.quality-held,
+.quality-recall {
+  grid-template-columns: minmax(0,1fr) minmax(90px,auto) minmax(110px,auto) !important;
+}
+
+.reservation-row {
+  grid-template-columns: minmax(0,1fr) minmax(88px,120px) minmax(82px,auto) minmax(90px,auto) !important;
+}
+
+.governance-action {
+  grid-template-columns: 78px minmax(0,1fr) minmax(80px,auto) minmax(90px,auto) minmax(100px,auto) !important;
+}
+
+.daily-action > *,
+.approval-row > *,
+.reservation-row > *,
+.governance-action > *,
+.quality-held > *,
+.quality-recall > * {
+  min-width: 0;
+}
+
+.daily-action strong,
+.daily-action small,
+.approval-row strong,
+.approval-row small,
+.reservation-row strong,
+.reservation-row small,
+.governance-action strong,
+.governance-action small,
+.quality-held strong,
+.quality-held small,
+.quality-recall strong,
+.quality-recall small {
+  overflow-wrap: anywhere;
+}
+
+.approval-actions,
+.quality-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* 4. Tables use consistent geometry and don't look vertically displaced */
+.product-table th,
+.batch-table th,
+.blind-table th,
+.planning-table th,
+.ledger-table th,
+.cycle-count-table th,
+.variance-table th {
+  height: 38px;
+  vertical-align: middle !important;
+  white-space: nowrap;
+}
+
+.product-table td,
+.batch-table td,
+.blind-table td,
+.planning-table td,
+.ledger-table td,
+.cycle-count-table td,
+.variance-table td {
+  vertical-align: middle !important;
+}
+
+.product-table td strong,
+.product-table td small,
+.batch-table td strong,
+.batch-table td small,
+.planning-table td strong,
+.planning-table td small,
+.cycle-count-table td strong,
+.cycle-count-table td small {
+  display: block;
+}
+
+.product-table td small,
+.batch-table td small,
+.planning-table td small,
+.cycle-count-table td small {
+  margin-top: 3px;
+}
+
+/* 5. Forms align labels, controls and footer actions */
+.product-form,
+.purchase-form,
+.governance-form,
+.quality-form,
+.reservation-form,
+.movement-form {
+  width: 100%;
+}
+
+.form-grid,
+.governance-inline,
+.reservation-inline,
+.sim-input-grid,
+.movement-grid {
+  align-items: end;
+}
+
+.form-grid label,
+.governance-form label,
+.quality-form label,
+.reservation-form label,
+.purchase-form label,
+.movement-form label {
+  justify-content: end;
+}
+
+.form-title {
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.form-title > div {
+  min-width: 0;
+}
+
+.form-title > button {
+  flex: 0 0 auto;
+}
+
+.form-actions {
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px solid var(--nx-line);
+  align-items: center !important;
+}
+
+/* Section titles stay aligned with their content */
+.section-head {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  width: 100%;
+}
+
+.section-head > div {
+  min-width: 0;
+}
+
+.section-head > svg,
+.section-head > strong {
+  flex: 0 0 auto;
+}
+
+/* Tablet-specific row simplification */
+@media (max-width: 980px) {
+  .governance-action {
+    grid-template-columns: 70px minmax(0,1fr) minmax(90px,auto) !important;
+  }
+
+  .governance-action > b,
+  .governance-action > .governance-status,
+  .governance-action > button {
+    grid-column: 2 / 4 !important;
+    justify-self: start;
+  }
+
+  .reservation-row,
+  .approval-row,
+  .quality-held,
+  .quality-recall {
+    grid-template-columns: minmax(0,1fr) auto !important;
+  }
+
+  .approval-actions,
+  .quality-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 680px) {
+  .daily-action,
+  .approval-row,
+  .reservation-row,
+  .governance-action,
+  .quality-held,
+  .quality-recall {
+    grid-template-columns: 1fr !important;
+    gap: 7px !important;
+  }
+
+  .governance-action > b,
+  .governance-action > .governance-status,
+  .governance-action > button {
+    grid-column: auto !important;
+  }
+
+  .approval-actions,
+  .quality-actions {
+    grid-column: auto;
+    justify-content: flex-start;
+  }
+
+  .system-readiness {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
