@@ -5544,3 +5544,954 @@ textarea,
     border-left: 0;
   }
 }
+
+
+/* =========================================================
+   NEXO LAYOUT STABILIZATION
+   Final geometry layer: prevents legacy CSS from moving UI.
+   ========================================================= */
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body,
+#root {
+  min-height: 100dvh;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+.app-shell,
+.workspace,
+.workspace > *,
+.page-header > *,
+.products-head > *,
+.control-header > *,
+.section-head > * {
+  min-width: 0;
+}
+
+.workspace {
+  box-sizing: border-box !important;
+  overflow: visible;
+}
+
+.workspace > * {
+  max-width: 100%;
+}
+
+/* Sidebar geometry: neutralize legacy brand-card rules */
+.app-shell > aside .sidebar-brand {
+  width: 100% !important;
+  min-height: 64px !important;
+  height: 64px !important;
+  flex: 0 0 64px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding: 8px 10px 12px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app-shell > aside .sidebar-brand .sidebar-logo-full {
+  display: block !important;
+  width: 148px !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+}
+
+.app-shell > aside .sidebar-logo-symbol {
+  flex: 0 0 auto;
+}
+
+.sidebar-nav {
+  width: 100%;
+}
+
+.sidebar-nav button {
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+
+.sidebar-nav button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-bottom {
+  width: 100%;
+}
+
+/* Utility/status rows */
+.system-readiness {
+  width: max-content;
+  max-width: 100%;
+  margin: 0 0 16px auto !important;
+}
+
+.system-readiness > * {
+  min-width: 0;
+}
+
+.demo-readonly-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.demo-readonly-banner svg {
+  flex: 0 0 auto;
+}
+
+/* Headers */
+.page-header,
+.products-head,
+.intelligence-head,
+.traceability-head,
+.action-center-head,
+.planning-head,
+.governance-head,
+.quality-head,
+.advisor-page-header,
+.control-header {
+  width: 100%;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 20px !important;
+  flex-wrap: wrap;
+}
+
+.page-header > div:first-child,
+.products-head > div:first-child,
+.intelligence-head > div:first-child,
+.traceability-head > div:first-child,
+.action-center-head > div:first-child,
+.planning-head > div:first-child,
+.governance-head > div:first-child,
+.quality-head > div:first-child,
+.advisor-page-header > div:first-child,
+.control-heading {
+  flex: 1 1 520px;
+  min-width: 0;
+}
+
+.page-header > button,
+.products-head > button,
+.intelligence-head > button,
+.traceability-head > button,
+.action-center-head > button,
+.planning-head > button,
+.governance-head > button,
+.quality-head > button,
+.control-actions {
+  flex: 0 0 auto;
+}
+
+.purchase-header-actions,
+.dashboard-actions,
+.control-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.purchase-header-actions button,
+.dashboard-actions button,
+.control-actions button {
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+
+/* Control Deck */
+.control-deck {
+  width: 100%;
+  grid-template-columns: minmax(0,1.35fr) minmax(280px,.72fr) !important;
+  overflow: hidden;
+}
+
+.control-stock,
+.control-pressure,
+.pressure-line,
+.instrument,
+.signal-row,
+.signal-copy {
+  min-width: 0;
+}
+
+.control-stock > strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.control-stock-meta {
+  flex-wrap: wrap;
+}
+
+.control-pressure {
+  min-width: 0;
+}
+
+.pressure-line {
+  min-width: 0;
+}
+
+.pressure-line > strong {
+  max-width: 100%;
+}
+
+.instrument-strip {
+  width: 100%;
+  grid-template-columns: repeat(4,minmax(0,1fr)) !important;
+}
+
+.instrument > strong,
+.instrument b,
+.instrument small {
+  max-width: 100%;
+}
+
+.signal-row {
+  width: 100%;
+  grid-template-columns: 44px 38px minmax(0,1fr) minmax(88px,auto) !important;
+}
+
+.signal-value {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Shared forms/toolbars */
+.product-toolbar,
+.batch-toolbar,
+.intelligence-toolbar,
+.action-toolbar,
+.planning-toolbar {
+  width: 100%;
+  max-width: 100%;
+}
+
+.product-toolbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  flex-wrap: wrap;
+}
+
+.product-search-with-scan {
+  flex: 1 1 360px !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+.product-search-with-scan > input {
+  min-width: 0 !important;
+}
+
+.product-toolbar-filters {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end;
+  gap: 8px !important;
+  flex-wrap: wrap;
+}
+
+.batch-toolbar {
+  display: grid !important;
+  grid-template-columns: minmax(220px,1fr) minmax(180px,260px);
+  align-items: center !important;
+}
+
+.batch-toolbar input,
+.batch-toolbar select {
+  width: 100%;
+  min-width: 0;
+}
+
+.form-grid {
+  width: 100%;
+  grid-template-columns: repeat(4,minmax(0,1fr)) !important;
+}
+
+.form-grid > *,
+.governance-inline > *,
+.sim-input-grid > *,
+.movement-grid > * {
+  min-width: 0;
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid textarea,
+.governance-inline input,
+.governance-inline select,
+.sim-input-grid input,
+.movement-grid input,
+.movement-grid select {
+  width: 100%;
+  min-width: 0;
+}
+
+.form-actions {
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.form-actions > span {
+  flex: 1 1 300px;
+  min-width: 0;
+}
+
+.form-actions > button {
+  flex: 0 0 auto;
+}
+
+.field-with-action {
+  min-width: 0;
+}
+
+.field-with-action > input {
+  min-width: 0 !important;
+}
+
+/* KPI layouts */
+.batch-kpis,
+.location-kpis,
+.intelligence-kpis,
+.trace-kpis,
+.action-kpis,
+.planning-kpis,
+.governance-kpis,
+.quality-kpis,
+.impact-kpis {
+  width: 100%;
+  grid-template-columns: repeat(auto-fit,minmax(170px,1fr)) !important;
+}
+
+.batch-kpis > *,
+.location-kpis > *,
+.intelligence-kpis > *,
+.trace-kpis > *,
+.action-kpis > *,
+.planning-kpis > *,
+.governance-kpis > *,
+.quality-kpis > *,
+.impact-kpis > * {
+  min-width: 0;
+}
+
+/* Main module grids */
+.location-grid {
+  width: 100%;
+  grid-template-columns: repeat(auto-fit,minmax(260px,1fr)) !important;
+}
+
+.purchase-grid {
+  width: 100%;
+  grid-template-columns: minmax(260px,.8fr) minmax(0,1.35fr) !important;
+}
+
+.purchase-panel,
+.purchase-orders-panel,
+.purchase-order-row,
+.purchase-order-main,
+.purchase-order-meta {
+  min-width: 0;
+}
+
+.purchase-order-row {
+  max-width: 100%;
+}
+
+.purchase-order-main {
+  overflow: hidden;
+}
+
+.purchase-order-main strong,
+.purchase-order-main small {
+  overflow-wrap: anywhere;
+}
+
+.blind-layout {
+  width: 100%;
+  grid-template-columns: minmax(230px,280px) minmax(0,1fr) !important;
+}
+
+.inventory-sessions,
+.inventory-work,
+.inventory-session,
+.inventory-session > div {
+  min-width: 0;
+}
+
+.inventory-sessions {
+  max-width: 100%;
+}
+
+.inventory-work {
+  overflow: hidden;
+}
+
+.inventory-work-head {
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.intelligence-grid,
+.trace-grid,
+.action-grid,
+.governance-grid,
+.quality-grid {
+  width: 100%;
+  grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+}
+
+.intelligence-panel,
+.trace-panel,
+.action-panel,
+.governance-panel,
+.quality-panel,
+.trace-wide,
+.action-wide,
+.governance-wide,
+.quality-wide {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.trace-wide,
+.action-wide,
+.governance-wide,
+.quality-wide {
+  grid-column: 1 / -1 !important;
+}
+
+.advisor-workspace {
+  width: 100%;
+  grid-template-columns: minmax(240px,.42fr) minmax(0,1fr) !important;
+}
+
+.advisor-context,
+.advisor-chat,
+.advisor-messages,
+.advisor-message {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.sim-grid {
+  width: 100%;
+  grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+}
+
+.controls,
+.result {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.sim-real-baseline,
+.result-grid {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+}
+
+.result-grid {
+  grid-template-columns: repeat(3,minmax(0,1fr));
+}
+
+/* Lists */
+.movement-list,
+.purchase-list,
+.intelligence-list,
+.trace-list,
+.replenishment-list,
+.approval-list,
+.reservation-list,
+.daily-actions,
+.governance-action-list,
+.governance-exceptions,
+.quality-held-list,
+.quality-recall-list {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.movement-row {
+  width: 100%;
+  grid-template-columns: 92px minmax(0,1fr) minmax(110px,150px) minmax(120px,150px) !important;
+}
+
+.movement-row > *,
+.intelligence-row > *,
+.trace-row > *,
+.approval-row > *,
+.reservation-row > *,
+.governance-action > *,
+.quality-held > *,
+.quality-recall > * {
+  min-width: 0;
+}
+
+/* Tables */
+.product-table-wrap,
+.batch-table-wrap,
+.blind-table-wrap,
+.planning-table-wrap,
+.ledger-table-wrap,
+.cycle-count-table-wrap,
+.variance-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto !important;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+.product-table { min-width: 860px !important; }
+.batch-table { min-width: 980px !important; }
+.blind-table { min-width: 640px !important; }
+.planning-table { min-width: 980px !important; }
+.ledger-table { min-width: 900px !important; }
+.cycle-count-table { min-width: 860px !important; }
+.variance-table { min-width: 820px !important; }
+
+.product-table,
+.batch-table,
+.blind-table,
+.planning-table,
+.ledger-table,
+.cycle-count-table,
+.variance-table {
+  width: 100% !important;
+}
+
+/* Modals and overlays */
+.modal-backdrop,
+.barcode-overlay {
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.movement-modal,
+.barcode-card {
+  width: min(680px,calc(100vw - 32px)) !important;
+  max-width: 100% !important;
+  max-height: calc(100dvh - 32px) !important;
+  overflow: auto !important;
+}
+
+.movement-grid {
+  grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+}
+
+.modal-actions {
+  flex-wrap: wrap;
+}
+
+/* Login geometry */
+.login-shell {
+  width: 100%;
+  grid-template-columns: minmax(0,1.05fr) minmax(420px,.95fr) !important;
+}
+
+.login-copy,
+.login-side,
+.login-card,
+.login-title,
+.login-access-copy {
+  min-width: 0;
+}
+
+.login-card {
+  max-width: 430px !important;
+}
+
+.login-title {
+  max-width: 100%;
+}
+
+.login-title .login-logo {
+  flex: 0 1 180px;
+  min-width: 0;
+}
+
+.login-access-copy {
+  flex: 1 1 auto;
+}
+
+/* Laptop / compact desktop */
+@media (max-width: 1320px) {
+  .control-deck {
+    grid-template-columns: 1fr !important;
+  }
+
+  .control-stock {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--nexo-rule) !important;
+  }
+
+  .control-pressure {
+    grid-template-columns: repeat(3,minmax(0,1fr)) !important;
+    grid-template-rows: none !important;
+  }
+
+  .pressure-line {
+    border-right: 1px solid var(--nexo-rule) !important;
+    border-bottom: 0 !important;
+  }
+
+  .pressure-line:last-child {
+    border-right: 0 !important;
+  }
+
+  .instrument-strip {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+  }
+
+  .instrument:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .instrument:nth-child(-n+2) {
+    border-bottom: 1px solid var(--nexo-rule);
+  }
+
+  .purchase-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Tablet */
+@media (max-width: 1050px) {
+  .workspace {
+    padding-left: 22px !important;
+    padding-right: 22px !important;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+  }
+
+  .blind-layout,
+  .advisor-workspace,
+  .sim-grid,
+  .intelligence-grid,
+  .trace-grid,
+  .action-grid,
+  .governance-grid,
+  .quality-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .trace-wide,
+  .action-wide,
+  .governance-wide,
+  .quality-wide {
+    grid-column: auto !important;
+  }
+
+  .inventory-sessions {
+    min-height: auto !important;
+  }
+
+  .batch-toolbar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .product-toolbar-filters {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+
+  .advisor-context {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+  }
+}
+
+/* Phone / narrow tablet */
+@media (max-width: 720px) {
+  .app-shell {
+    grid-template-columns: 64px minmax(0,1fr) !important;
+  }
+
+  .app-shell > aside {
+    padding-left: 7px !important;
+    padding-right: 7px !important;
+  }
+
+  .app-shell > aside .sidebar-brand {
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .sidebar-logo-full {
+    display: none !important;
+  }
+
+  .sidebar-logo-symbol {
+    display: block !important;
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .workspace {
+    padding: 18px 12px 48px !important;
+  }
+
+  .page-header,
+  .products-head,
+  .intelligence-head,
+  .traceability-head,
+  .action-center-head,
+  .planning-head,
+  .governance-head,
+  .quality-head,
+  .advisor-page-header,
+  .control-header {
+    gap: 14px !important;
+  }
+
+  .page-header > div:first-child,
+  .products-head > div:first-child,
+  .intelligence-head > div:first-child,
+  .traceability-head > div:first-child,
+  .action-center-head > div:first-child,
+  .planning-head > div:first-child,
+  .governance-head > div:first-child,
+  .quality-head > div:first-child,
+  .advisor-page-header > div:first-child,
+  .control-heading {
+    flex-basis: 100%;
+  }
+
+  .page-header > button,
+  .products-head > button,
+  .intelligence-head > button,
+  .traceability-head > button,
+  .action-center-head > button,
+  .planning-head > button,
+  .governance-head > button,
+  .quality-head > button {
+    width: 100%;
+  }
+
+  .control-actions,
+  .purchase-header-actions,
+  .dashboard-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .control-actions button,
+  .purchase-header-actions button,
+  .dashboard-actions button {
+    flex: 1 1 150px;
+  }
+
+  .control-stock {
+    padding: 22px 18px !important;
+  }
+
+  .control-stock > strong {
+    font-size: clamp(44px,15vw,64px) !important;
+    line-height: .95 !important;
+  }
+
+  .control-stock-meta {
+    gap: 8px;
+  }
+
+  .control-stock-meta span + span {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .control-pressure {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pressure-line {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--nexo-rule) !important;
+  }
+
+  .instrument-strip,
+  .batch-kpis,
+  .location-kpis,
+  .intelligence-kpis,
+  .trace-kpis,
+  .action-kpis,
+  .planning-kpis,
+  .governance-kpis,
+  .quality-kpis,
+  .impact-kpis {
+    grid-template-columns: 1fr !important;
+  }
+
+  .instrument {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--nexo-rule);
+  }
+
+  .instrument:last-child {
+    border-bottom: 0;
+  }
+
+  .signal-row {
+    grid-template-columns: 28px 30px minmax(0,1fr) !important;
+    gap: 7px !important;
+  }
+
+  .signal-value {
+    grid-column: 3 !important;
+    max-width: 100%;
+    padding-left: 0 !important;
+    border-left: 0 !important;
+  }
+
+  .form-grid,
+  .movement-grid,
+  .sim-real-baseline,
+  .result-grid,
+  .advisor-context {
+    grid-template-columns: 1fr !important;
+  }
+
+  .form-actions {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .form-actions > button {
+    width: 100%;
+  }
+
+  .product-search-with-scan {
+    flex-basis: 100% !important;
+    flex-wrap: wrap;
+  }
+
+  .product-search-with-scan > input {
+    flex-basis: 100%;
+  }
+
+  .barcode-trigger {
+    width: 100%;
+  }
+
+  .product-toolbar-filters {
+    width: 100%;
+    align-items: stretch !important;
+    flex-direction: column;
+  }
+
+  .product-toolbar-filters select,
+  .batch-toolbar select {
+    width: 100%;
+  }
+
+  .blind-create,
+  .blind-create form,
+  .inventory-work-head {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .inventory-sessions {
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  .inventory-side-head {
+    width: 100%;
+  }
+
+  .inventory-session {
+    width: 100%;
+    min-width: 0 !important;
+  }
+
+  .movement-row,
+  .purchase-order-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .purchase-order-row {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .purchase-order-meta {
+    width: 100%;
+    justify-content: flex-start !important;
+    flex-wrap: wrap;
+  }
+
+  .location-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .location-card {
+    min-width: 0;
+  }
+
+  .login-shell {
+    grid-template-columns: 1fr !important;
+  }
+
+  .login-copy {
+    display: none !important;
+  }
+
+  .login-side {
+    min-height: 100dvh;
+    padding: 18px 14px !important;
+  }
+
+  .login-card {
+    width: 100% !important;
+    max-width: 430px !important;
+  }
+
+  .login-title {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .login-title .login-logo {
+    width: 172px !important;
+    max-width: 100% !important;
+  }
+}
