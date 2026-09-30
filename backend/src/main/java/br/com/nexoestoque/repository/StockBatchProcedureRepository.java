@@ -132,7 +132,9 @@ public class StockBatchProcedureRepository {
     }
 
     public FefoPreviewResponse previewExit(long productId, BigDecimal quantity) throws SQLException {
-        List<StockBatch> batches = findBatches(productId);
+        List<StockBatch> batches = findBatches(productId).stream()
+                .filter(batch -> "AVAILABLE".equals(batch.qualityStatus()))
+                .toList();
         BigDecimal available = batches.stream()
                 .map(StockBatch::quantity)
                 .filter(value -> value != null)
@@ -178,6 +180,7 @@ public class StockBatchProcedureRepository {
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
                     Date expiresAt = rs.getDate("expires_at");
+                    Timestamp qualityUpdatedAt = rs.getTimestamp("quality_updated_at");
                     Timestamp receivedAt = rs.getTimestamp("received_at");
                     Integer daysToExpiry = (Integer) rs.getObject("days_to_expiry");
 
@@ -199,6 +202,10 @@ public class StockBatchProcedureRepository {
                             expiresAt == null ? null : expiresAt.toLocalDate(),
                             rs.getBigDecimal("quantity"),
                             rs.getBigDecimal("unit_cost"),
+                            rs.getString("quality_status"),
+                            rs.getString("quality_reason"),
+                            rs.getString("quality_updated_by"),
+                            qualityUpdatedAt == null ? null : qualityUpdatedAt.toLocalDateTime(),
                             receivedAt == null ? null : receivedAt.toLocalDateTime(),
                             daysToExpiry,
                             rs.getString("expiry_status"),
