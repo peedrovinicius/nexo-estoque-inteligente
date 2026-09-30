@@ -76,6 +76,7 @@ jobs:
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V6__inventory_alert_settings.sql
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V7__approvals_reservations.sql
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V8__operational_governance.sql
+          mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/V9__quality_recall_control.sql
           mysql -h 127.0.0.1 -uroot -proot nexo_test < database/migrations/R__procedures.sql
       - name: Verify warehouse receipt transfer and barcode integration
         env:
@@ -139,6 +140,15 @@ jobs:
         run: |
           cd backend
           mvn -B -Dtest=OperationalGovernanceIntegrationTest test
+
+      - name: Verify quality recall control
+        env:
+          NEXO_DB_INTEGRATION_URL: jdbc:mysql://127.0.0.1:3306/nexo_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+          NEXO_DB_INTEGRATION_USER: root
+          NEXO_DB_INTEGRATION_PASSWORD: root
+        run: |
+          cd backend
+          mvn -B -Dtest=QualityControlIntegrationTest test
 
       - name: Verify idempotent stock write
         shell: bash
