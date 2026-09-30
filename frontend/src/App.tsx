@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, ArrowRightLeft, Boxes, BrainCircuit, Camera, ChevronRight, ClipboardCheck, Download, LayoutDashboard, LogOut, MapPin, Moon, PackageSearch, ScanLine, ShieldAlert, ShieldCheck, ShoppingCart, Sparkles, Sun, TrendingUp, Truck } from 'lucide-react';
 import { NEXO_LOGO_ORIGINAL } from './nexoLogoOriginal';
-import InventoryIntelligencePanel from './InventoryIntelligencePanel';
-import TraceabilityPanel from './TraceabilityPanel';
-import ActionCenterPanel from './ActionCenterPanel';
-import DemandPlanningPanel from './DemandPlanningPanel';
-import GovernancePanel from './GovernancePanel';
-import QualityControlPanel from './QualityControlPanel';
 import { apiFetch, clearAuthSession, isReadOnlySession, newIdempotencyKey, readAuthSession, saveAuthSession, type AuthRole, type AuthSession } from './auth';
+
+const InventoryIntelligencePanel=lazy(()=>import('./InventoryIntelligencePanel'));
+const TraceabilityPanel=lazy(()=>import('./TraceabilityPanel'));
+const ActionCenterPanel=lazy(()=>import('./ActionCenterPanel'));
+const DemandPlanningPanel=lazy(()=>import('./DemandPlanningPanel'));
+const GovernancePanel=lazy(()=>import('./GovernancePanel'));
+const QualityControlPanel=lazy(()=>import('./QualityControlPanel'));
 
 const DEMO_USER='demo';
 const DEMO_PASSWORD='Nexo@2026';
@@ -157,6 +158,12 @@ function BrandImage({
     draggable={false}
     decoding="async"
   />;
+}
+
+function DeferredPanel({children}:{children:React.ReactNode}){
+  return <Suspense fallback={<div className="deferred-panel-loading" role="status" aria-live="polite"><span/> Carregando módulo...</div>}>
+    {children}
+  </Suspense>;
 }
 
 function ThemeToggle({theme,onToggle,compact=false}:{theme:Theme;onToggle:()=>void;compact?:boolean}){
@@ -2853,17 +2860,17 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
               : page==='purchasing'
                 ? <PurchasingPanel/>
                 : page==='intelligence'
-                ? <InventoryIntelligencePanel/>
+                ? <DeferredPanel><InventoryIntelligencePanel/></DeferredPanel>
                 : page==='actions'
-                ? <ActionCenterPanel/>
+                ? <DeferredPanel><ActionCenterPanel/></DeferredPanel>
                 : page==='planning'
-                ? <DemandPlanningPanel/>
+                ? <DeferredPanel><DemandPlanningPanel/></DeferredPanel>
                 : page==='governance'
-                ? <GovernancePanel/>
+                ? <DeferredPanel><GovernancePanel/></DeferredPanel>
                 : page==='quality'
-                ? <QualityControlPanel/>
+                ? <DeferredPanel><QualityControlPanel/></DeferredPanel>
                 : page==='traceability'
-                ? <TraceabilityPanel/>
+                ? <DeferredPanel><TraceabilityPanel/></DeferredPanel>
                 : page==='assistant'
                 ? <AdvisorPanel/>
                 : <>
