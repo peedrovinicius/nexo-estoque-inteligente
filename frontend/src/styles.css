@@ -3612,3 +3612,44 @@ html[data-theme="dark"] .intelligence-row{background:#14253a;border-color:#263b5
 @media (prefers-reduced-motion:reduce){
   .deferred-panel-loading span{animation:none}
 }
+
+
+/* Sidebar scrolling */
+.app-shell > aside {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(174,189,208,.55) transparent;
+}
+
+.app-shell > aside::-webkit-scrollbar {
+  width: 7px;
+}
+
+.app-shell > aside::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-shell > aside::-webkit-scrollbar-thumb {
+  background: rgba(174,189,208,.42);
+  border-radius: 999px;
+}
+
+.app-shell > aside::-webkit-scrollbar-thumb:hover {
+  background: rgba(174,189,208,.68);
+}
+
+[data-theme='dark'] .app-shell > aside {
+  scrollbar-color: rgba(147,160,173,.52) transparent;
+}
+
+[data-theme='dark'] .app-shell > aside::-webkit-scrollbar-thumb {
+  background: rgba(147,160,173,.38);
+}
+
+[data-theme='dark'] .app-shell > aside::-webkit-scrollbar-thumb:hover {
+  background: rgba(147,160,173,.62);
+}
