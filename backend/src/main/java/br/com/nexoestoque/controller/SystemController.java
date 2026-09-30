@@ -24,7 +24,7 @@ public class SystemController {
         return Map.of(
                 "status", "ok",
                 "service", "nexo-estoque-api",
-                "version", "0.9.0",
+                "version", "1.0.0",
                 "timestamp", Instant.now().toString()
         );
     }
