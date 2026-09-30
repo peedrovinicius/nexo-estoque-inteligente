@@ -69,6 +69,12 @@ O Nexo concentra operação, rastreabilidade e apoio à decisão em uma única a
 - contagem cíclica priorizada por valor, classe ABC, divergência e tempo desde a última contagem
 - SLA para ações operacionais com reconhecimento, autoria e histórico de atendimento
 - workspace dedicado de governança operacional no frontend
+- quarentena de lotes com bloqueio imediato de consumo FEFO
+- recall por produto e lote com bloqueio de todas as posições afetadas
+- rastreabilidade de impacto do recall por saldo, recebimentos, saídas e locais
+- bloqueio de transferência e novo recebimento para lotes sob recall
+- divergências de recebimento por falta, excesso, avaria, rejeição ou outra ocorrência
+- workspace dedicado de Qualidade & Recall no frontend
 
 ## Inteligência operacional
 
@@ -124,6 +130,17 @@ GET /api/v1/governance/cycle-counts
 GET /api/v1/governance/actions
 POST /api/v1/governance/actions/{key}/acknowledge
 GET /api/v1/governance/summary
+
+GET /api/v1/quality/summary
+GET /api/v1/quality/batches
+POST /api/v1/quality/batches/{batchId}/quarantine
+POST /api/v1/quality/batches/{batchId}/release
+GET /api/v1/quality/recalls
+POST /api/v1/quality/recalls
+GET /api/v1/quality/recalls/{recallId}/impact
+POST /api/v1/quality/recalls/{recallId}/close
+GET /api/v1/quality/receipt-variances
+POST /api/v1/quality/receipt-variances
 ```
 
 Filtros de produto/SKU e categoria são aplicados no backend. A central de alertas combina ruptura, validade, cobertura, ausência de giro e compras atrasadas usando limiares persistidos no MySQL.
@@ -134,6 +151,8 @@ A Central de Ação transforma os diagnósticos em operação. As sugestões de 
 
 A camada de governança permite configurar regras de reposição por produto, registrar pausas operacionais temporárias, priorizar inventários cíclicos e acompanhar ações por SLA. As alterações de política são exclusivas de Admin; exceções e reconhecimentos preservam autoria e validade.
 
+A camada de Qualidade & Recall controla lotes retidos sem alterar artificialmente o saldo físico. Lotes em quarentena ou bloqueados ficam fora do FEFO e não podem ser transferidos. Um recall bloqueia todas as posições do mesmo produto/lote, impede novos recebimentos daquele lote e preserva o estado anterior para restauração controlada no encerramento. O impacto consolida saldo atual, quantidade recebida, quantidade já expedida e locais afetados.
+
 ## Segurança e consistência
 
 - CORS restrito em produção
@@ -143,6 +162,9 @@ A camada de governança permite configurar regras de reposição por produto, re
 - políticas de reposição alteráveis somente por Admin
 - exceções operacionais com justificativa, validade e autoria
 - reconhecimento de ações com registro do responsável e do SLA
+- liberação de quarentena e encerramento de recall restritos a Admin
+- bloqueio transacional de FEFO, transferência e recebimento para lotes retidos
+- histórico de mudança de status de qualidade com ator, motivo e data
 - pedidos gerados por reposição assistida não podem ser enviados sem aprovação administrativa
 - chaves de idempotência persistidas
 - travas de banco em saídas FEFO
@@ -162,4 +184,4 @@ senha: Nexo@2026
 
 ## Estado
 
-Em desenvolvimento ativo. A versão da API neste bloco é 0.9.0.
+Versão 1.0.0. O escopo funcional planejado para o projeto de portfólio está concluído; evoluções futuras passam a ser incrementais, sem ampliar o núcleo operacional sem necessidade.
