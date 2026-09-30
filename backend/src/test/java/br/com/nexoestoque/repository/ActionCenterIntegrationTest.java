@@ -70,8 +70,8 @@ class ActionCenterIntegrationTest {
 
         assertThat(initial.supplierId()).isEqualTo(supplierId);
         assertThat(initial.averageDailyDemand()).isEqualByComparingTo("1.000");
-        assertThat(initial.recommendedQuantity()).isEqualByComparingTo("6");
-        assertThat(initial.estimatedCost()).isEqualByComparingTo("27.00");
+        assertThat(initial.recommendedQuantity()).isEqualByComparingTo("19.000");
+        assertThat(initial.estimatedCost()).isEqualByComparingTo("85.50");
         assertThat(initial.supplierRequired()).isFalse();
 
         StockReservation reservation = actionRepository.createReservation(

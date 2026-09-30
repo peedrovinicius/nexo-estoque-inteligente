@@ -51,11 +51,30 @@ public class ActionCenterRepository {
                             COALESCE(m.exit_quantity,0) AS exit_quantity,
                             COALESCE(r.reserved_quantity,0) AS reserved_quantity,
                             COALESCE(i.incoming_quantity,0) AS incoming_quantity,
-                            supplier_history.supplier_id,
-                            supplier_history.supplier_name,
-                            COALESCE(supplier_history.lead_time_days,0) AS lead_time_days,
-                            supplier_history.last_unit_cost
+                            COALESCE(pref.id,supplier_history.supplier_id) AS supplier_id,
+                            COALESCE(pref.name,supplier_history.supplier_name) AS supplier_name,
+                            COALESCE(pref.lead_time_days,supplier_history.lead_time_days,0) AS lead_time_days,
+                            supplier_history.supplier_id AS historical_supplier_id,
+                            supplier_history.last_unit_cost,
+                            COALESCE(pol.enabled,TRUE) AS policy_enabled,
+                            COALESCE(pol.target_coverage_days,14) AS target_coverage_days,
+                            COALESCE(pol.safety_stock_multiplier,1.000) AS safety_stock_multiplier,
+                            COALESCE(pol.minimum_order_quantity,1.000) AS minimum_order_quantity,
+                            COALESCE(pol.order_multiple,1.000) AS order_multiple,
+                            pol.preferred_supplier_id,
+                            EXISTS(
+                                SELECT 1
+                                  FROM operational_exceptions oe
+                                 WHERE oe.product_id=p.id
+                                   AND oe.exception_type='REPLENISHMENT_PAUSE'
+                                   AND oe.status='ACTIVE'
+                                   AND oe.expires_at>NOW()
+                            ) AS replenishment_paused
                        FROM products p
+                       LEFT JOIN product_replenishment_policies pol ON pol.product_id=p.id
+                       LEFT JOIN suppliers pref
+                         ON pref.id=pol.preferred_supplier_id
+                        AND pref.active=TRUE
                        LEFT JOIN (
                            SELECT product_id, SUM(quantity) AS exit_quantity
                              FROM (
@@ -128,21 +147,46 @@ public class ActionCenterRepository {
                     BigDecimal availableToPromise = current.subtract(reserved);
                     BigDecimal projectedAvailable = availableToPromise.add(incoming);
 
+                    if (!rs.getBoolean("policy_enabled") || rs.getBoolean("replenishment_paused")) {
+                        continue;
+                    }
+
                     Long supplierId = (Long) rs.getObject("supplier_id");
+                    Long preferredSupplierId = (Long) rs.getObject("preferred_supplier_id");
+                    Long historicalSupplierId = (Long) rs.getObject("historical_supplier_id");
                     int leadTime = rs.getInt("lead_time_days");
-                    int safetyDays = Math.max(2, (int) Math.ceil(leadTime * 0.35d));
+                    int targetCoverageDays = rs.getInt("target_coverage_days");
+                    BigDecimal safetyMultiplier = rs.getBigDecimal("safety_stock_multiplier");
+                    BigDecimal minimumOrder = rs.getBigDecimal("minimum_order_quantity");
+                    BigDecimal orderMultiple = rs.getBigDecimal("order_multiple");
+
+                    int baseSafetyDays = Math.max(2, (int) Math.ceil(Math.max(leadTime, 1) * 0.35d));
+                    int safetyDays = (int) Math.ceil(
+                            baseSafetyDays * (safetyMultiplier == null ? 1d : safetyMultiplier.doubleValue())
+                    );
 
                     BigDecimal demandTarget = dailyDemand.multiply(
-                            BigDecimal.valueOf((long) leadTime + safetyDays)
+                            BigDecimal.valueOf((long) Math.max(leadTime, 1) + targetCoverageDays + safetyDays)
                     );
                     BigDecimal target = demandTarget.max(minimum);
-                    BigDecimal recommended = target.subtract(projectedAvailable)
-                            .max(BigDecimal.ZERO)
-                            .setScale(0, RoundingMode.CEILING);
+                    BigDecimal rawRecommendation = target.subtract(projectedAvailable).max(BigDecimal.ZERO);
 
-                    if (recommended.signum() <= 0) continue;
+                    if (rawRecommendation.signum() <= 0) continue;
+
+                    BigDecimal recommended = rawRecommendation.max(minimumOrder);
+                    if (orderMultiple != null && orderMultiple.signum() > 0) {
+                        recommended = recommended
+                                .divide(orderMultiple, 0, RoundingMode.CEILING)
+                                .multiply(orderMultiple);
+                    }
+                    recommended = recommended.setScale(3, RoundingMode.HALF_UP);
 
                     BigDecimal unitCost = rs.getBigDecimal("last_unit_cost");
+                    if (preferredSupplierId != null
+                            && historicalSupplierId != null
+                            && !preferredSupplierId.equals(historicalSupplierId)) {
+                        unitCost = null;
+                    }
                     if (unitCost == null || unitCost.signum() <= 0) {
                         unitCost = rs.getBigDecimal("cost_price");
                     }
