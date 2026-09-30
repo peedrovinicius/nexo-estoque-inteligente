@@ -111,7 +111,7 @@ function BarcodeScanner({
         <div className="barcode-guide"><span/></div>
       </div>
       {error
-        ? <div className="product-feedback warning">{error}</div>
+        ? <div className="product-feedback warning" role="alert">{error}</div>
         : <p className="barcode-hint">Aponte a câmera para EAN, UPC ou Code 128. A leitura é automática.</p>}
     </div>
   </div>;
@@ -249,7 +249,7 @@ function Login({onLogin,theme,onToggleTheme}:{onLogin:()=>void;theme:Theme;onTog
         </div>
         <label>Usuário<input value={user} onChange={e=>setUser(e.target.value)} placeholder="Digite seu usuário" autoFocus/></label>
         <label>Senha<input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Digite sua senha"/></label>
-        {error&&<div className="error">{error}</div>}
+        {error&&<div className="error" role="alert">{error}</div>}
         <button className="primary" disabled={loading}>{loading?'Entrando...':<>Entrar <ChevronRight size={18}/></>}</button>
         <div className="demo"><span>Demo</span><code>{DEMO_USER}</code><code>{DEMO_PASSWORD}</code></div>
       </form>
@@ -1504,8 +1504,8 @@ function BlindInventoryPanel(){
       <div className="blind-shield"><ShieldCheck size={17}/><span>Durante a contagem, o Nexo não envia o saldo do sistema para a tela.</span></div>
     </section>
 
-    {error&&<div className="product-feedback warning">{error}</div>}
-    {feedback&&<div className="product-feedback success">{feedback}</div>}
+    {error&&<div className="product-feedback warning" role="alert">{error}</div>}
+    {feedback&&<div className="product-feedback success" role="status" aria-live="polite">{feedback}</div>}
 
     <section className="blind-layout">
       <aside className="inventory-sessions">
@@ -1709,7 +1709,7 @@ function BatchesPanel(){
       </select>
     </section>
 
-    {error&&<div className="product-feedback warning">{error}</div>}
+    {error&&<div className="product-feedback warning" role="alert">{error}</div>}
 
     <section className="batch-table-wrap">
       <table className="batch-table">
@@ -1930,7 +1930,7 @@ function SystemReadiness(){
         ? 'API indisponível'
         : 'Verificando infraestrutura...';
 
-  return <div className={'system-readiness '+state}>
+  return <div className={'system-readiness '+state} role="status" aria-live="polite" aria-atomic="true">
     <span className="readiness-dot"/>
     <strong>{text}</strong>
     {latency!==null&&state==='ready'&&<small>{latency} ms</small>}
@@ -2143,7 +2143,7 @@ function LogisticsPanel(){
       </div>
     </header>
 
-    {feedback&&<div className="product-feedback success">{feedback}</div>}
+    {feedback&&<div className="product-feedback success" role="status" aria-live="polite">{feedback}</div>}
 
     {showWarehouse&&<form className="product-form purchase-form" onSubmit={createWarehouse}>
       <div className="form-title"><div><span className="eyebrow">DEPÓSITO / FILIAL</span><h2>Novo local operacional</h2></div><button type="button" onClick={()=>setShowWarehouse(false)}>Fechar</button></div>
@@ -2515,7 +2515,7 @@ function PurchasingPanel(){
       </div>
     </header>
 
-    {feedback&&<div className="product-feedback success">{feedback}</div>}
+    {feedback&&<div className="product-feedback success" role="status" aria-live="polite">{feedback}</div>}
 
     {showSupplier&&<form className="product-form purchase-form" onSubmit={createSupplier}>
       <div className="form-title"><div><span className="eyebrow">FORNECEDOR</span><h2>Novo fornecedor</h2></div><button type="button" onClick={()=>setShowSupplier(false)}>Fechar</button></div>
@@ -2824,7 +2824,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
   };
 
   return <div className="app-shell">
-    <a className="skip-link" href="#main-content">Pular para o conteúdo</a>
+    <a className="skip-link" href="#main-content">Ir para o conteúdo</a>
     <aside aria-label="Navegação do Nexo">
       <div className="brand sidebar-brand">
         <BrandImage theme={theme} className="sidebar-logo-full" alt="Nexo" />
@@ -2857,9 +2857,9 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
         <span className="sidebar-section-title">Assistência</span>
         <button type="button" className={page==='assistant'?'active':''} aria-current={page==='assistant'?'page':undefined} onClick={()=>setPage('assistant')}><BrainCircuit size={18}/><span>Assistente</span></button>
       </nav>
-      <div className="sidebar-bottom"><ThemeToggle theme={theme} onToggle={onToggleTheme}/><button type="button" className="logout" onClick={logout}><LogOut size={18}/> Sair</button></div>
+      <div className="sidebar-bottom"><ThemeToggle theme={theme} onToggle={onToggleTheme}/><button className="logout" onClick={logout}><LogOut size={18}/> Sair</button></div>
     </aside>
-    <main id="main-content" className="workspace" tabIndex={-1}>
+    <main className="workspace" id="main-content" tabIndex={-1}>
       <SystemReadiness/>
       {readOnly&&<div className="demo-readonly-banner" role="note"><ShieldCheck size={16}/><span>Modo demonstração: consultas, FEFO, locais, simulador, compras e assistente liberados. Alterações operacionais estão bloqueadas.</span></div>}
       {page==='products'
