@@ -180,7 +180,115 @@ function ThemeToggle({theme,onToggle,compact=false}:{theme:Theme;onToggle:()=>vo
 }
 
 
-function Login({onLogin,theme,onToggleTheme}:{onLogin:()=>void;theme:Theme;onToggleTheme:()=>void}) {
+function PublicHome({
+  theme,
+  onToggleTheme,
+  onLogin
+}:{theme:Theme;onToggleTheme:()=>void;onLogin:()=>void}){
+  const capabilities=[
+    {code:'01',Icon:Boxes,title:'Estoque em tempo real',text:'Saldo, movimentações, posições físicas e inventário em uma visão operacional única.'},
+    {code:'02',Icon:PackageSearch,title:'Lotes, validade e FEFO',text:'Controle de lotes e prioridade de saída para reduzir perdas e exposição por vencimento.'},
+    {code:'03',Icon:ShoppingCart,title:'Compras e reposição',text:'Sinais de ruptura, planejamento de demanda e apoio à decisão de compra.'},
+    {code:'04',Icon:ScanLine,title:'Rastreabilidade',text:'Histórico auditável de recebimentos, transferências, lotes e movimentos de estoque.'},
+    {code:'05',Icon:ShieldCheck,title:'Governança e qualidade',text:'Controles operacionais, exceções, quarentena, recall e trilha de decisões.'},
+    {code:'06',Icon:BrainCircuit,title:'Assistência inteligente',text:'IA aplicada como camada explicativa sobre cálculos e dados determinísticos do sistema.'}
+  ];
+
+  return <main className="public-home">
+    <header className="public-nav">
+      <a className="public-brand" href="#inicio" aria-label="Nexo, início">
+        <img src="/nexo-symbol.png" alt="" aria-hidden="true"/>
+        <span>Nexo</span>
+      </a>
+      <nav className="public-nav-actions" aria-label="Ações públicas">
+        <ThemeToggle theme={theme} onToggle={onToggleTheme} compact />
+        <button type="button" className="public-login-button" onClick={onLogin}>
+          Login <ChevronRight size={16}/>
+        </button>
+      </nav>
+    </header>
+
+    <section id="inicio" className="public-hero">
+      <div className="public-hero-copy">
+        <span className="public-kicker">SISTEMA INTELIGENTE DE GESTÃO DE ESTOQUE</span>
+        <h1>Estoque não é uma lista.<br/><span>É uma operação em movimento.</span></h1>
+        <p>O Nexo conecta saldo, lotes, validade, compras, inventário, rastreabilidade e sinais de risco para transformar dados operacionais em decisões claras.</p>
+        <div className="public-hero-actions">
+          <button type="button" className="public-primary" onClick={onLogin}>Acessar demonstração <ChevronRight size={17}/></button>
+          <a className="public-secondary" href="#projeto">Conhecer o projeto</a>
+        </div>
+      </div>
+
+      <div className="public-console" aria-label="Resumo conceitual do Nexo">
+        <div className="public-console-top"><span className="live-indicator"/> NEXO / OPERAÇÃO</div>
+        <div className="public-console-core">
+          <span>VISÃO ÚNICA</span>
+          <strong>Estoque → decisão</strong>
+          <small>saldo · validade · compras · rastreabilidade</small>
+        </div>
+        <div className="public-console-signals">
+          <div><span>RUPTURA</span><b>antecipar</b></div>
+          <div><span>VALIDADE</span><b>priorizar</b></div>
+          <div><span>FLUXO</span><b>rastrear</b></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="projeto" className="public-about">
+      <div className="public-section-index">01 / PROJETO</div>
+      <div className="public-about-copy">
+        <span className="public-kicker">O QUE É O NEXO</span>
+        <h2>Um sistema de estoque pensado como operação, não como cadastro.</h2>
+        <p>O projeto foi construído para reunir o ciclo real de estoque em um único produto: entrada, armazenagem, lote, validade, transferência, inventário, compra, análise, governança e rastreabilidade.</p>
+        <p>A interface prioriza sinais operacionais e contexto. A lógica crítica permanece determinística no backend; a inteligência artificial entra para explicar cenários e apoiar leitura, sem substituir o cálculo.</p>
+      </div>
+    </section>
+
+    <section className="public-capabilities" aria-labelledby="capabilities-title">
+      <div className="public-section-head">
+        <div>
+          <span className="public-kicker">CAPACIDADES</span>
+          <h2 id="capabilities-title">O que o sistema conecta</h2>
+        </div>
+        <span>06 módulos centrais</span>
+      </div>
+      <div className="public-capability-list">
+        {capabilities.map(({code,Icon,title,text})=><article key={code}>
+          <span className="public-capability-code">{code}</span>
+          <Icon size={20}/>
+          <div><strong>{title}</strong><p>{text}</p></div>
+        </article>)}
+      </div>
+    </section>
+
+    <section className="public-architecture">
+      <div>
+        <span className="public-kicker">ARQUITETURA</span>
+        <h2>Construído de ponta a ponta.</h2>
+      </div>
+      <div className="public-stack">
+        <div><span>BACKEND</span><strong>Java 21 · Spring Boot</strong></div>
+        <div><span>FRONTEND</span><strong>React · TypeScript · Vite</strong></div>
+        <div><span>DADOS</span><strong>MySQL · SQL · procedures</strong></div>
+        <div><span>ENTREGA</span><strong>GitHub Actions · Railway</strong></div>
+      </div>
+    </section>
+
+    <section className="public-entry">
+      <span className="public-kicker">DEMONSTRAÇÃO</span>
+      <h2>Entre no Nexo e percorra a operação completa.</h2>
+      <p>O ambiente público utiliza perfil de demonstração somente leitura para preservar os dados e permitir explorar o produto com segurança.</p>
+      <button type="button" className="public-primary" onClick={onLogin}>Ir para o login <ChevronRight size={17}/></button>
+    </section>
+
+    <footer className="public-footer">
+      <div className="public-brand public-brand-footer"><img src="/nexo-symbol.png" alt="" aria-hidden="true"/><span>Nexo</span></div>
+      <span>Sistema inteligente de gestão de estoque</span>
+    </footer>
+  </main>;
+}
+
+function Login({onLogin,onBack,theme,onToggleTheme}:{onLogin:()=>void;onBack:()=>void;theme:Theme;onToggleTheme:()=>void}) {
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [user,setUser]=useState('');
   const [password,setPassword]=useState('');
@@ -2976,6 +3084,7 @@ function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onT
 
 export default function App(){
   const [auth,setAuth]=useState(Boolean(readAuthSession()));
+  const [publicView,setPublicView]=useState<'home'|'login'>(()=>window.location.hash==='#login'?'login':'home');
   const [theme,setTheme]=useState<Theme>(()=>localStorage.getItem('nexo-theme')==='dark'?'dark':'light');
 
   useEffect(()=>{
@@ -2985,11 +3094,32 @@ export default function App(){
 
   const toggleTheme=()=>setTheme(current=>current==='light'?'dark':'light');
 
-  return auth
-    ? <Dashboard
+  const showLogin=()=>{
+    setPublicView('login');
+    window.history.replaceState(null,'',window.location.pathname+window.location.search+'#login');
+    window.scrollTo({top:0,behavior:'auto'});
+  };
+
+  const showHome=()=>{
+    setPublicView('home');
+    window.history.replaceState(null,'',window.location.pathname+window.location.search);
+    window.scrollTo({top:0,behavior:'auto'});
+  };
+
+  if(auth){
+    return <Dashboard
+      theme={theme}
+      onToggleTheme={toggleTheme}
+      logout={()=>{clearAuthSession();setAuth(false);setPublicView('home')}}
+    />;
+  }
+
+  return publicView==='login'
+    ? <Login
+        onLogin={()=>{setAuth(true);window.history.replaceState(null,'',window.location.pathname+window.location.search)}}
+        onBack={showHome}
         theme={theme}
         onToggleTheme={toggleTheme}
-        logout={()=>{clearAuthSession();setAuth(false)}}
       />
-    : <Login onLogin={()=>setAuth(true)} theme={theme} onToggleTheme={toggleTheme}/>;
+    : <PublicHome theme={theme} onToggleTheme={toggleTheme} onLogin={showLogin}/>;
 }
