@@ -185,104 +185,109 @@ function PublicHome({
   onToggleTheme,
   onLogin
 }:{theme:Theme;onToggleTheme:()=>void;onLogin:()=>void}){
-  const capabilities=[
-    {code:'01',Icon:Boxes,title:'Estoque em tempo real',text:'Saldo, movimentações, posições físicas e inventário em uma visão operacional única.'},
-    {code:'02',Icon:PackageSearch,title:'Lotes, validade e FEFO',text:'Controle de lotes e prioridade de saída para reduzir perdas e exposição por vencimento.'},
-    {code:'03',Icon:ShoppingCart,title:'Compras e reposição',text:'Sinais de ruptura, planejamento de demanda e apoio à decisão de compra.'},
-    {code:'04',Icon:ScanLine,title:'Rastreabilidade',text:'Histórico auditável de recebimentos, transferências, lotes e movimentos de estoque.'},
-    {code:'05',Icon:ShieldCheck,title:'Governança e qualidade',text:'Controles operacionais, exceções, quarentena, recall e trilha de decisões.'},
-    {code:'06',Icon:BrainCircuit,title:'Assistência inteligente',text:'IA aplicada como camada explicativa sobre cálculos e dados determinísticos do sistema.'}
-  ];
-
   return <main className="public-home">
     <header className="public-nav">
-      <a className="public-brand" href="#inicio" aria-label="Nexo, início">
-        <img src="/nexo-symbol.png" alt="" aria-hidden="true"/>
-        <span>Nexo</span>
-      </a>
-      <nav className="public-nav-actions" aria-label="Ações públicas">
-        <ThemeToggle theme={theme} onToggle={onToggleTheme} compact />
-        <button type="button" className="public-login-button" onClick={onLogin}>
-          Login <ChevronRight size={16}/>
-        </button>
+      <a className="public-brand-text" href="#inicio" aria-label="Nexo, início">Nexo</a>
+      <nav className="public-nav-links" aria-label="Navegação da apresentação">
+        <a href="#projeto">Projeto</a>
+        <a href="#recursos">Recursos</a>
+        <a href="#tecnologia">Tecnologia</a>
       </nav>
+      <div className="public-nav-actions">
+        <ThemeToggle theme={theme} onToggle={onToggleTheme} compact />
+        <button type="button" className="public-login-button" onClick={onLogin}>Login</button>
+      </div>
     </header>
 
     <section id="inicio" className="public-hero">
       <div className="public-hero-copy">
-        <span className="public-kicker">SISTEMA INTELIGENTE DE GESTÃO DE ESTOQUE</span>
-        <h1>Estoque não é uma lista.<br/><span>É uma operação em movimento.</span></h1>
-        <p>O Nexo conecta saldo, lotes, validade, compras, inventário, rastreabilidade e sinais de risco para transformar dados operacionais em decisões claras.</p>
+        <span className="public-kicker">GESTÃO DE ESTOQUE · RASTREABILIDADE · DECISÃO</span>
+        <h1>Veja o estoque.<br/><span>Entenda o que ele está dizendo.</span></h1>
+        <p>O Nexo reúne operação, validade, compras, inventário e rastreabilidade em um sistema único. A proposta é simples: mostrar o estado real do estoque e transformar sinais operacionais em decisões claras.</p>
         <div className="public-hero-actions">
           <button type="button" className="public-primary" onClick={onLogin}>Acessar demonstração <ChevronRight size={17}/></button>
-          <a className="public-secondary" href="#projeto">Conhecer o projeto</a>
+          <a className="public-secondary" href="#projeto">Entender o projeto</a>
         </div>
       </div>
 
-      <div className="public-console" aria-label="Resumo conceitual do Nexo">
-        <div className="public-console-top"><span className="live-indicator"/> NEXO / OPERAÇÃO</div>
-        <div className="public-console-core">
-          <span>VISÃO ÚNICA</span>
-          <strong>Estoque → decisão</strong>
-          <small>saldo · validade · compras · rastreabilidade</small>
-        </div>
-        <div className="public-console-signals">
-          <div><span>RUPTURA</span><b>antecipar</b></div>
-          <div><span>VALIDADE</span><b>priorizar</b></div>
-          <div><span>FLUXO</span><b>rastrear</b></div>
+      <div className="public-flow" aria-label="Fluxo operacional do Nexo">
+        <div className="public-flow-head"><span>FLUXO OPERACIONAL</span><b>NEXO</b></div>
+        <ol>
+          <li><span>01</span><div><strong>Receber</strong><small>entrada, lote, custo e posição</small></div></li>
+          <li><span>02</span><div><strong>Rastrear</strong><small>saldo, validade e movimentações</small></div></li>
+          <li><span>03</span><div><strong>Interpretar</strong><small>ruptura, cobertura e exposição</small></div></li>
+          <li><span>04</span><div><strong>Decidir</strong><small>comprar, priorizar, transferir ou conter</small></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="projeto" className="public-story">
+      <div className="public-story-index">01</div>
+      <div className="public-story-content">
+        <span className="public-kicker">O PROJETO</span>
+        <h2>Não é um CRUD de produtos. É um sistema para acompanhar o ciclo do estoque.</h2>
+        <div className="public-story-columns">
+          <p>O Nexo foi desenvolvido para tratar estoque como uma operação contínua. O sistema acompanha recebimento, armazenamento, lotes, validade, transferências, inventário, compras, planejamento e rastreabilidade.</p>
+          <p>As regras críticas são calculadas pelo backend e permanecem auditáveis. A camada de IA entra apenas para explicar cenários e apoiar a leitura dos dados, sem substituir a lógica operacional.</p>
         </div>
       </div>
     </section>
 
-    <section id="projeto" className="public-about">
-      <div className="public-section-index">01 / PROJETO</div>
-      <div className="public-about-copy">
-        <span className="public-kicker">O QUE É O NEXO</span>
-        <h2>Um sistema de estoque pensado como operação, não como cadastro.</h2>
-        <p>O projeto foi construído para reunir o ciclo real de estoque em um único produto: entrada, armazenagem, lote, validade, transferência, inventário, compra, análise, governança e rastreabilidade.</p>
-        <p>A interface prioriza sinais operacionais e contexto. A lógica crítica permanece determinística no backend; a inteligência artificial entra para explicar cenários e apoiar leitura, sem substituir o cálculo.</p>
+    <section id="recursos" className="public-features">
+      <div className="public-section-heading">
+        <span className="public-kicker">RECURSOS</span>
+        <h2>O que existe de verdade no sistema.</h2>
+      </div>
+
+      <div className="public-feature-row">
+        <span className="public-feature-number">01</span>
+        <div className="public-feature-title"><Boxes size={19}/><strong>Operação de estoque</strong></div>
+        <p>Produtos, saldo, lotes, validade, FEFO, depósitos, posições físicas, transferências, recebimento parcial e inventário cego.</p>
+      </div>
+
+      <div className="public-feature-row">
+        <span className="public-feature-number">02</span>
+        <div className="public-feature-title"><TrendingUp size={19}/><strong>Inteligência operacional</strong></div>
+        <p>Estoque crítico, cobertura, curva ABC, capital imobilizado, risco de validade, previsão de demanda, reposição e central de ações.</p>
+      </div>
+
+      <div className="public-feature-row">
+        <span className="public-feature-number">03</span>
+        <div className="public-feature-title"><ShieldCheck size={19}/><strong>Controle e governança</strong></div>
+        <p>Auditoria, rastreabilidade por lote, qualidade, quarentena, recall, exceções operacionais, SLA e histórico de decisões.</p>
+      </div>
+
+      <div className="public-feature-row">
+        <span className="public-feature-number">04</span>
+        <div className="public-feature-title"><BrainCircuit size={19}/><strong>Assistência por IA</strong></div>
+        <p>Explicações sobre cenários e resultados já calculados pelo sistema, preservando a separação entre cálculo determinístico e interpretação.</p>
       </div>
     </section>
 
-    <section className="public-capabilities" aria-labelledby="capabilities-title">
-      <div className="public-section-head">
-        <div>
-          <span className="public-kicker">CAPACIDADES</span>
-          <h2 id="capabilities-title">O que o sistema conecta</h2>
-        </div>
-        <span>06 módulos centrais</span>
+    <section id="tecnologia" className="public-tech">
+      <div className="public-section-heading">
+        <span className="public-kicker">TECNOLOGIA</span>
+        <h2>Aplicação full stack, banco relacional e entrega contínua.</h2>
       </div>
-      <div className="public-capability-list">
-        {capabilities.map(({code,Icon,title,text})=><article key={code}>
-          <span className="public-capability-code">{code}</span>
-          <Icon size={20}/>
-          <div><strong>{title}</strong><p>{text}</p></div>
-        </article>)}
+      <div className="public-tech-grid">
+        <div><span>01 / BACKEND</span><strong>Java 21<br/>Spring Boot</strong></div>
+        <div><span>02 / FRONTEND</span><strong>React<br/>TypeScript + Vite</strong></div>
+        <div><span>03 / DADOS</span><strong>MySQL<br/>SQL + procedures</strong></div>
+        <div><span>04 / ENTREGA</span><strong>GitHub Actions<br/>Railway</strong></div>
       </div>
     </section>
 
-    <section className="public-architecture">
+    <section className="public-demo">
       <div>
-        <span className="public-kicker">ARQUITETURA</span>
-        <h2>Construído de ponta a ponta.</h2>
+        <span className="public-kicker">DEMONSTRAÇÃO</span>
+        <h2>O projeto está online.</h2>
+        <p>O acesso público usa um perfil somente leitura. Assim é possível percorrer as telas e entender o produto sem alterar os dados operacionais.</p>
       </div>
-      <div className="public-stack">
-        <div><span>BACKEND</span><strong>Java 21 · Spring Boot</strong></div>
-        <div><span>FRONTEND</span><strong>React · TypeScript · Vite</strong></div>
-        <div><span>DADOS</span><strong>MySQL · SQL · procedures</strong></div>
-        <div><span>ENTREGA</span><strong>GitHub Actions · Railway</strong></div>
-      </div>
-    </section>
-
-    <section className="public-entry">
-      <span className="public-kicker">DEMONSTRAÇÃO</span>
-      <h2>Entre no Nexo e percorra a operação completa.</h2>
-      <p>O ambiente público utiliza perfil de demonstração somente leitura para preservar os dados e permitir explorar o produto com segurança.</p>
-      <button type="button" className="public-primary" onClick={onLogin}>Ir para o login <ChevronRight size={17}/></button>
+      <button type="button" className="public-primary public-demo-button" onClick={onLogin}>Ir para o login <ChevronRight size={17}/></button>
     </section>
 
     <footer className="public-footer">
-      <div className="public-brand public-brand-footer"><img src="/nexo-symbol.png" alt="" aria-hidden="true"/><span>Nexo</span></div>
+      <strong>Nexo</strong>
       <span>Sistema inteligente de gestão de estoque</span>
     </footer>
   </main>;
