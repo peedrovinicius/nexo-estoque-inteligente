@@ -4780,3 +4780,584 @@ html[data-theme='dark'] .public-product-frame {
   background: var(--nexo-panel) !important;
   border-color: var(--nexo-rule) !important;
 }
+
+
+/* =========================================================
+   NEXO MOBILE CALM — softer, ordered, low-saturation
+   ========================================================= */
+@media (max-width: 720px) {
+  :root {
+    --nexo-mobile-bg: #f1f0ec;
+    --nexo-mobile-panel: #f8f7f4;
+    --nexo-mobile-line: rgba(16,18,20,.09);
+    --nexo-mobile-text: #191b1d;
+    --nexo-mobile-muted: #747a80;
+    --nexo-mobile-accent: #5f7fa8;
+  }
+
+  html:not([data-theme='dark']) body,
+  html:not([data-theme='dark']) .public-home,
+  html:not([data-theme='dark']) .login-shell,
+  html:not([data-theme='dark']) .app-shell,
+  html:not([data-theme='dark']) .workspace {
+    background: var(--nexo-mobile-bg) !important;
+    color: var(--nexo-mobile-text) !important;
+  }
+
+  /* Public page: one calm vertical rhythm */
+  .public-home {
+    --public-pad: 18px !important;
+  }
+
+  .public-header {
+    height: 56px !important;
+    background: rgba(241,240,236,.96) !important;
+    border-bottom-color: var(--nexo-mobile-line) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+  }
+
+  .public-header-inner {
+    gap: 10px !important;
+  }
+
+  .public-wordmark {
+    font-size: 16px !important;
+    color: var(--nexo-mobile-text) !important;
+  }
+
+  .public-header .theme-toggle {
+    width: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    border-color: var(--nexo-mobile-line) !important;
+    color: #5e646a !important;
+  }
+
+  .public-login {
+    min-height: 32px !important;
+    padding: 0 12px !important;
+    border-color: #303438 !important;
+    background: #303438 !important;
+    color: #f7f7f5 !important;
+  }
+
+  .public-hero {
+    padding: 44px 0 52px !important;
+  }
+
+  .public-hero-copy {
+    text-align: left !important;
+  }
+
+  .public-eyebrow {
+    color: #81868b !important;
+    font-size: 8px !important;
+    line-height: 1.45 !important;
+  }
+
+  .public-hero h1 {
+    margin: 14px 0 16px !important;
+    font-size: clamp(38px,11vw,48px) !important;
+    line-height: .99 !important;
+    letter-spacing: -.05em !important;
+  }
+
+  .public-hero-copy > p {
+    margin: 0 !important;
+    color: #62686d !important;
+    font-size: 14px !important;
+    line-height: 1.58 !important;
+  }
+
+  .public-hero-actions {
+    margin-top: 24px !important;
+    gap: 9px !important;
+  }
+
+  .public-button-primary,
+  .public-button-link {
+    min-height: 40px !important;
+    border-radius: 5px !important;
+    font-size: 11px !important;
+  }
+
+  .public-button-primary {
+    border-color: #303438 !important;
+    background: #303438 !important;
+    color: #f7f7f5 !important;
+  }
+
+  .public-button-link {
+    border-color: var(--nexo-mobile-line) !important;
+    color: #4d5358 !important;
+    background: rgba(255,255,255,.26) !important;
+  }
+
+  .public-product-frame {
+    margin-top: 42px !important;
+    border-color: var(--nexo-mobile-line) !important;
+    background: var(--nexo-mobile-panel) !important;
+  }
+
+  .public-frame-bar {
+    min-height: 38px !important;
+    padding: 0 14px !important;
+    border-bottom-color: var(--nexo-mobile-line) !important;
+    font-size: 8px !important;
+  }
+
+  .public-frame-body {
+    grid-template-columns: 1fr !important;
+    min-height: 0 !important;
+  }
+
+  .public-frame-main {
+    min-height: 168px !important;
+    padding: 20px !important;
+    border-right: 0 !important;
+    border-bottom-color: var(--nexo-mobile-line) !important;
+  }
+
+  .public-frame-main strong {
+    font-size: 32px !important;
+    line-height: 1 !important;
+  }
+
+  .public-frame-main small {
+    color: #767b80 !important;
+    font-size: 10px !important;
+  }
+
+  .public-frame-signals {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    grid-template-rows: repeat(2,1fr) !important;
+  }
+
+  .public-frame-signals > div {
+    min-height: 58px !important;
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
+    padding: 12px 14px !important;
+    border-right: 1px solid var(--nexo-mobile-line) !important;
+    border-bottom: 1px solid var(--nexo-mobile-line) !important;
+  }
+
+  .public-frame-signals > div:nth-child(2n) {
+    border-right: 0 !important;
+  }
+
+  .public-frame-signals > div:nth-last-child(-n+2) {
+    border-bottom: 0 !important;
+  }
+
+  .public-frame-signals span {
+    font-size: 8px !important;
+  }
+
+  .public-frame-signals b {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+  }
+
+  .public-section {
+    border-top-color: var(--nexo-mobile-line) !important;
+  }
+
+  .public-section-grid {
+    gap: 18px !important;
+    padding: 50px 0 !important;
+  }
+
+  .public-section-meta {
+    gap: 7px !important;
+    color: #83888d !important;
+  }
+
+  .public-section-meta span,
+  .public-section-meta strong {
+    font-size: 9px !important;
+    color: #83888d !important;
+  }
+
+  .public-section-content > h2 {
+    margin: 10px 0 22px !important;
+    font-size: clamp(29px,8.7vw,38px) !important;
+    line-height: 1.06 !important;
+    letter-spacing: -.045em !important;
+  }
+
+  .public-copy-columns {
+    gap: 12px !important;
+  }
+
+  .public-copy-columns p,
+  .public-feature > p,
+  .public-demo-content p {
+    color: #676d72 !important;
+    font-size: 13px !important;
+    line-height: 1.62 !important;
+  }
+
+  .public-feature-list {
+    border-top-color: var(--nexo-mobile-line) !important;
+  }
+
+  .public-feature {
+    min-height: 0 !important;
+    grid-template-columns: 28px minmax(0,1fr) !important;
+    gap: 7px 10px !important;
+    padding: 16px 0 !important;
+    border-bottom-color: var(--nexo-mobile-line) !important;
+  }
+
+  .public-feature > strong {
+    grid-column: 2 !important;
+    font-size: 13px !important;
+  }
+
+  .public-feature > p {
+    grid-column: 2 !important;
+  }
+
+  .public-stack-grid {
+    border-color: var(--nexo-mobile-line) !important;
+  }
+
+  .public-stack-grid > div {
+    min-height: 96px !important;
+    padding: 16px !important;
+    border-color: var(--nexo-mobile-line) !important;
+    background: transparent !important;
+  }
+
+  .public-stack-grid strong {
+    font-size: 14px !important;
+  }
+
+  .public-demo-content {
+    gap: 22px !important;
+  }
+
+  .public-footer {
+    border-top-color: var(--nexo-mobile-line) !important;
+  }
+
+  /* Login: remove heavy split-screen feeling on phones */
+  .login-shell {
+    min-height: 100dvh !important;
+  }
+
+  .login-copy {
+    display: none !important;
+  }
+
+  .login-side {
+    min-height: 100dvh !important;
+    padding: 72px 18px 28px !important;
+    background: var(--nexo-mobile-bg) !important;
+  }
+
+  .login-card {
+    width: 100% !important;
+    max-width: 420px !important;
+    padding: 20px !important;
+    border: 1px solid var(--nexo-mobile-line) !important;
+    border-radius: 10px !important;
+    background: var(--nexo-mobile-panel) !important;
+    box-shadow: none !important;
+  }
+
+  .login-title {
+    gap: 12px !important;
+    margin-bottom: 22px !important;
+  }
+
+  .login-title .login-logo {
+    width: 148px !important;
+    max-width: 100% !important;
+  }
+
+  .login-access-copy strong {
+    font-size: 14px !important;
+  }
+
+  .login-access-copy small {
+    color: #7a8085 !important;
+  }
+
+  .login-card label {
+    color: #676d72 !important;
+    font-size: 11px !important;
+  }
+
+  .login-card input {
+    min-height: 42px !important;
+    background: #fcfbf8 !important;
+    border-color: var(--nexo-mobile-line) !important;
+  }
+
+  .login-card .primary {
+    min-height: 42px !important;
+    background: #303438 !important;
+    border-color: #303438 !important;
+    color: #f7f7f5 !important;
+  }
+
+  .login-back-link {
+    top: 14px !important;
+    left: 14px !important;
+    min-height: 32px !important;
+    padding: 0 10px !important;
+    border-color: var(--nexo-mobile-line) !important;
+    background: transparent !important;
+    color: #676d72 !important;
+  }
+
+  /* Internal app: soften the rail and reduce visual noise */
+  .app-shell {
+    grid-template-columns: 56px minmax(0,1fr) !important;
+  }
+
+  html:not([data-theme='dark']) .app-shell > aside {
+    padding: 6px 5px !important;
+    background: #e7e5df !important;
+    color: #52585d !important;
+    border-right: 1px solid var(--nexo-mobile-line) !important;
+  }
+
+  html:not([data-theme='dark']) .app-shell > aside .sidebar-brand {
+    height: 54px !important;
+    min-height: 54px !important;
+    flex-basis: 54px !important;
+    border-bottom-color: var(--nexo-mobile-line) !important;
+  }
+
+  .app-shell > aside .sidebar-brand .sidebar-logo-symbol {
+    width: 30px !important;
+    height: 30px !important;
+    max-width: 30px !important;
+  }
+
+  html:not([data-theme='dark']) .sidebar-section-title {
+    display: none !important;
+  }
+
+  html:not([data-theme='dark']) .sidebar-nav {
+    gap: 2px !important;
+  }
+
+  html:not([data-theme='dark']) .sidebar-nav button,
+  html:not([data-theme='dark']) .sidebar-bottom button {
+    min-height: 40px !important;
+    padding: 0 !important;
+    border-radius: 7px !important;
+    color: #6e7479 !important;
+    background: transparent !important;
+  }
+
+  html:not([data-theme='dark']) .sidebar-nav button svg,
+  html:not([data-theme='dark']) .sidebar-bottom button svg {
+    width: 18px !important;
+    height: 18px !important;
+    color: #70767b !important;
+  }
+
+  html:not([data-theme='dark']) .sidebar-nav button.active {
+    background: rgba(255,255,255,.58) !important;
+    color: #303438 !important;
+    box-shadow: none !important;
+  }
+
+  html:not([data-theme='dark']) .sidebar-nav button.active::before {
+    left: 1px !important;
+    top: 11px !important;
+    bottom: 11px !important;
+    width: 2px !important;
+    background: var(--nexo-mobile-accent) !important;
+  }
+
+  html:not([data-theme='dark']) .sidebar-nav button.active svg {
+    color: #39434c !important;
+  }
+
+  html:not([data-theme='dark']) .sidebar-bottom {
+    border-top-color: var(--nexo-mobile-line) !important;
+  }
+
+  .workspace {
+    padding: 14px 12px 38px !important;
+  }
+
+  .system-readiness,
+  .demo-readonly-banner {
+    border-color: var(--nexo-mobile-line) !important;
+    background: rgba(255,255,255,.42) !important;
+    color: #70767b !important;
+  }
+
+  .control-header,
+  .page-header,
+  .products-head,
+  .intelligence-head,
+  .traceability-head,
+  .action-center-head,
+  .planning-head,
+  .governance-head,
+  .quality-head,
+  .advisor-page-header {
+    gap: 10px !important;
+    margin-bottom: 14px !important;
+    padding-bottom: 12px !important;
+    border-bottom-color: var(--nexo-mobile-line) !important;
+  }
+
+  .control-header h1,
+  .page-header h1,
+  .products-head h1,
+  .intelligence-head h1,
+  .traceability-head h1,
+  .action-center-head h1,
+  .planning-head h1,
+  .governance-head h1,
+  .quality-head h1,
+  .advisor-page-header h1 {
+    font-size: 23px !important;
+    line-height: 1.08 !important;
+  }
+
+  .control-path,
+  .eyebrow,
+  .section-head small {
+    color: #83888d !important;
+  }
+
+  .control-deck {
+    border-color: var(--nexo-mobile-line) !important;
+    background: var(--nexo-mobile-panel) !important;
+    background-image: none !important;
+  }
+
+  .control-stock,
+  .control-pressure,
+  .pressure-line,
+  .instrument,
+  .signal-row {
+    border-color: var(--nexo-mobile-line) !important;
+  }
+
+  .control-stock {
+    padding: 18px 15px !important;
+  }
+
+  .control-stock > strong {
+    font-size: clamp(40px,12vw,52px) !important;
+  }
+
+  .pressure-line {
+    padding: 13px 15px !important;
+  }
+
+  .instrument {
+    padding: 12px !important;
+    background: transparent !important;
+  }
+
+  .instrument > strong {
+    font-size: 18px !important;
+  }
+
+  .signal-row {
+    min-height: 56px !important;
+    padding: 10px 8px !important;
+  }
+
+  .purchase-panel,
+  .action-panel,
+  .governance-panel,
+  .quality-panel,
+  .product-form,
+  .inventory-sessions,
+  .inventory-work,
+  .advisor-context,
+  .advisor-chat,
+  .controls,
+  .result {
+    border-color: var(--nexo-mobile-line) !important;
+    background: var(--nexo-mobile-panel) !important;
+  }
+
+  .primary,
+  .new-action,
+  .simulate-btn,
+  .close-inventory,
+  .count-save,
+  .secondary-action,
+  .receipt-action {
+    background: #303438 !important;
+    border-color: #303438 !important;
+    color: #f7f7f5 !important;
+  }
+
+  .ghost,
+  .theme-toggle,
+  .trace-export,
+  .action-refresh,
+  .planning-refresh,
+  .governance-refresh,
+  .quality-refresh,
+  .dashboard-export,
+  .barcode-trigger {
+    border-color: var(--nexo-mobile-line) !important;
+    background: transparent !important;
+    color: #62686d !important;
+  }
+
+  /* Keep semantic colors only where they convey status */
+  .product-feedback.success {
+    color: #527765 !important;
+    background: rgba(31,143,95,.06) !important;
+    border-color: rgba(31,143,95,.12) !important;
+  }
+
+  .product-feedback.warning,
+  .error {
+    color: #8a5f5a !important;
+    background: rgba(201,57,50,.05) !important;
+    border-color: rgba(201,57,50,.11) !important;
+  }
+}
+
+@media (max-width: 720px) and (prefers-color-scheme: dark) {
+  html[data-theme='dark'] .public-home,
+  html[data-theme='dark'] .login-shell,
+  html[data-theme='dark'] .app-shell,
+  html[data-theme='dark'] .workspace {
+    background: #111315 !important;
+  }
+
+  html[data-theme='dark'] .public-header,
+  html[data-theme='dark'] .login-card,
+  html[data-theme='dark'] .control-deck,
+  html[data-theme='dark'] .purchase-panel,
+  html[data-theme='dark'] .action-panel,
+  html[data-theme='dark'] .governance-panel,
+  html[data-theme='dark'] .quality-panel {
+    background: #17191b !important;
+    border-color: rgba(255,255,255,.075) !important;
+  }
+
+  html[data-theme='dark'] .app-shell > aside {
+    background: #151719 !important;
+    border-right-color: rgba(255,255,255,.07) !important;
+  }
+
+  html[data-theme='dark'] .sidebar-nav button,
+  html[data-theme='dark'] .sidebar-bottom button {
+    color: #8f959a !important;
+  }
+
+  html[data-theme='dark'] .sidebar-nav button.active {
+    background: rgba(255,255,255,.055) !important;
+  }
+}
