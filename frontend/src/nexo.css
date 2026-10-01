@@ -4593,3 +4593,190 @@ html[data-theme='dark'] .public-button-primary {
     left: 12px;
   }
 }
+
+
+/* =========================================================
+   NEXO UNIFIED PALETTE — public + login + application
+   ========================================================= */
+:root {
+  --nexo-canvas: #eeede8;
+  --nexo-panel: #f8f7f3;
+  --nexo-ink: #101214;
+  --nexo-graphite: #111417;
+  --nexo-signal: #1769ff;
+  --nexo-ok: #1f8f5f;
+  --nexo-warn: #c56a12;
+  --nexo-danger: #c93932;
+  --nexo-rule: rgba(16,18,20,.14);
+  --nexo-rule-strong: rgba(16,18,20,.28);
+
+  --nx-bg: var(--nexo-canvas);
+  --nx-surface: rgba(248,247,243,.92);
+  --nx-surface-solid: var(--nexo-panel);
+  --nx-surface-soft: #e8e7e2;
+  --nx-surface-elevated: #fbfaf7;
+  --nx-text: var(--nexo-ink);
+  --nx-text-secondary: #666c72;
+  --nx-text-tertiary: #858a8f;
+  --nx-line: var(--nexo-rule);
+  --nx-line-strong: var(--nexo-rule-strong);
+  --nx-accent: var(--nexo-signal);
+  --nx-accent-hover: #0f5ee8;
+  --nx-accent-soft: rgba(23,105,255,.10);
+  --nx-success: var(--nexo-ok);
+  --nx-warning: var(--nexo-warn);
+  --nx-danger: var(--nexo-danger);
+}
+
+/* Public page */
+.public-home {
+  --public-bg: var(--nexo-canvas) !important;
+  --public-text: var(--nexo-ink) !important;
+  --public-secondary: #6f7479 !important;
+  --public-line: var(--nexo-rule) !important;
+  background: var(--nexo-canvas) !important;
+  color: var(--nexo-ink) !important;
+}
+
+.public-header {
+  background: rgba(238,237,232,.94) !important;
+  border-bottom-color: var(--nexo-rule) !important;
+}
+
+.public-product-frame {
+  background: var(--nexo-panel) !important;
+  border-color: var(--nexo-rule-strong) !important;
+}
+
+.public-login,
+.public-button-primary {
+  border-color: var(--nexo-graphite) !important;
+  background: var(--nexo-graphite) !important;
+  color: #fff !important;
+}
+
+.public-eyebrow,
+.public-section-meta span,
+.public-frame-label,
+.public-frame-signals span,
+.public-feature > span,
+.public-stack-grid span {
+  color: #7a8085 !important;
+}
+
+/* Login */
+.login-shell {
+  background: var(--nexo-canvas) !important;
+}
+
+.login-copy {
+  background: var(--nexo-graphite) !important;
+  color: #f3f4f5 !important;
+}
+
+.login-copy .hero h1,
+.login-copy .hero h1 span,
+.login-copy .hero p,
+.login-copy .eyebrow,
+.login-copy .trust,
+.login-copy .hero-feature-grid > div {
+  color: #f3f4f5 !important;
+}
+
+.login-copy .hero h1 span,
+.login-copy .hero p,
+.login-copy .trust {
+  color: #b9bec3 !important;
+}
+
+.login-copy .hero-feature-grid > div {
+  border-color: rgba(255,255,255,.10) !important;
+  background: rgba(255,255,255,.055) !important;
+}
+
+.login-side {
+  background: var(--nexo-canvas) !important;
+}
+
+.login-card {
+  background: var(--nexo-panel) !important;
+  border-color: var(--nexo-rule) !important;
+  color: var(--nexo-ink) !important;
+  box-shadow: none !important;
+}
+
+.login-card input {
+  background: #fbfaf7 !important;
+  border-color: var(--nexo-rule) !important;
+  color: var(--nexo-ink) !important;
+}
+
+.login-card .primary {
+  background: var(--nexo-signal) !important;
+  border-color: var(--nexo-signal) !important;
+  color: #fff !important;
+}
+
+/* Internal application */
+html:not([data-theme='dark']) body,
+html:not([data-theme='dark']) .app-shell,
+html:not([data-theme='dark']) .workspace {
+  background: var(--nexo-canvas) !important;
+}
+
+html:not([data-theme='dark']) .app-shell > aside {
+  background: var(--nexo-graphite) !important;
+}
+
+html:not([data-theme='dark']) .control-deck,
+html:not([data-theme='dark']) .product-form,
+html:not([data-theme='dark']) .purchase-panel,
+html:not([data-theme='dark']) .action-panel,
+html:not([data-theme='dark']) .governance-panel,
+html:not([data-theme='dark']) .quality-panel,
+html:not([data-theme='dark']) .inventory-sessions,
+html:not([data-theme='dark']) .inventory-work,
+html:not([data-theme='dark']) .advisor-context,
+html:not([data-theme='dark']) .advisor-chat,
+html:not([data-theme='dark']) .controls,
+html:not([data-theme='dark']) .result {
+  background-color: var(--nexo-panel) !important;
+  border-color: var(--nexo-rule) !important;
+}
+
+/* Dark theme keeps the same identity, just inverted */
+html[data-theme='dark'] {
+  --nexo-canvas: #090a0b;
+  --nexo-panel: #111315;
+  --nexo-ink: #f3f4f5;
+  --nexo-graphite: #0d0f11;
+  --nexo-signal: #4b91ff;
+  --nexo-ok: #41b883;
+  --nexo-warn: #e29343;
+  --nexo-danger: #ef625c;
+  --nexo-rule: rgba(255,255,255,.085);
+  --nexo-rule-strong: rgba(255,255,255,.17);
+}
+
+html[data-theme='dark'] .public-home,
+html[data-theme='dark'] .login-shell,
+html[data-theme='dark'] .app-shell,
+html[data-theme='dark'] .workspace {
+  background: var(--nexo-canvas) !important;
+}
+
+html[data-theme='dark'] .public-header {
+  background: rgba(9,10,11,.94) !important;
+}
+
+html[data-theme='dark'] .login-copy,
+html[data-theme='dark'] .app-shell > aside {
+  background: var(--nexo-graphite) !important;
+}
+
+html[data-theme='dark'] .login-side,
+html[data-theme='dark'] .login-card,
+html[data-theme='dark'] .public-product-frame {
+  background: var(--nexo-panel) !important;
+  border-color: var(--nexo-rule) !important;
+}
