@@ -6798,3 +6798,302 @@ html[data-theme='dark'] .public-button-primary {
   .login3-access{min-height:100dvh;padding:72px 18px 28px;}
   .login3-card{max-width:390px;}
 }
+
+
+/* =========================================================
+   NEXO HOME 3 — alignment + visibility polish
+   ========================================================= */
+
+.home3-header {
+  background: rgba(247,246,242,.97) !important;
+}
+
+.home3-brand {
+  min-width: 196px !important;
+}
+
+.home3-logo {
+  width: 190px !important;
+  height: 48px !important;
+  max-width: none !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+  opacity: 1 !important;
+}
+
+.home3-section,
+.home3-soft-section {
+  padding: 0 !important;
+}
+
+.home3-section-grid {
+  grid-template-columns: minmax(250px,.82fr) minmax(0,1.18fr) !important;
+  gap: 72px !important;
+  padding: 104px 0 !important;
+  align-items: start !important;
+}
+
+.home3-section-intro {
+  position: sticky;
+  top: 98px;
+}
+
+.home3-section-intro h2 {
+  max-width: 360px !important;
+  margin-top: 12px !important;
+  margin-bottom: 0 !important;
+}
+
+.home3-section-body {
+  min-width: 0;
+}
+
+.home3-section-copy {
+  padding-top: 28px !important;
+}
+
+.home3-soft-section {
+  background: rgba(255,255,255,.18) !important;
+}
+
+.home3-cards {
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+
+.home3-cards article {
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: 42px 160px minmax(0,1fr) !important;
+  gap: 22px !important;
+  align-items: center !important;
+  padding: 22px 24px !important;
+  border-radius: 16px !important;
+}
+
+.home3-cards svg {
+  align-self: center !important;
+}
+
+.home3-cards h3 {
+  margin: 0 !important;
+  font-size: 15px !important;
+}
+
+.home3-cards p {
+  margin: 0 !important;
+  font-size: 12px !important;
+  line-height: 1.62 !important;
+}
+
+.home3-tech {
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+
+.home3-tech > div {
+  min-height: 84px !important;
+  display: grid !important;
+  grid-template-columns: 150px minmax(0,1fr) !important;
+  align-items: center !important;
+  gap: 24px !important;
+  padding: 18px 22px !important;
+  border-radius: 14px !important;
+}
+
+.home3-tech span {
+  margin-bottom: 0 !important;
+}
+
+.home3-tech strong {
+  font-size: 14px !important;
+}
+
+/* =========================================================
+   LOGIN 3 — graphite + white split
+   ========================================================= */
+.login3 {
+  background: #f7f7f5 !important;
+  color: #1d2022 !important;
+}
+
+.login3-branding {
+  background: #35383b !important;
+  border-right: 1px solid rgba(255,255,255,.08) !important;
+  color: #f5f5f4 !important;
+}
+
+.login3-brand-copy h1 {
+  color: #f7f7f6 !important;
+}
+
+.login3-brand-copy h1 em {
+  color: #b8bdc1 !important;
+}
+
+.login3-brand-copy p {
+  color: #c1c5c8 !important;
+}
+
+.login3-brand-copy > span,
+.login3-trust {
+  color: #a4aaae !important;
+}
+
+.login3-trust svg {
+  color: #b3b8bc !important;
+}
+
+.login3-access {
+  background: #f7f7f5 !important;
+}
+
+.login3-card {
+  background: #ffffff !important;
+  color: #1d2022 !important;
+  padding: 34px !important;
+  border: 1px solid rgba(27,30,32,.08) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 22px 70px rgba(27,30,32,.06) !important;
+}
+
+.login3-card-head > span {
+  color: #94999e !important;
+}
+
+.login3-card-head h2 {
+  color: #202326 !important;
+}
+
+.login3-card-head p {
+  color: #858a8f !important;
+}
+
+.login3-card label > span {
+  color: #676d72 !important;
+}
+
+.login3-card input {
+  background: #f8f8f6 !important;
+  border: 1px solid rgba(27,30,32,.09) !important;
+  color: #202326 !important;
+}
+
+.login3-card input::placeholder {
+  color: #9a9fa4 !important;
+}
+
+.login3-card input:focus {
+  border-color: rgba(27,30,32,.22) !important;
+  box-shadow: 0 0 0 3px rgba(27,30,32,.035) !important;
+}
+
+.login3-submit {
+  background: #2f3235 !important;
+  border-color: #2f3235 !important;
+  color: #ffffff !important;
+}
+
+.login3-submit:hover {
+  background: #242729 !important;
+  border-color: #242729 !important;
+}
+
+.login3-demo {
+  border-top-color: rgba(27,30,32,.07) !important;
+  color: #8b9095 !important;
+}
+
+.login3-demo code {
+  background: #f4f4f2 !important;
+  border-color: rgba(27,30,32,.06) !important;
+  color: #6e7479 !important;
+}
+
+.login3-back {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.14) !important;
+  color: #e1e3e4 !important;
+}
+
+/* keep the official logo readable on graphite */
+.login3-logo {
+  width: 196px !important;
+  height: 54px !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+  opacity: 1 !important;
+}
+
+@media (max-width: 900px) {
+  .home3-brand {
+    min-width: 150px !important;
+  }
+
+  .home3-logo {
+    width: 148px !important;
+    height: 40px !important;
+  }
+
+  .home3-section-intro {
+    position: static !important;
+  }
+
+  .home3-section-grid {
+    grid-template-columns: 1fr !important;
+    gap: 26px !important;
+    padding: 78px 0 !important;
+  }
+
+  .login3-access {
+    background: #f2f1ee !important;
+  }
+
+  .login3-card {
+    max-width: 420px !important;
+  }
+
+  .login3-back {
+    background: #ffffff !important;
+    border-color: rgba(27,30,32,.08) !important;
+    color: #666c71 !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .home3-logo {
+    width: 132px !important;
+    height: 34px !important;
+  }
+
+  .home3-section-grid {
+    padding: 58px 0 !important;
+  }
+
+  .home3-cards article {
+    grid-template-columns: 34px minmax(0,1fr) !important;
+    gap: 8px 12px !important;
+    padding: 18px !important;
+  }
+
+  .home3-cards h3,
+  .home3-cards p {
+    grid-column: 2 !important;
+  }
+
+  .home3-tech > div {
+    grid-template-columns: 1fr !important;
+    gap: 7px !important;
+    min-height: 92px !important;
+  }
+
+  .login3-access {
+    padding: 72px 16px 28px !important;
+  }
+
+  .login3-card {
+    padding: 24px !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+  }
+}

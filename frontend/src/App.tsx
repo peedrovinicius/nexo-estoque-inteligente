@@ -243,13 +243,14 @@ function PublicHome({
       </div>
     </section>
 
-    <section id="recursos" className="home3-soft-section">
-      <div className="home3-wrap">
-        <div className="home3-section-title">
+    <section id="recursos" className="home3-section home3-soft-section">
+      <div className="home3-wrap home3-section-grid">
+        <div className="home3-section-intro">
           <span className="home3-overline">RECURSOS</span>
           <h2>Feito para acompanhar o que realmente muda.</h2>
         </div>
-        <div className="home3-cards">
+        <div className="home3-section-body">
+          <div className="home3-cards">
           <article>
             <Boxes size={22}/>
             <h3>Operação</h3>
@@ -265,6 +266,7 @@ function PublicHome({
             <h3>Rastreabilidade</h3>
             <p>Auditoria, movimentações, qualidade, quarentena e recall preservando histórico e contexto.</p>
           </article>
+          </div>
         </div>
       </div>
     </section>
@@ -278,16 +280,18 @@ function PublicHome({
     </section>
 
     <section id="tecnologia" className="home3-section">
-      <div className="home3-wrap">
-        <div className="home3-section-title compact">
+      <div className="home3-wrap home3-section-grid">
+        <div className="home3-section-intro">
           <span className="home3-overline">TECNOLOGIA</span>
           <h2>Construído como produto completo.</h2>
         </div>
-        <div className="home3-tech">
+        <div className="home3-section-body">
+          <div className="home3-tech">
           <div><span>Backend</span><strong>Java 21 · Spring Boot</strong></div>
           <div><span>Frontend</span><strong>React · TypeScript · Vite</strong></div>
           <div><span>Dados</span><strong>MySQL · SQL · procedures</strong></div>
           <div><span>Entrega</span><strong>GitHub Actions · Railway</strong></div>
+          </div>
         </div>
       </div>
     </section>
