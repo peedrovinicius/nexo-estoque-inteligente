@@ -184,141 +184,127 @@ function PublicHome({
   theme,
   onLogin
 }:{theme:Theme;onToggleTheme:()=>void;onLogin:()=>void}){
-  const capabilities=[
-    ['01','Operar','Recebimento, saldo, lotes, validade, FEFO, posições físicas e inventário.'],
-    ['02','Antecipar','Cobertura, ruptura, demanda, reposição e exposição por vencimento.'],
-    ['03','Rastrear','Movimentações, transferências, auditoria, qualidade, quarentena e recall.'],
-    ['04','Explicar','Assistência por IA sobre dados e cálculos já produzidos pelo sistema.']
-  ];
-
-  const flow=[
-    ['Entrada','receber e posicionar'],
-    ['Controle','acompanhar lote e validade'],
-    ['Leitura','entender risco e cobertura'],
-    ['Ação','comprar, transferir ou conter']
-  ];
-
-  return <main className="home2">
-    <header className="home2-header">
-      <div className="home2-container home2-header-inner">
-        <a href="#inicio" className="home2-brand" aria-label="Nexo, início">
-          <BrandImage theme={theme} className="home2-logo" alt="Nexo — Sistema inteligente de gestão de estoque" />
+  return <main className="home3">
+    <header className="home3-header">
+      <div className="home3-wrap home3-header-inner">
+        <a className="home3-brand" href="#inicio" aria-label="Nexo, início">
+          <BrandImage theme={theme} className="home3-logo" alt="Nexo — Sistema inteligente de gestão de estoque" />
         </a>
-        <nav className="home2-nav" aria-label="Navegação da apresentação">
-          <a href="#projeto">Projeto</a>
+        <nav className="home3-nav" aria-label="Navegação">
+          <a href="#produto">Produto</a>
           <a href="#recursos">Recursos</a>
-          <a href="#arquitetura">Arquitetura</a>
+          <a href="#tecnologia">Tecnologia</a>
         </nav>
-        <button type="button" className="home2-login" onClick={onLogin}>Login</button>
+        <button type="button" className="home3-login" onClick={onLogin}>Entrar</button>
       </div>
     </header>
 
-    <section id="inicio" className="home2-hero">
-      <div className="home2-container">
-        <div className="home2-hero-copy">
-          <span className="home2-kicker">GESTÃO DE ESTOQUE · OPERAÇÃO · INTELIGÊNCIA</span>
-          <h1>Menos ruído.<br/>Mais clareza para decidir.</h1>
-          <p>O Nexo conecta o ciclo inteiro do estoque em uma experiência única: entrada, lote, validade, inventário, compras, planejamento, rastreabilidade e ação.</p>
-          <div className="home2-actions">
-            <button type="button" className="home2-primary" onClick={onLogin}>Acessar demonstração <ChevronRight size={16}/></button>
-            <a href="#projeto" className="home2-text-link">Conhecer o projeto</a>
+    <section id="inicio" className="home3-hero">
+      <div className="home3-wrap">
+        <div className="home3-hero-copy">
+          <span className="home3-overline">NEXO · GESTÃO INTELIGENTE DE ESTOQUE</span>
+          <h1>O estoque,<br/><em>finalmente claro.</em></h1>
+          <p>Uma experiência única para acompanhar produtos, lotes, validade, compras, inventário, planejamento e rastreabilidade sem perder o contexto da operação.</p>
+          <div className="home3-actions">
+            <button type="button" className="home3-primary" onClick={onLogin}>Explorar demonstração <ChevronRight size={16}/></button>
+            <a className="home3-secondary" href="#produto">Ver como funciona</a>
           </div>
         </div>
 
-        <div className="home2-preview" aria-label="Resumo do produto">
-          <div className="home2-preview-head">
-            <span>NEXO / VISÃO OPERACIONAL</span>
-            <span>ONLINE</span>
+        <div className="home3-stage" aria-label="Resumo conceitual do Nexo">
+          <div className="home3-stage-top">
+            <span>Nexo</span>
+            <span>Visão operacional</span>
           </div>
-          <div className="home2-preview-main">
-            <div>
-              <span className="home2-preview-label">ESTADO DO ESTOQUE</span>
-              <strong>Dados que chegam<br/>até uma decisão.</strong>
-            </div>
-            <div className="home2-preview-status">
-              <span>saldo</span><span>validade</span><span>cobertura</span><span>rastreio</span>
-            </div>
+          <div className="home3-stage-center">
+            <span className="home3-stage-label">ESTADO CONSOLIDADO</span>
+            <strong>534</strong>
+            <small>unidades em estoque</small>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="projeto" className="home2-section">
-      <div className="home2-container home2-two-col">
-        <div className="home2-section-label"><span>01</span><strong>Projeto</strong></div>
-        <div className="home2-section-body">
-          <span className="home2-kicker">O QUE É O NEXO</span>
-          <h2>Um sistema para acompanhar o estoque como operação contínua.</h2>
-          <div className="home2-copy-grid">
-            <p>Em vez de separar cadastro, movimentação e análise em experiências desconectadas, o Nexo reúne o ciclo operacional em uma única leitura.</p>
-            <p>As regras críticas permanecem determinísticas e auditáveis. A inteligência artificial atua apenas como camada de explicação e apoio à interpretação.</p>
+          <div className="home3-stage-bottom">
+            <div><span>Ruptura</span><b>1 sinal</b></div>
+            <div><span>Validade</span><b>monitorada</b></div>
+            <div><span>Precisão</span><b>rastreável</b></div>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="recursos" className="home2-section">
-      <div className="home2-container home2-two-col">
-        <div className="home2-section-label"><span>02</span><strong>Recursos</strong></div>
-        <div className="home2-section-body">
-          <span className="home2-kicker">CAPACIDADES</span>
-          <h2>Quatro camadas. Um único fluxo.</h2>
-          <div className="home2-capabilities">
-            {capabilities.map(([number,title,text])=><article key={number}>
-              <span>{number}</span>
-              <strong>{title}</strong>
-              <p>{text}</p>
-            </article>)}
-          </div>
+    <section id="produto" className="home3-section">
+      <div className="home3-wrap home3-section-grid">
+        <div className="home3-section-intro">
+          <span className="home3-overline">PRODUTO</span>
+          <h2>Menos telas isoladas.<br/>Mais continuidade.</h2>
+        </div>
+        <div className="home3-section-copy">
+          <p>O Nexo acompanha o estoque como um fluxo contínuo. Recebimento, armazenamento, lotes, validade, inventário, compras e análise aparecem conectados, não espalhados em experiências diferentes.</p>
+          <p>A operação crítica continua determinística e auditável. A inteligência artificial entra apenas para explicar cenários e facilitar leitura.</p>
         </div>
       </div>
     </section>
 
-    <section className="home2-flow-section">
-      <div className="home2-container">
-        <div className="home2-flow-head">
-          <span className="home2-kicker">FLUXO</span>
-          <h2>Do recebimento à ação.</h2>
+    <section id="recursos" className="home3-soft-section">
+      <div className="home3-wrap">
+        <div className="home3-section-title">
+          <span className="home3-overline">RECURSOS</span>
+          <h2>Feito para acompanhar o que realmente muda.</h2>
         </div>
-        <div className="home2-flow">
-          {flow.map(([title,text],index)=><div key={title}>
-            <span>{String(index+1).padStart(2,'0')}</span>
-            <strong>{title}</strong>
-            <small>{text}</small>
-          </div>)}
-        </div>
-      </div>
-    </section>
-
-    <section id="arquitetura" className="home2-section">
-      <div className="home2-container home2-two-col">
-        <div className="home2-section-label"><span>03</span><strong>Arquitetura</strong></div>
-        <div className="home2-section-body">
-          <span className="home2-kicker">FULL STACK</span>
-          <h2>Construído de ponta a ponta.</h2>
-          <div className="home2-tech">
-            <div><span>BACKEND</span><strong>Java 21 · Spring Boot</strong></div>
-            <div><span>FRONTEND</span><strong>React · TypeScript · Vite</strong></div>
-            <div><span>DADOS</span><strong>MySQL · SQL · procedures</strong></div>
-            <div><span>ENTREGA</span><strong>GitHub Actions · Railway</strong></div>
-          </div>
+        <div className="home3-cards">
+          <article>
+            <Boxes size={22}/>
+            <h3>Operação</h3>
+            <p>Saldo, lotes, FEFO, validade, depósitos, posições e transferências em uma visão coerente.</p>
+          </article>
+          <article>
+            <TrendingUp size={22}/>
+            <h3>Planejamento</h3>
+            <p>Cobertura, ruptura, demanda, reposição e sinais de risco para decidir com antecedência.</p>
+          </article>
+          <article>
+            <ShieldCheck size={22}/>
+            <h3>Rastreabilidade</h3>
+            <p>Auditoria, movimentações, qualidade, quarentena e recall preservando histórico e contexto.</p>
+          </article>
         </div>
       </div>
     </section>
 
-    <section className="home2-final">
-      <div className="home2-container home2-final-inner">
+    <section className="home3-quiet-section">
+      <div className="home3-wrap home3-focus">
+        <span className="home3-overline">ASSISTÊNCIA</span>
+        <h2>A IA explica.<br/>O sistema calcula.</h2>
+        <p>A camada inteligente não substitui regras de estoque. Ela organiza e explica resultados já produzidos pelo sistema para apoiar interpretação sem comprometer rastreabilidade.</p>
+      </div>
+    </section>
+
+    <section id="tecnologia" className="home3-section">
+      <div className="home3-wrap">
+        <div className="home3-section-title compact">
+          <span className="home3-overline">TECNOLOGIA</span>
+          <h2>Construído como produto completo.</h2>
+        </div>
+        <div className="home3-tech">
+          <div><span>Backend</span><strong>Java 21 · Spring Boot</strong></div>
+          <div><span>Frontend</span><strong>React · TypeScript · Vite</strong></div>
+          <div><span>Dados</span><strong>MySQL · SQL · procedures</strong></div>
+          <div><span>Entrega</span><strong>GitHub Actions · Railway</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section className="home3-cta">
+      <div className="home3-wrap home3-cta-inner">
         <div>
-          <span className="home2-kicker">DEMONSTRAÇÃO</span>
-          <h2>Veja o Nexo funcionando.</h2>
-          <p>O ambiente público usa um perfil somente leitura para permitir explorar o produto sem alterar os dados operacionais.</p>
+          <span className="home3-overline">DEMONSTRAÇÃO</span>
+          <h2>Conheça o Nexo por dentro.</h2>
+          <p>O acesso público é somente leitura para preservar os dados enquanto você percorre o produto.</p>
         </div>
-        <button type="button" className="home2-primary" onClick={onLogin}>Ir para o login <ChevronRight size={16}/></button>
+        <button type="button" className="home3-primary" onClick={onLogin}>Acessar agora <ChevronRight size={16}/></button>
       </div>
     </section>
 
-    <footer className="home2-footer">
-      <div className="home2-container">
+    <footer className="home3-footer">
+      <div className="home3-wrap">
         <strong>Nexo</strong>
         <span>Sistema inteligente de gestão de estoque</span>
       </div>
@@ -326,7 +312,7 @@ function PublicHome({
   </main>;
 }
 
-function Login({onLogin,onBack,theme,onToggleTheme}:{onLogin:()=>void;onBack:()=>void;theme:Theme;onToggleTheme:()=>void}) {
+function Login({onLogin,onBack}:{onLogin:()=>void;onBack:()=>void;theme:Theme;onToggleTheme:()=>void}) {
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [user,setUser]=useState('');
   const [password,setPassword]=useState('');
@@ -337,23 +323,13 @@ function Login({onLogin,onBack,theme,onToggleTheme}:{onLogin:()=>void;onBack:()=
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try{
       const authorization='Basic '+btoa(user+':'+password);
-      const response=await fetch(API_URL+'/api/v1/auth/login',{
-        method:'POST',
-        headers:{Authorization:authorization}
-      });
-
+      const response=await fetch(API_URL+'/api/v1/auth/login',{method:'POST',headers:{Authorization:authorization}});
       if(!response.ok) throw new Error('Usuário ou senha inválidos.');
       const data=await response.json();
       const role=String(data.role||'VIEWER') as AuthRole;
-
-      saveAuthSession({
-        username:String(data.username||user),
-        role,
-        authorization
-      } satisfies AuthSession);
+      saveAuthSession({username:String(data.username||user),role,authorization} satisfies AuthSession);
       onLogin();
     }catch(err){
       setError(err instanceof Error?err.message:'Não foi possível autenticar.');
@@ -361,43 +337,50 @@ function Login({onLogin,onBack,theme,onToggleTheme}:{onLogin:()=>void;onBack:()=
       setLoading(false);
     }
   }
-  return <main className="login-shell login-black">
-    <div className="login-theme-toggle"><ThemeToggle theme={theme} onToggle={onToggleTheme} compact /></div>
-    <section className="login-copy">
-      <div className="brand official-brand">
-        <BrandImage
-          theme={theme}
-          className="brand-logo-full"
-          alt="Nexo — Sistema inteligente de gestão de estoque"
-        />
+
+  return <main className="login3">
+    <button type="button" className="login3-back" onClick={onBack}>← Voltar</button>
+    <section className="login3-branding">
+      <BrandImage theme="dark" className="login3-logo" alt="Nexo" />
+      <div className="login3-brand-copy">
+        <span>NEXO</span>
+        <h1>Precisão para operar.<br/><em>Clareza para decidir.</em></h1>
+        <p>Gestão de estoque, validade, compras e rastreabilidade em uma experiência única.</p>
       </div>
-      <div className="hero">
-        <span className="eyebrow">GESTÃO INTELIGENTE DE ESTOQUE</span>
-        <h1>Estoque claro.<br/><span>Decisões melhores.</span></h1>
-        <p>Uma visão única para operar estoque, validade, compras e rastreabilidade com precisão, contexto e menos ruído.</p>
-        <div className="hero-feature-grid">
-          <div><Boxes size={19}/><span>Estoque em tempo real</span></div>
-          <div><AlertTriangle size={19}/><span>Alertas operacionais</span></div>
-          <div><PackageSearch size={19}/><span>FEFO e validade</span></div>
-          <div><BrainCircuit size={19}/><span>Assistência inteligente</span></div>
-        </div>
-        <div className="trust"><span><ShieldCheck size={18}/> decisões auditáveis</span><span><ScanLine size={18}/> rastreabilidade por lote</span></div>
+      <div className="login3-trust">
+        <span><ShieldCheck size={16}/> decisões auditáveis</span>
+        <span><ScanLine size={16}/> rastreabilidade por lote</span>
       </div>
     </section>
-    <section className="login-side">
-      <form className="login-card" onSubmit={submit}>
-        <div className="login-title">
-          <BrandImage theme="dark" className="login-logo" alt="Nexo" />
-          <div className="login-access-copy">
-            <strong>Acesso ao Nexo</strong>
-            <small>Demonstração · somente leitura</small>
-          </div>
+
+    <section className="login3-access">
+      <form className="login3-card" onSubmit={submit}>
+        <div className="login3-card-head">
+          <span>ACESSO</span>
+          <h2>Entrar no Nexo</h2>
+          <p>Ambiente demonstrativo · somente leitura</p>
         </div>
-        <label>Usuário<input value={user} onChange={e=>setUser(e.target.value)} placeholder="Digite seu usuário" autoFocus/></label>
-        <label>Senha<input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Digite sua senha"/></label>
-        {error&&<div className="error" role="alert">{error}</div>}
-        <button className="primary" disabled={loading}>{loading?'Entrando...':<>Entrar <ChevronRight size={18}/></>}</button>
-        <div className="demo"><span>Demo</span><code>{DEMO_USER}</code><code>{DEMO_PASSWORD}</code></div>
+
+        <label>
+          <span>Usuário</span>
+          <input value={user} onChange={e=>setUser(e.target.value)} placeholder="Digite seu usuário" autoFocus/>
+        </label>
+        <label>
+          <span>Senha</span>
+          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Digite sua senha"/>
+        </label>
+
+        {error&&<div className="login3-error" role="alert">{error}</div>}
+
+        <button className="login3-submit" disabled={loading}>
+          {loading?'Entrando...':<>Entrar <ChevronRight size={17}/></>}
+        </button>
+
+        <div className="login3-demo">
+          <span>Demo</span>
+          <code>{DEMO_USER}</code>
+          <code>{DEMO_PASSWORD}</code>
+        </div>
       </form>
     </section>
   </main>;
