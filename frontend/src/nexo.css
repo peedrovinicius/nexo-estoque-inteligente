@@ -5361,3 +5361,376 @@ html[data-theme='dark'] .public-product-frame {
     background: rgba(255,255,255,.055) !important;
   }
 }
+
+
+/* =========================================================
+   NEXO DELICATE FINISH — public + login
+   ========================================================= */
+
+/* Public brand: official asset, restrained scale */
+.public-wordmark {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-width: 0;
+}
+
+.public-logo {
+  display: block;
+  width: 132px;
+  height: 34px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+/* Public page: quieter surfaces and less visual competition */
+.public-home {
+  background: #f4f3ef !important;
+}
+
+.public-header {
+  background: rgba(244,243,239,.92) !important;
+  border-bottom-color: rgba(16,18,20,.08) !important;
+}
+
+.public-nav-links a {
+  color: #7b8085 !important;
+  font-weight: 560 !important;
+}
+
+.public-nav-links a:hover {
+  color: #2b2f32 !important;
+}
+
+.public-header .theme-toggle {
+  border-color: rgba(16,18,20,.09) !important;
+  color: #6b7075 !important;
+  background: rgba(255,255,255,.26) !important;
+}
+
+.public-login {
+  background: #202326 !important;
+  border-color: #202326 !important;
+  color: #f7f7f5 !important;
+  font-weight: 600 !important;
+}
+
+.public-eyebrow {
+  color: #8b9095 !important;
+  font-weight: 650 !important;
+  letter-spacing: .085em !important;
+}
+
+.public-hero h1 {
+  color: #1b1e20 !important;
+  font-weight: 640 !important;
+}
+
+.public-hero-copy > p,
+.public-copy-columns p,
+.public-feature > p,
+.public-demo-content p {
+  color: #686e73 !important;
+}
+
+.public-button-primary {
+  background: #202326 !important;
+  border-color: #202326 !important;
+  color: #f7f7f5 !important;
+}
+
+.public-button-link {
+  color: #555b60 !important;
+  border-bottom-color: rgba(16,18,20,.18) !important;
+}
+
+.public-product-frame {
+  background: #f9f8f5 !important;
+  border-color: rgba(16,18,20,.10) !important;
+  box-shadow: 0 18px 60px rgba(16,18,20,.035) !important;
+}
+
+.public-frame-bar,
+.public-frame-main,
+.public-frame-signals > div,
+.public-section,
+.public-feature,
+.public-stack-grid,
+.public-stack-grid > div,
+.public-footer {
+  border-color: rgba(16,18,20,.08) !important;
+}
+
+.public-frame-label,
+.public-frame-signals span,
+.public-section-meta span,
+.public-section-meta strong,
+.public-feature > span,
+.public-stack-grid span {
+  color: #90959a !important;
+}
+
+.public-frame-main strong,
+.public-frame-signals b,
+.public-feature > strong,
+.public-stack-grid strong,
+.public-section-content > h2,
+.public-footer strong {
+  color: #222528 !important;
+}
+
+.public-stack-grid > div {
+  background: rgba(255,255,255,.18) !important;
+}
+
+/* Login: fully black, no split-tone look */
+.login-shell {
+  background: #050506 !important;
+  color: #f5f5f7 !important;
+}
+
+.login-copy,
+.login-side {
+  background: #050506 !important;
+}
+
+.login-copy {
+  background-image:
+    radial-gradient(circle at 22% 18%, rgba(255,255,255,.045), transparent 30%) !important;
+}
+
+.login-copy::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 8%;
+  bottom: 8%;
+  width: 1px;
+  background: rgba(255,255,255,.07);
+}
+
+.login-copy .brand-logo-full {
+  filter: none !important;
+  opacity: .96;
+}
+
+.login-copy .hero h1,
+.login-copy .hero h1 span,
+.login-copy .hero p,
+.login-copy .eyebrow,
+.login-copy .trust,
+.login-copy .hero-feature-grid > div {
+  color: #f5f5f7 !important;
+}
+
+.login-copy .hero h1 {
+  font-weight: 640 !important;
+}
+
+.login-copy .hero h1 span {
+  color: #a9adb1 !important;
+}
+
+.login-copy .hero p,
+.login-copy .trust {
+  color: #92979c !important;
+}
+
+.login-copy .hero-feature-grid > div {
+  background: rgba(255,255,255,.025) !important;
+  border-color: rgba(255,255,255,.07) !important;
+  color: #aeb3b7 !important;
+  border-radius: 10px !important;
+  backdrop-filter: none !important;
+}
+
+.login-copy .hero-feature-grid svg,
+.login-copy .trust svg {
+  color: #81878d !important;
+}
+
+.login-side {
+  border-left: 0 !important;
+}
+
+.login-card {
+  background: #0b0c0d !important;
+  border: 1px solid rgba(255,255,255,.075) !important;
+  color: #f5f5f7 !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+}
+
+.login-title {
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  padding-bottom: 20px;
+}
+
+.login-title .login-logo,
+.login-logo-wordmark,
+.login-logo-base,
+.login-logo-blackword,
+.login-logo-blacktagline {
+  filter: none !important;
+}
+
+.login-access-copy strong {
+  color: #f5f5f7 !important;
+  font-weight: 620 !important;
+}
+
+.login-access-copy small,
+.login-card label,
+.login-title small {
+  color: #8f9499 !important;
+}
+
+.login-card input {
+  background: #111315 !important;
+  border-color: rgba(255,255,255,.09) !important;
+  color: #f5f5f7 !important;
+  box-shadow: none !important;
+}
+
+.login-card input::placeholder {
+  color: #64696e !important;
+}
+
+.login-card input:focus {
+  border-color: rgba(255,255,255,.22) !important;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.035) !important;
+}
+
+.login-card .primary {
+  background: #f2f2f3 !important;
+  border-color: #f2f2f3 !important;
+  color: #111315 !important;
+  font-weight: 650 !important;
+}
+
+.login-card .primary:hover {
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+.demo {
+  color: #71767b !important;
+  border-top-color: rgba(255,255,255,.06) !important;
+}
+
+.demo code {
+  background: #111315 !important;
+  color: #a7acb0 !important;
+  border: 1px solid rgba(255,255,255,.05);
+}
+
+.login-theme-toggle .theme-toggle {
+  background: rgba(255,255,255,.035) !important;
+  border-color: rgba(255,255,255,.08) !important;
+  color: #a6abb0 !important;
+}
+
+.login-back-link {
+  background: rgba(255,255,255,.025) !important;
+  border-color: rgba(255,255,255,.07) !important;
+  color: #9aa0a5 !important;
+}
+
+/* Mobile refinement */
+@media (max-width: 720px) {
+  .public-logo {
+    width: 110px !important;
+    height: 30px !important;
+  }
+
+  .public-header {
+    background: rgba(244,243,239,.96) !important;
+  }
+
+  .public-hero {
+    padding-top: 50px !important;
+  }
+
+  .public-hero-copy {
+    text-align: left !important;
+  }
+
+  .public-product-frame {
+    box-shadow: none !important;
+  }
+
+  .login-copy {
+    display: none !important;
+  }
+
+  .login-shell,
+  .login-side {
+    background: #050506 !important;
+  }
+
+  .login-side {
+    min-height: 100dvh !important;
+    padding: 78px 18px 28px !important;
+  }
+
+  .login-card {
+    max-width: 390px !important;
+    padding: 22px !important;
+    border-radius: 12px !important;
+    background: #0a0b0c !important;
+  }
+
+  .login-title {
+    margin-bottom: 20px !important;
+    padding-bottom: 18px !important;
+  }
+
+  .login-card input {
+    min-height: 44px !important;
+  }
+
+  .login-card .primary {
+    min-height: 44px !important;
+  }
+
+  .login-back-link {
+    top: 14px !important;
+    left: 14px !important;
+  }
+}
+
+html[data-theme='dark'] .public-home {
+  background: #0a0b0c !important;
+}
+
+html[data-theme='dark'] .public-header {
+  background: rgba(10,11,12,.94) !important;
+  border-bottom-color: rgba(255,255,255,.07) !important;
+}
+
+html[data-theme='dark'] .public-product-frame {
+  background: #101214 !important;
+  border-color: rgba(255,255,255,.08) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme='dark'] .public-frame-bar,
+html[data-theme='dark'] .public-frame-main,
+html[data-theme='dark'] .public-frame-signals > div,
+html[data-theme='dark'] .public-section,
+html[data-theme='dark'] .public-feature,
+html[data-theme='dark'] .public-stack-grid,
+html[data-theme='dark'] .public-stack-grid > div,
+html[data-theme='dark'] .public-footer {
+  border-color: rgba(255,255,255,.07) !important;
+}
+
+html[data-theme='dark'] .public-stack-grid > div {
+  background: rgba(255,255,255,.018) !important;
+}
+
+html[data-theme='dark'] .public-login,
+html[data-theme='dark'] .public-button-primary {
+  background: #f0f0f1 !important;
+  border-color: #f0f0f1 !important;
+  color: #111315 !important;
+}

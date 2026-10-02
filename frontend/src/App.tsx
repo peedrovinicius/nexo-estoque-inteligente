@@ -202,7 +202,7 @@ function PublicHome({
   return <main className="public-home">
     <header className="public-header">
       <div className="public-container public-header-inner">
-        <a className="public-wordmark" href="#inicio" aria-label="Nexo, início">Nexo</a>
+        <a className="public-wordmark" href="#inicio" aria-label="Nexo, início"><BrandImage theme={theme} className="public-logo" alt="Nexo — Sistema inteligente de gestão de estoque" /></a>
         <nav className="public-nav-links" aria-label="Navegação da apresentação">
           <a href="#projeto">Projeto</a>
           <a href="#recursos">Recursos</a>
