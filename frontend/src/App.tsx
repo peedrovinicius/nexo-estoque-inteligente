@@ -225,18 +225,21 @@ function PublicHome({
 
         <div className="home3-stage" aria-label="Resumo conceitual do Nexo">
           <div className="home3-stage-top">
-            <span>Nexo</span>
-            <span>Visão operacional</span>
+            <span>NEXO / VISÃO OPERACIONAL</span>
+            <span className="home3-stage-live"><i/> ambiente conectado</span>
           </div>
-          <div className="home3-stage-center">
-            <span className="home3-stage-label">ESTADO CONSOLIDADO</span>
-            <strong>534</strong>
-            <small>unidades em estoque</small>
-          </div>
-          <div className="home3-stage-bottom">
-            <div><span>Ruptura</span><b>1 sinal</b></div>
-            <div><span>Validade</span><b>monitorada</b></div>
-            <div><span>Precisão</span><b>rastreável</b></div>
+          <div className="home3-stage-grid">
+            <div className="home3-stage-message">
+              <span className="home3-stage-label">LEITURA CONSOLIDADA</span>
+              <strong>Operação<br/>em contexto.</strong>
+              <small>estoque, risco e ação na mesma leitura</small>
+            </div>
+            <div className="home3-stage-signals">
+              <div><span>Estoque</span><b>acompanhar saldo</b></div>
+              <div><span>Validade</span><b>priorizar lotes</b></div>
+              <div><span>Planejamento</span><b>antecipar ruptura</b></div>
+              <div><span>Rastreio</span><b>preservar histórico</b></div>
+            </div>
           </div>
         </div>
       </div>
@@ -251,6 +254,12 @@ function PublicHome({
         <div className="home3-section-copy">
           <p>O Nexo acompanha o estoque como um fluxo contínuo. Recebimento, armazenamento, lotes, validade, inventário, compras e análise aparecem conectados, não espalhados em experiências diferentes.</p>
           <p>A operação crítica continua determinística e auditável. A inteligência artificial entra apenas para explicar cenários e facilitar leitura.</p>
+          <div className="home3-product-flow" aria-label="Fluxo operacional do Nexo">
+            <div><span>01</span><strong>Receber</strong><small>entrada e posição</small></div>
+            <div><span>02</span><strong>Controlar</strong><small>lote e validade</small></div>
+            <div><span>03</span><strong>Interpretar</strong><small>risco e cobertura</small></div>
+            <div><span>04</span><strong>Agir</strong><small>comprar ou transferir</small></div>
+          </div>
         </div>
       </div>
     </section>
