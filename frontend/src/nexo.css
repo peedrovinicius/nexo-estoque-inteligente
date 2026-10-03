@@ -8111,3 +8111,57 @@ html {
     scroll-behavior: auto;
   }
 }
+
+
+/* =========================================================
+   NEXO HOME — restore approved original logo
+   ========================================================= */
+.home3-brand {
+  min-width: 250px !important;
+  height: 100% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  text-decoration: none !important;
+}
+
+.home3-logo-original {
+  display: block !important;
+  width: 228px !important;
+  height: 58px !important;
+  max-width: 228px !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+  opacity: 1 !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+.home3-brand-lockup,
+.home3-brand-symbol,
+.home3-brand-copy {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .home3-brand {
+    min-width: 194px !important;
+  }
+
+  .home3-logo-original {
+    width: 188px !important;
+    height: 48px !important;
+    max-width: 188px !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .home3-brand {
+    min-width: 145px !important;
+  }
+
+  .home3-logo-original {
+    width: 142px !important;
+    height: 38px !important;
+    max-width: 142px !important;
+  }
+}
