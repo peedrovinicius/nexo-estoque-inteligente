@@ -188,14 +188,19 @@ function PublicHome({
     <header className="home3-header">
       <div className="home3-wrap home3-header-inner">
         <a className="home3-brand" href="#inicio" aria-label="Nexo, início">
-          <img
-            src="/nexo-logo-light.png"
-            alt="Nexo — Sistema inteligente de gestão de estoque"
-            className="home3-logo"
-            draggable={false}
-            decoding="async"
-            onError={event=>{event.currentTarget.src='/nexo-logo.png';}}
-          />
+          <span className="home3-brand-lockup">
+            <img
+              src="/nexo-symbol.png"
+              alt=""
+              className="home3-brand-symbol"
+              draggable={false}
+              decoding="async"
+            />
+            <span className="home3-brand-copy">
+              <strong>Nexo</strong>
+              <small>Sistema inteligente de gestão de estoque</small>
+            </span>
+          </span>
         </a>
         <nav className="home3-nav" aria-label="Navegação">
           <a href="#produto">Produto</a>
