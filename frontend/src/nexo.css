@@ -7606,3 +7606,56 @@ html[data-theme='dark'] .public-button-primary {
     font-size: clamp(32px,9vw,41px) !important;
   }
 }
+
+
+/* =========================================================
+   NEXO HOME — logo visibility correction
+   ========================================================= */
+.home3-header {
+  height: 76px !important;
+}
+
+.home3-brand {
+  min-width: 250px !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.home3-logo {
+  display: block !important;
+  width: 238px !important;
+  height: 62px !important;
+  max-width: 238px !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+  opacity: 1 !important;
+}
+
+@media (max-width: 980px) {
+  .home3-brand {
+    min-width: 195px !important;
+  }
+
+  .home3-logo {
+    width: 190px !important;
+    height: 50px !important;
+    max-width: 190px !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .home3-header {
+    height: 64px !important;
+  }
+
+  .home3-brand {
+    min-width: 154px !important;
+  }
+
+  .home3-logo {
+    width: 150px !important;
+    height: 42px !important;
+    max-width: 150px !important;
+  }
+}
