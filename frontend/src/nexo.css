@@ -8165,3 +8165,72 @@ html {
     max-width: 142px !important;
   }
 }
+
+
+/* =========================================================
+   NEXO HOME — original logo with black lettering
+   Keeps the approved symbol untouched and recolors only
+   the original lettering via a clipped duplicate.
+   ========================================================= */
+.home3-logo-lockup {
+  position: relative;
+  display: block;
+  width: 228px;
+  height: 58px;
+  overflow: visible;
+}
+
+.home3-logo-original,
+.home3-logo-blacktext {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 228px !important;
+  height: 58px !important;
+  max-width: 228px !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+  transform: none !important;
+}
+
+.home3-logo-original {
+  opacity: 1 !important;
+  filter: none !important;
+  z-index: 1;
+}
+
+.home3-logo-blacktext {
+  opacity: 1 !important;
+  filter: grayscale(1) brightness(0) !important;
+  clip-path: inset(0 0 0 31.5%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+@media (max-width: 980px) {
+  .home3-logo-lockup {
+    width: 188px;
+    height: 48px;
+  }
+
+  .home3-logo-original,
+  .home3-logo-blacktext {
+    width: 188px !important;
+    height: 48px !important;
+    max-width: 188px !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .home3-logo-lockup {
+    width: 142px;
+    height: 38px;
+  }
+
+  .home3-logo-original,
+  .home3-logo-blacktext {
+    width: 142px !important;
+    height: 38px !important;
+    max-width: 142px !important;
+  }
+}
