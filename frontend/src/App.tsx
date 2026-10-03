@@ -196,14 +196,8 @@ export function PublicHome({
               draggable={false}
               decoding="async"
             />
-            <img
-              src="/nexo-logo-original.png"
-              alt=""
-              aria-hidden="true"
-              className="home3-logo-blacktext"
-              draggable={false}
-              decoding="async"
-            />
+            <span className="home3-logo-wordmark-mask" aria-hidden="true"/>
+            <span className="home3-logo-tagline-mask" aria-hidden="true"/>
           </span>
         </a>
         <nav className="home3-nav" aria-label="Navegação">
