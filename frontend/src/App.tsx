@@ -180,7 +180,7 @@ function ThemeToggle({theme,onToggle,compact=false}:{theme:Theme;onToggle:()=>vo
 }
 
 
-function PublicHome({
+export function PublicHome({
   theme,
   onLogin
 }:{theme:Theme;onToggleTheme:()=>void;onLogin:()=>void}){
@@ -337,7 +337,7 @@ function PublicHome({
   </main>;
 }
 
-function Login({onLogin,onBack}:{onLogin:()=>void;onBack:()=>void;theme:Theme;onToggleTheme:()=>void}) {
+export function Login({onLogin,onBack}:{onLogin:()=>void;onBack:()=>void;theme:Theme;onToggleTheme:()=>void}) {
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [user,setUser]=useState('');
   const [password,setPassword]=useState('');
@@ -351,7 +351,10 @@ function Login({onLogin,onBack}:{onLogin:()=>void;onBack:()=>void;theme:Theme;on
     try{
       const authorization='Basic '+btoa(user+':'+password);
       const response=await fetch(API_URL+'/api/v1/auth/login',{method:'POST',headers:{Authorization:authorization}});
-      if(!response.ok) throw new Error('Usuário ou senha inválidos.');
+      if(!response.ok){
+        if(response.status===401||response.status===403) throw new Error('Usuário ou senha inválidos.');
+        throw new Error('O serviço de autenticação está indisponível no momento.');
+      }
       const data=await response.json();
       const role=String(data.role||'VIEWER') as AuthRole;
       saveAuthSession({username:String(data.username||user),role,authorization} satisfies AuthSession);
@@ -388,23 +391,49 @@ function Login({onLogin,onBack}:{onLogin:()=>void;onBack:()=>void;theme:Theme;on
 
         <label>
           <span>Usuário</span>
-          <input value={user} onChange={e=>setUser(e.target.value)} placeholder="Digite seu usuário" autoFocus/>
+          <input
+            name="username"
+            value={user}
+            onChange={e=>setUser(e.target.value)}
+            placeholder="Digite seu usuário"
+            autoComplete="username"
+            required
+            autoFocus
+          />
         </label>
         <label>
           <span>Senha</span>
-          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Digite sua senha"/>
+          <input
+            name="password"
+            type="password"
+            value={password}
+            onChange={e=>setPassword(e.target.value)}
+            placeholder="Digite sua senha"
+            autoComplete="current-password"
+            required
+          />
         </label>
 
         {error&&<div className="login3-error" role="alert">{error}</div>}
 
-        <button className="login3-submit" disabled={loading}>
+        <button type="submit" className="login3-submit" disabled={loading||!user.trim()||!password}>
           {loading?'Entrando...':<>Entrar <ChevronRight size={17}/></>}
         </button>
 
         <div className="login3-demo">
-          <span>Demo</span>
-          <code>{DEMO_USER}</code>
-          <code>{DEMO_PASSWORD}</code>
+          <div className="login3-demo-data">
+            <span>Demo</span>
+            <code>{DEMO_USER}</code>
+            <code>{DEMO_PASSWORD}</code>
+          </div>
+          <button
+            type="button"
+            className="login3-demo-fill"
+            onClick={()=>{setUser(DEMO_USER);setPassword(DEMO_PASSWORD);setError('');}}
+            disabled={loading}
+          >
+            Usar acesso demo
+          </button>
         </div>
       </form>
     </section>
@@ -3138,11 +3167,26 @@ export default function App(){
     localStorage.setItem('nexo-theme',theme);
   },[theme]);
 
+  useEffect(()=>{
+    const syncPublicView=()=>{
+      if(readAuthSession()) return;
+      setPublicView(window.location.hash==='#login'?'login':'home');
+    };
+    window.addEventListener('popstate',syncPublicView);
+    window.addEventListener('hashchange',syncPublicView);
+    return ()=>{
+      window.removeEventListener('popstate',syncPublicView);
+      window.removeEventListener('hashchange',syncPublicView);
+    };
+  },[]);
+
   const toggleTheme=()=>setTheme(current=>current==='light'?'dark':'light');
 
   const showLogin=()=>{
     setPublicView('login');
-    window.history.replaceState(null,'',window.location.pathname+window.location.search+'#login');
+    if(window.location.hash!=='#login'){
+      window.history.pushState(null,'',window.location.pathname+window.location.search+'#login');
+    }
     window.scrollTo({top:0,behavior:'auto'});
   };
 
@@ -3156,7 +3200,13 @@ export default function App(){
     return <Dashboard
       theme={theme}
       onToggleTheme={toggleTheme}
-      logout={()=>{clearAuthSession();setAuth(false);setPublicView('home')}}
+      logout={()=>{
+        clearAuthSession();
+        setAuth(false);
+        setPublicView('home');
+        window.history.replaceState(null,'',window.location.pathname+window.location.search);
+        window.scrollTo({top:0,behavior:'auto'});
+      }}
     />;
   }
 

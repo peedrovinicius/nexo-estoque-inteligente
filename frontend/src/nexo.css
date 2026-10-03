@@ -8036,3 +8036,78 @@ html[data-theme='dark'] .public-button-primary {
     scroll-behavior: auto !important;
   }
 }
+
+
+/* =========================================================
+   NEXO — functional interaction polish
+   ========================================================= */
+#inicio,
+#produto,
+#recursos,
+#tecnologia {
+  scroll-margin-top: 96px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.login3-demo {
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+.login3-demo-data {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.login3-demo-fill {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(27,30,32,.08);
+  border-radius: 7px;
+  background: #fff;
+  color: #5f656a;
+  font: 600 10px/1 var(--nx-font);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.login3-demo-fill:hover {
+  border-color: rgba(27,30,32,.16);
+  color: #25282a;
+}
+
+.login3-demo-fill:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+@media (max-width: 680px) {
+  #inicio,
+  #produto,
+  #recursos,
+  #tecnologia {
+    scroll-margin-top: 78px;
+  }
+
+  .login3-demo {
+    align-items: stretch !important;
+    flex-direction: column;
+  }
+
+  .login3-demo-fill {
+    width: 100%;
+    min-height: 36px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
