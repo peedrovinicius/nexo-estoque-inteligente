@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -56,7 +57,7 @@ public class AuthSessionService {
     }
 
     public SessionResponse login(String username, String password, String address) {
-        String key = digest(address + "\n" + username);
+        String key = digest(address + "\n" + username.toLowerCase(Locale.ROOT));
         consumeAttempt(key);
         if (password.getBytes(StandardCharsets.UTF_8).length > 72) {
             encoder.matches("invalid", dummyPasswordHash);
