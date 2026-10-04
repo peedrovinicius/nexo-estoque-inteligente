@@ -182,3 +182,6 @@ html[data-theme='dark'] :root:root .app-shell .sidebar-logo-full { filter:none!i
 :root:root .app-shell .control-actions button { width:auto!important; min-height:42px!important; }
 :root:root .app-shell .dashboard-primary-action { background:#293842!important; border-color:#293842!important; color:#fff!important; }
 @media(max-width:720px) { :root:root .app-shell .control-actions { flex-wrap:wrap!important; } }
+
+.home3 .home3-logo-original { clip-path:inset(0 66% 0 0)!important; }
+.home3 .home3-logo-wordmark-mask { clip-path:inset(0 0 27% 34%)!important; }
