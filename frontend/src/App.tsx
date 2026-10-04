@@ -936,7 +936,7 @@ function ProductsPanel(){
         </select>
         <span>{totalElements} produto{totalElements===1?'':'s'}</span>
         <span className={'data-source '+source}>
-          {source==='loading'?'carregando...':source==='api'?'API + MySQL':'API indisponível'}
+          {source==='loading'?'carregando...':source==='api'?'Dados atualizados':'Dados indisponíveis'}
         </span>
       </div>
     </section>
@@ -1454,7 +1454,7 @@ function RecentMovements({refreshKey}:{refreshKey:number}){
     <div className="section-head">
       <div><span className="eyebrow">RASTREABILIDADE</span><h2>Movimentações recentes</h2></div>
       <span className={'data-source '+(source==='api'?'api':source==='loading'?'loading':'demo')}>
-        {source==='api'?'API + MySQL':source==='loading'?'carregando...':source==='empty'?'sem movimentações':'API indisponível'}
+        {source==='api'?'Dados atualizados':source==='loading'?'carregando...':source==='empty'?'sem movimentações':'Dados indisponíveis'}
       </span>
     </div>
 
@@ -1990,7 +1990,7 @@ function AdvisorPanel(){
         {
           id:Date.now()+1,
           role:'assistant',
-          text:'Não consegui consultar o contexto operacional agora. Confirme o indicador API + MySQL e tente novamente.',
+          text:'Não consegui consultar o contexto operacional agora. Tente novamente em alguns instantes.',
           source:'falha de conexão'
         }
       ]);
