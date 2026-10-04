@@ -57,7 +57,7 @@ class AuthSessionServiceTest {
             assertThatThrownBy(() -> service.login("demo", "wrong", "127.0.0.1"))
                     .isInstanceOf(BadCredentialsException.class);
         }
-        assertThatThrownBy(() -> service.login("demo", "test-password", "127.0.0.1"))
+        assertThatThrownBy(() -> service.login("DEMO", "test-password", "127.0.0.1"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(error -> assertThat(((ResponseStatusException) error).getStatusCode().value()).isEqualTo(429));
         when(clock.instant()).thenReturn(start.plusSeconds(901));

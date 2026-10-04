@@ -77,6 +77,9 @@ class SessionSecurityTest {
     @Test void rejectsMissingCredentialsAndLimitsFailedLogins() throws Exception {
         mvc.perform(post("/api/v1/auth/login").contentType("application/json").content("{}"))
                 .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/auth/login").contentType("application/json")
+                .content(mapper.writeValueAsString(new AuthController.LoginRequest("absent", "é".repeat(40)))))
+                .andExpect(status().isUnauthorized());
         for (int i = 0; i < 5; i++) {
             mvc.perform(post("/api/v1/auth/login").contentType("application/json")
                     .content("{\"username\":\"demo\",\"password\":\"wrong\"}"))
