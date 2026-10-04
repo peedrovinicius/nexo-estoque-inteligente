@@ -2074,7 +2074,6 @@ function AdvisorPanel(){
 function SystemReadiness(){
   const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
   const [state,setState]=useState<'loading'|'ready'|'degraded'|'offline'>('loading');
-  const [latency,setLatency]=useState<number|null>(null);
 
   useEffect(()=>{
     let active=true;
@@ -2086,11 +2085,9 @@ function SystemReadiness(){
         const data=await response.json();
         if(!active) return;
         setState(data.database==='ready'?'ready':'degraded');
-        setLatency(Number.isFinite(Number(data.databaseLatencyMs))?Number(data.databaseLatencyMs):null);
       }catch{
         if(active){
           setState('offline');
-          setLatency(null);
         }
       }
     }
@@ -2103,18 +2100,11 @@ function SystemReadiness(){
     };
   },[]);
 
-  const text=state==='ready'
-    ? 'API + MySQL operacionais'
-    : state==='degraded'
-      ? 'API online · MySQL desconectado'
-      : state==='offline'
-        ? 'API indisponível'
-        : 'Verificando infraestrutura...';
+  if(state==='loading'||state==='ready') return null;
 
   return <div className={'system-readiness '+state} role="status" aria-live="polite" aria-atomic="true">
     <span className="readiness-dot"/>
-    <strong>{text}</strong>
-    {latency!==null&&state==='ready'&&<small>{latency} ms</small>}
+    <strong>Não foi possível conectar ao sistema. Alguns dados podem estar indisponíveis.</strong>
   </div>;
 }
 
