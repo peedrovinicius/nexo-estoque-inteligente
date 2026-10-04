@@ -122,6 +122,13 @@ function BrandImage({
   className,
   alt
 }:{theme:Theme;className:string;alt:string}){
+  if(className==='sidebar-logo-full'){
+    return <span className={className+' sidebar-original-lockup'} role="img" aria-label={alt}>
+      <img src="/nexo-logo-original.png" alt="" aria-hidden="true" className="sidebar-original-symbol" draggable={false}/>
+      <span className="sidebar-original-lettering" aria-hidden="true"/>
+    </span>;
+  }
+
   if(theme==='light' && className.includes('login-logo')){
     return <span className="login-logo-wordmark" role="img" aria-label={alt}>
       <img
