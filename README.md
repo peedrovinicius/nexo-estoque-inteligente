@@ -214,3 +214,7 @@ senha: Nexo@2026
 ## Estado
 
 Versão 1.0.0. O escopo funcional planejado para o projeto de portfólio está concluído; evoluções futuras passam a ser incrementais, sem ampliar o núcleo operacional sem necessidade.
+
+### Sessões de acesso
+
+O login emite um token temporário; senhas não são persistidas pelo frontend. Consulte o [contrato de autenticação e os limites de operação](docs/auth-sessions.md).

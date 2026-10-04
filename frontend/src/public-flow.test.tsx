@@ -66,7 +66,7 @@ describe('public navigation',()=>{
 describe('login flow',()=>{
   it('fills the demo account and authenticates',async()=>{
     const fetchMock=vi.spyOn(globalThis,'fetch').mockResolvedValue(
-      new Response(JSON.stringify({username:'demo',role:'VIEWER'}),{
+      new Response(JSON.stringify({username:'demo',role:'VIEWER',token:'a'.repeat(43),expiresAt:new Date(Date.now()+1800000).toISOString()}),{
         status:200,
         headers:{'Content-Type':'application/json'}
       })
