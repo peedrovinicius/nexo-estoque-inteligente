@@ -205,3 +205,5 @@ html[data-theme='dark'] :root:root .app-shell .sidebar-logo-full { filter:none!i
 @media(max-width:720px) {
   :root:root .app-shell .sidebar-original-lockup { height:42px!important; }
 }
+
+:root:root .app-shell .sidebar-original-lettering { clip-path:polygon(34% 0,100% 0,100% 100%,26% 100%,26% 73%,34% 73%)!important; }
