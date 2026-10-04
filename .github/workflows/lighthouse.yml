@@ -1,0 +1,31 @@
+name: Lighthouse
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/lighthouse.yml'
+  schedule:
+    - cron: '41 7 * * 1'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.15.1
+      - name: Audit production
+        run: |
+          lhci collect --url=https://nexo-estoque-web-production.up.railway.app --numberOfRuns=1
+          lhci assert \
+            --assertions.categories:performance="warn" \
+            --assertions.categories:accessibility="error" \
+            --assertions.categories:best-practices="warn" \
+            --assertions.categories:seo="warn"
