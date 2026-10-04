@@ -4,6 +4,7 @@ import App from './App';
 import './styles.css';
 import './nexo.css';
 import './refinement.css';
+import './responsive-audit.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode><App/></React.StrictMode>
