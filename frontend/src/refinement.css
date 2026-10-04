@@ -185,3 +185,23 @@ html[data-theme='dark'] :root:root .app-shell .sidebar-logo-full { filter:none!i
 
 .home3 .home3-logo-original { clip-path:inset(0 66% 0 0)!important; }
 .home3 .home3-logo-wordmark-mask { clip-path:inset(0 0 27% 34%)!important; }
+
+/* Preserve the original colored symbol; recolor only lettering. */
+:root:root .app-shell .sidebar-original-lockup {
+  position:relative!important; display:block!important; height:59px!important;
+  filter:none!important; overflow:visible!important;
+}
+:root:root .app-shell .sidebar-original-symbol {
+  position:absolute!important; inset:0!important; width:100%!important; height:100%!important;
+  object-fit:contain!important; filter:none!important; opacity:1!important;
+  clip-path:inset(0 66% 0 0)!important;
+}
+:root:root .app-shell .sidebar-original-lettering {
+  position:absolute!important; inset:0!important; background:var(--finish-ink)!important;
+  mask:url('/nexo-logo-original.png') center/contain no-repeat;
+  -webkit-mask:url('/nexo-logo-original.png') center/contain no-repeat;
+  clip-path:inset(0 0 0 34%)!important;
+}
+@media(max-width:720px) {
+  :root:root .app-shell .sidebar-original-lockup { height:42px!important; }
+}
