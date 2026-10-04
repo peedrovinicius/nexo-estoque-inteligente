@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, ArrowRightLeft, Boxes, BrainCircuit, Camera, ChevronRight, ClipboardCheck, Download, LayoutDashboard, LogOut, MapPin, Moon, PackageSearch, ScanLine, ShieldAlert, ShieldCheck, ShoppingCart, Sparkles, Sun, TrendingUp, Truck } from 'lucide-react';
-import { apiFetch, clearAuthSession, isReadOnlySession, newIdempotencyKey, readAuthSession, saveAuthSession, type AuthRole, type AuthSession } from './auth';
+import { apiFetch, clearAuthSession,logoutSession, isReadOnlySession, newIdempotencyKey, readAuthSession, saveAuthSession, type AuthRole, type AuthSession } from './auth';
 
 const InventoryIntelligencePanel=lazy(()=>import('./InventoryIntelligencePanel'));
 const TraceabilityPanel=lazy(()=>import('./TraceabilityPanel'));
@@ -336,15 +336,23 @@ export function Login({onLogin,onBack}:{onLogin:()=>void;onBack:()=>void;theme:T
     setError('');
     setLoading(true);
     try{
-      const authorization='Basic '+btoa(user+':'+password);
-      const response=await fetch(API_URL+'/api/v1/auth/login',{method:'POST',headers:{Authorization:authorization}});
+      const response=await fetch(API_URL+'/api/v1/auth/login',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({username:user,password}),credentials:'omit'
+      });
       if(!response.ok){
+        if(response.status===429) throw new Error('Muitas tentativas. Aguarde 15 minutos antes de tentar novamente.');
         if(response.status===401||response.status===403) throw new Error('Usuário ou senha inválidos.');
         throw new Error('O serviço de autenticação está indisponível no momento.');
       }
       const data=await response.json();
       const role=String(data.role||'VIEWER') as AuthRole;
-      saveAuthSession({username:String(data.username||user),role,authorization} satisfies AuthSession);
+      if(typeof data.token!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(data.token)
+        ||!['ADMIN','OPERATOR','VIEWER'].includes(role)
+        ||!Number.isFinite(Date.parse(data.expiresAt))||Date.parse(data.expiresAt)<=Date.now())
+        throw new Error('Não foi possível iniciar uma sessão válida.');
+      saveAuthSession({username:String(data.username||user),role,token:data.token,expiresAt:data.expiresAt} satisfies AuthSession);
+      setPassword('');
       onLogin();
     }catch(err){
       setError(err instanceof Error?err.message:'Não foi possível autenticar.');
@@ -3144,6 +3152,12 @@ export default function App(){
     };
   },[]);
 
+  useEffect(()=>{
+    const expire=()=>{clearAuthSession();setAuth(false);setPublicView('login');};
+    window.addEventListener('nexo:session-expired',expire);
+    return ()=>window.removeEventListener('nexo:session-expired',expire);
+  },[]);
+
   const toggleTheme=()=>setTheme(current=>current==='light'?'dark':'light');
 
   const showLogin=()=>{
@@ -3165,6 +3179,7 @@ export default function App(){
       theme={theme}
       onToggleTheme={toggleTheme}
       logout={()=>{
+        void logoutSession(import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app').catch(()=>{});
         clearAuthSession();
         setAuth(false);
         setPublicView('home');
