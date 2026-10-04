@@ -25,10 +25,10 @@ jobs:
       - name: Install application dependencies
         run: npm ci
       - name: Install Playwright runner
-        run: npm install --no-save @playwright/test@1.55.0
+        run: npm install --no-save @playwright/test@1.63.0
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Run production smoke test
         env:
           NEXO_BASE_URL: https://nexo-estoque-web-production.up.railway.app
-        run: npx playwright test e2e/home.spec.ts --project=chromium --reporter=line
+        run: npx playwright test e2e/home.spec.ts --reporter=line
