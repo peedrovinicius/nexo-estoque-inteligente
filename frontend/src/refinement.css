@@ -174,3 +174,11 @@ html[data-theme='dark'] :root:root .app-shell .sidebar-logo-full { filter:none!i
  :root:root .app-shell .sidebar-nav button { justify-content:flex-start!important; }
  :root:root .app-shell .sidebar-bottom .theme-toggle span { display:none!important; }
 }
+
+/* Keep rail icons legible against both sidebar themes. */
+:root:root .app-shell .sidebar-nav button svg { color:currentColor!important; opacity:1!important; }
+:root:root .app-shell .sidebar-nav button.active::before { background:var(--finish-ink)!important; }
+:root:root .app-shell .control-actions { display:flex!important; flex-direction:row!important; align-items:center!important; gap:10px!important; }
+:root:root .app-shell .control-actions button { width:auto!important; min-height:42px!important; }
+:root:root .app-shell .dashboard-primary-action { background:#293842!important; border-color:#293842!important; color:#fff!important; }
+@media(max-width:720px) { :root:root .app-shell .control-actions { flex-wrap:wrap!important; } }
