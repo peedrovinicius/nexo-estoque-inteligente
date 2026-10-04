@@ -1,0 +1,493 @@
+/* Final responsive polish.
+   Loaded after refinement.css to keep the public home, login and authenticated
+   workspace proportional across desktop, tablet and mobile without changing
+   application behavior. */
+
+html {
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+.home3 button,
+.login3 button,
+.app-shell button,
+.home3 a,
+.login3 a {
+  touch-action: manipulation;
+}
+
+/* Public home */
+@media (max-width: 1024px) {
+  .home3 .home3-wrap {
+    width: min(100% - 48px, 1120px) !important;
+  }
+
+  .home3 .home3-header {
+    height: 78px !important;
+  }
+
+  .home3 .home3-brand,
+  .home3 .home3-logo-lockup {
+    width: 178px !important;
+  }
+
+  .home3 .home3-hero {
+    padding: 66px 0 56px !important;
+  }
+
+  .home3 .home3-section-grid {
+    grid-template-columns: minmax(220px, .78fr) minmax(0, 1.22fr) !important;
+    gap: 40px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .home3 .home3-wrap {
+    width: calc(100% - 32px) !important;
+  }
+
+  .home3 .home3-header {
+    height: 64px !important;
+  }
+
+  .home3 .home3-header-inner {
+    gap: 12px !important;
+  }
+
+  .home3 .home3-brand,
+  .home3 .home3-logo-lockup {
+    width: 146px !important;
+    height: 52px !important;
+  }
+
+  .home3 .home3-login {
+    min-height: 40px !important;
+    padding: 0 16px !important;
+    border-radius: 11px !important;
+  }
+
+  .home3 .home3-hero {
+    padding: 44px 0 38px !important;
+  }
+
+  .home3 .home3-overline {
+    font-size: 10px !important;
+    line-height: 1.5 !important;
+  }
+
+  .home3 .home3-hero h1 {
+    margin: 18px 0 !important;
+    font-size: clamp(40px, 12.5vw, 58px) !important;
+    line-height: 1.01 !important;
+    letter-spacing: -.05em !important;
+  }
+
+  .home3 .home3-hero-copy > p {
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+  }
+
+  .home3 .home3-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    margin-top: 26px !important;
+  }
+
+  .home3 .home3-primary,
+  .home3 .home3-secondary {
+    width: 100% !important;
+    min-height: 46px !important;
+    border-radius: 11px !important;
+  }
+
+  .home3 .home3-secondary {
+    border: 1px solid #dce3e8 !important;
+    background: rgba(255,255,255,.7) !important;
+  }
+
+  .home3 .home3-stage {
+    margin-top: 34px !important;
+    border-radius: 16px !important;
+  }
+
+  .home3 .home3-stage-top {
+    min-height: 48px !important;
+    padding: 12px 16px !important;
+  }
+
+  .home3 .home3-stage-message {
+    padding: 24px !important;
+  }
+
+  .home3 .home3-stage-message strong {
+    font-size: clamp(34px, 11vw, 44px) !important;
+  }
+
+  .home3 .home3-stage-signals > div {
+    min-height: 64px !important;
+    padding: 17px 20px !important;
+  }
+
+  .home3 .home3-section,
+  .home3 .home3-quiet-section,
+  .home3 .home3-cta {
+    padding: 44px 0 !important;
+  }
+
+  .home3 .home3-section-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  .home3 h2 {
+    font-size: clamp(29px, 9vw, 38px) !important;
+  }
+
+  .home3 .home3-product-flow {
+    grid-template-columns: 1fr !important;
+  }
+
+  .home3 .home3-cards article {
+    padding: 20px !important;
+    border-radius: 16px !important;
+  }
+
+  .home3 .home3-footer > div {
+    align-items: flex-start !important;
+  }
+}
+
+/* Login */
+@media (max-width: 920px) {
+  .login3 {
+    grid-template-columns: minmax(0, .8fr) minmax(360px, 1.2fr) !important;
+  }
+
+  .login3 .login3-branding {
+    padding-inline: 40px !important;
+  }
+
+  .login3 .login3-access {
+    padding-inline: 32px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .login3 {
+    display: block !important;
+    min-height: 100dvh !important;
+    background: #fcfdfe !important;
+  }
+
+  .login3 .login3-back {
+    position: absolute !important;
+    top: 14px !important;
+    left: 16px !important;
+    min-height: 40px !important;
+    color: #e3e9ee !important;
+  }
+
+  .login3 .login3-branding {
+    min-height: 220px !important;
+    padding: 58px 24px 26px !important;
+    justify-content: flex-end !important;
+  }
+
+  .login3 .login3-logo {
+    width: 158px !important;
+    margin: 0 0 18px !important;
+  }
+
+  .login3 .login3-brand-copy > span {
+    font-size: 9px !important;
+  }
+
+  .login3 .login3-brand-copy h1 {
+    margin: 10px 0 0 !important;
+    font-size: clamp(25px, 7vw, 31px) !important;
+    line-height: 1.08 !important;
+  }
+
+  .login3 .login3-brand-copy p,
+  .login3 .login3-trust {
+    display: none !important;
+  }
+
+  .login3 .login3-access {
+    min-height: calc(100dvh - 220px) !important;
+    align-items: flex-start !important;
+    padding: 30px 20px 42px !important;
+  }
+
+  .login3 .login3-card {
+    max-width: 440px !important;
+  }
+
+  .login3 .login3-card-head {
+    margin-bottom: 22px !important;
+  }
+
+  .login3 .login3-card-head h2 {
+    font-size: 28px !important;
+  }
+
+  .login3 .login3-card label {
+    margin-top: 18px !important;
+  }
+
+  .login3 .login3-card input,
+  .login3 .login3-submit {
+    min-height: 48px !important;
+  }
+
+  .login3 .login3-demo {
+    margin-top: 22px !important;
+    padding: 16px !important;
+  }
+}
+
+/* Authenticated workspace */
+@media (min-width: 721px) and (max-width: 1100px) {
+  :root:root .app-shell {
+    grid-template-columns: 212px minmax(0, 1fr) !important;
+  }
+
+  :root:root .app-shell > aside {
+    width: 212px !important;
+    padding-inline: 12px !important;
+  }
+
+  :root:root .app-shell .sidebar-logo-full {
+    width: 154px !important;
+  }
+
+  :root:root .app-shell .workspace {
+    padding: 28px 26px 68px !important;
+  }
+
+  :root:root .app-shell .workspace h1 {
+    font-size: 30px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  :root:root .app-shell > aside {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) auto !important;
+    grid-template-rows: 46px auto !important;
+    align-items: center !important;
+    gap: 4px 10px !important;
+    padding: 8px 14px 10px !important;
+    background: color-mix(in srgb, var(--finish-panel) 94%, transparent) !important;
+    backdrop-filter: saturate(180%) blur(20px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
+  }
+
+  :root:root .app-shell .sidebar-brand {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: auto !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+  }
+
+  :root:root .app-shell .sidebar-original-lockup {
+    width: 132px !important;
+    height: 46px !important;
+  }
+
+  :root:root .app-shell .sidebar-bottom {
+    position: static !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 4px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  :root:root .app-shell .sidebar-bottom button {
+    width: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 10px !important;
+  }
+
+  :root:root .app-shell .sidebar-bottom button span {
+    display: none !important;
+  }
+
+  :root:root .app-shell .sidebar-nav {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    margin: 0 !important;
+    padding: 6px 0 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none !important;
+  }
+
+  :root:root .app-shell .sidebar-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  :root:root .app-shell .sidebar-nav button {
+    flex: 0 0 auto !important;
+    min-height: 40px !important;
+    padding: 9px 12px !important;
+    scroll-snap-align: start;
+    border: 1px solid var(--finish-line) !important;
+    background: var(--finish-panel) !important;
+  }
+
+  :root:root .app-shell .sidebar-nav button.active {
+    border-color: color-mix(in srgb, var(--nx-accent) 25%, var(--finish-line)) !important;
+    background: var(--nx-accent-soft) !important;
+  }
+
+  :root:root .app-shell .workspace {
+    padding: 20px 14px 64px !important;
+  }
+
+  :root:root .app-shell .workspace > header,
+  :root:root .app-shell .page-header,
+  :root:root .app-shell .products-head,
+  :root:root .app-shell .intelligence-head,
+  :root:root .app-shell .traceability-head,
+  :root:root .app-shell .action-center-head,
+  :root:root .app-shell .planning-head,
+  :root:root .app-shell .governance-head,
+  :root:root .app-shell .quality-head,
+  :root:root .app-shell .advisor-page-header {
+    margin-bottom: 20px !important;
+  }
+
+  :root:root .app-shell .workspace h1,
+  :root:root .app-shell .page-header h1,
+  :root:root .app-shell .products-head h1,
+  :root:root .app-shell .intelligence-head h1,
+  :root:root .app-shell .traceability-head h1,
+  :root:root .app-shell .action-center-head h1,
+  :root:root .app-shell .planning-head h1,
+  :root:root .app-shell .governance-head h1,
+  :root:root .app-shell .quality-head h1,
+  :root:root .app-shell .advisor-page-header h1 {
+    font-size: clamp(25px, 7vw, 30px) !important;
+    line-height: 1.12 !important;
+  }
+
+  :root:root .app-shell .dashboard-hero {
+    padding: 22px !important;
+    border-radius: 18px !important;
+  }
+
+  :root:root .app-shell .dashboard-hero-copy h1 {
+    font-size: clamp(29px, 9vw, 38px) !important;
+  }
+
+  :root:root .app-shell .cards,
+  :root:root .app-shell .batch-kpis,
+  :root:root .app-shell .governance-kpis,
+  :root:root .app-shell .quality-kpis,
+  :root:root .app-shell .action-kpis,
+  :root:root .app-shell .trace-kpis,
+  :root:root .app-shell .intelligence-kpis,
+  :root:root .app-shell .planning-kpis,
+  :root:root .app-shell .impact-kpis,
+  :root:root .app-shell .instrument-strip {
+    grid-template-columns: 1fr !important;
+  }
+
+  :root:root .app-shell .metric,
+  :root:root .app-shell .batch-kpis article,
+  :root:root .app-shell .impact-kpis article,
+  :root:root .app-shell .governance-kpis article,
+  :root:root .app-shell .quality-kpis article,
+  :root:root .app-shell .action-kpis article,
+  :root:root .app-shell .trace-kpis article,
+  :root:root .app-shell .intelligence-kpis article,
+  :root:root .app-shell .planning-kpis article {
+    min-height: 0 !important;
+    padding: 16px !important;
+  }
+
+  :root:root .app-shell .product-table-wrap,
+  :root:root .app-shell .batch-table-wrap,
+  :root:root .app-shell .planning-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  :root:root .app-shell table {
+    min-width: 680px;
+  }
+
+  :root:root .app-shell input,
+  :root:root .app-shell select,
+  :root:root .app-shell textarea,
+  :root:root .app-shell button {
+    font-size: max(12px, 1em);
+  }
+}
+
+@media (max-width: 430px) {
+  .home3 .home3-wrap {
+    width: calc(100% - 28px) !important;
+  }
+
+  .home3 .home3-brand,
+  .home3 .home3-logo-lockup {
+    width: 132px !important;
+  }
+
+  .home3 .home3-login {
+    padding-inline: 14px !important;
+  }
+
+  .home3 .home3-hero h1 {
+    font-size: clamp(38px, 12vw, 50px) !important;
+  }
+
+  .login3 .login3-branding {
+    min-height: 196px !important;
+    padding-top: 54px !important;
+  }
+
+  .login3 .login3-access {
+    min-height: calc(100dvh - 196px) !important;
+    padding-inline: 16px !important;
+  }
+
+  :root:root .app-shell .workspace {
+    padding-inline: 12px !important;
+  }
+
+  :root:root .app-shell .sidebar-nav button {
+    padding-inline: 10px !important;
+    font-size: 11px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home3 *,
+  .login3 *,
+  :root:root .app-shell * {
+    scroll-behavior: auto !important;
+    animation-duration: .001ms !important;
+    transition-duration: .001ms !important;
+  }
+}
