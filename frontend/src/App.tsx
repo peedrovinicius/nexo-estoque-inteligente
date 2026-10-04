@@ -203,7 +203,6 @@ export function PublicHome({
         <nav className="home3-nav" aria-label="Navegação">
           <a href="#produto">Produto</a>
           <a href="#recursos">Recursos</a>
-          <a href="#tecnologia">Tecnologia</a>
         </nav>
         <button type="button" className="home3-login" onClick={onLogin}>Entrar</button>
       </div>
@@ -295,23 +294,6 @@ export function PublicHome({
         <span className="home3-overline">ASSISTÊNCIA</span>
         <h2>A IA explica.<br/>O sistema calcula.</h2>
         <p>A camada inteligente não substitui regras de estoque. Ela organiza e explica resultados já produzidos pelo sistema para apoiar interpretação sem comprometer rastreabilidade.</p>
-      </div>
-    </section>
-
-    <section id="tecnologia" className="home3-section">
-      <div className="home3-wrap home3-section-grid">
-        <div className="home3-section-intro">
-          <span className="home3-overline">TECNOLOGIA</span>
-          <h2>Construído como produto completo.</h2>
-        </div>
-        <div className="home3-section-body">
-          <div className="home3-tech">
-          <div><span>Backend</span><strong>Java 21 · Spring Boot</strong></div>
-          <div><span>Frontend</span><strong>React · TypeScript · Vite</strong></div>
-          <div><span>Dados</span><strong>MySQL · SQL · procedures</strong></div>
-          <div><span>Entrega</span><strong>GitHub Actions · Railway</strong></div>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -457,7 +439,6 @@ function Simulator(){
   const [productsLoading,setProductsLoading]=useState(true);
   const [advisorLoading,setAdvisorLoading]=useState(false);
   const [explanation,setExplanation]=useState('');
-  const [advisorSource,setAdvisorSource]=useState('');
   const [error,setError]=useState('');
   const [source,setSource]=useState<'idle'|'api'|'offline'>('idle');
   const [result,setResult]=useState<{
@@ -511,7 +492,6 @@ function Simulator(){
   function invalidate(){
     setResult(null);
     setExplanation('');
-    setAdvisorSource('');
     if(source!=='offline') setSource('idle');
   }
 
@@ -559,7 +539,7 @@ function Simulator(){
       });
 
       const data=await response.json().catch(()=>null);
-      if(!response.ok) throw new Error(data?.detail||data?.message||'API de simulação indisponível');
+      if(!response.ok) throw new Error(data?.detail||data?.message||'Não foi possível carregar a simulação');
 
       setResult({
         coverage:Number(data.coverageDays),
@@ -574,7 +554,7 @@ function Simulator(){
     }catch(err){
       setResult(null);
       setSource('offline');
-      setError(err instanceof Error?err.message:'API de simulação indisponível.');
+      setError(err instanceof Error?err.message:'Não foi possível carregar a simulação. Tente novamente.');
     }finally{
       setLoading(false);
     }
@@ -602,10 +582,8 @@ function Simulator(){
       const data=await response.json().catch(()=>null);
       if(!response.ok) throw new Error(data?.detail||data?.message||'Assistente indisponível');
       setExplanation(String(data.explanation||''));
-      setAdvisorSource(data.source==='openai'?'OpenAI '+data.model:'explicação determinística');
     }catch{
-      setExplanation('O assistente está temporariamente indisponível. A simulação acima continua válida porque foi calculada pelo backend.');
-      setAdvisorSource('assistente indisponível');
+      setExplanation('O assistente está temporariamente indisponível. Você pode continuar consultando o resultado da simulação.');
     }finally{
       setAdvisorLoading(false);
     }
@@ -664,14 +642,14 @@ function Simulator(){
           <button className="simulate-btn" onClick={simulate} disabled={loading||productsLoading||!selected}>
             {loading?'Calculando...':'Simular cenário'}
           </button>
-          <div className="note"><Sparkles size={18}/><p>Saldo e custo vêm do MySQL. Demanda e prazo são premissas do cenário. A IA apenas explica o resultado.</p></div>
+          <div className="note"><Sparkles size={18}/><p>Saldo e custo usam os dados do estoque. Informe a demanda e o prazo para comparar cenários.</p></div>
         </div>
 
         <div className="result">
           {result
             ? <>
                 <div className="risk-line"><span>Risco projetado</span><strong className={'risk '+String(result.risk).toLowerCase()}>{result.risk}</strong></div>
-                <div className="api-status"><span className="status-dot api"></span>Resultado calculado pelo Spring Boot</div>
+                <div className="api-status"><span className="status-dot api"></span>Simulação concluída</div>
                 <div className="coverage">{result.coverage}<small> dias de cobertura</small></div>
                 <div className="result-grid">
                   <div><span>Ruptura estimada</span><b>{result.stockout}</b></div>
@@ -681,13 +659,13 @@ function Simulator(){
                 <button className="ghost" onClick={explain} disabled={advisorLoading}>
                   <BrainCircuit size={18}/>{advisorLoading?'Analisando...':'Explicar esta decisão'}
                 </button>
-                {explanation&&<div className="advisor-box"><div><BrainCircuit size={17}/><strong>Assistente Nexo</strong><span>{advisorSource}</span></div><p>{explanation}</p></div>}
+                {explanation&&<div className="advisor-box"><div><BrainCircuit size={17}/><strong>Assistente Nexo</strong></div><p>{explanation}</p></div>}
               </>
             : <div className="sim-empty-state">
                 <TrendingUp size={28}/>
                 <strong>{source==='offline'?'Simulação indisponível':'Configure o cenário'}</strong>
                 <p>{source==='offline'
-                  ? 'A API não respondeu. Nenhum cálculo local foi usado como substituto.'
+                  ? 'Não foi possível calcular o cenário. Tente novamente.'
                   : 'Selecione o produto, informe as premissas e execute a simulação.'}</p>
               </div>}
 
@@ -770,7 +748,7 @@ function ProductsPanel(){
       if(statusFilter==='inactive') params.set('active','false');
 
       const response=await apiFetch(API_URL+'/api/v1/products?'+params.toString());
-      if(!response.ok) throw new Error(await apiErrorMessage(response,'API de produtos indisponível'));
+      if(!response.ok) throw new Error(await apiErrorMessage(response,'Não foi possível carregar os produtos'));
       const data=await response.json();
       const rows=productContent(data);
       setProducts(rows.map(normalizeProduct));
@@ -782,7 +760,7 @@ function ProductsPanel(){
       setTotalPages(0);
       setTotalElements(0);
       setSource('offline');
-      setFeedback(err instanceof Error?err.message:'API/MySQL indisponível.');
+      setFeedback(err instanceof Error?err.message:'Não foi possível consultar os dados. Tente novamente.');
     }
   }
 
@@ -877,7 +855,7 @@ function ProductsPanel(){
 
       resetForm();
       await loadProducts(page);
-      setFeedback(isEdit?'Produto atualizado com segurança.':'Produto salvo na base MySQL.');
+      setFeedback(isEdit?'Produto atualizado com segurança.':'Produto cadastrado.');
       setSource('api');
     }catch(err){
       setFeedback(err instanceof Error?err.message:'Não foi possível salvar o produto.');
@@ -1082,7 +1060,7 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
           expiry:'—'
         })));
       }catch{
-        setError('A API de produtos está indisponível. Movimentações reais exigem conexão com a base.');
+        setError('Não foi possível carregar os produtos. Tente novamente antes de registrar a movimentação.');
       }finally{
         setLoading(false);
       }
@@ -1474,7 +1452,7 @@ function RecentMovements({refreshKey}:{refreshKey:number}){
           </article>)}
         </div>
       : <div className="movement-empty">
-          {source==='offline'?'Conecte a API/MySQL para visualizar o histórico real.':'Nenhuma movimentação registrada ainda.'}
+          {source==='offline'?'Não foi possível carregar o histórico. Tente novamente.':'Nenhuma movimentação registrada ainda.'}
         </div>}
   </section>;
 }
@@ -1573,7 +1551,7 @@ function BlindInventoryPanel(){
         const desired=await loadSessions();
         if(desired) await loadItems(desired);
       }catch(err){
-        setError(err instanceof Error?err.message:'A API de inventário está indisponível.');
+        setError(err instanceof Error?err.message:'Não foi possível carregar o inventário. Tente novamente.');
       }finally{
         setLoading(false);
       }
@@ -1837,7 +1815,7 @@ function BatchesPanel(){
           fefoPosition:Number(item.fefoPosition||0)
         })));
       }catch(err){
-        setError(err instanceof Error?err.message:'A API de lotes está indisponível.');
+        setError(err instanceof Error?err.message:'Não foi possível carregar os lotes. Tente novamente.');
       }finally{
         setLoading(false);
       }
@@ -1938,7 +1916,6 @@ function AdvisorPanel(){
       id:1,
       role:'assistant',
       text:'Consulte o estoque em linguagem natural. Posso analisar saldos, itens abaixo do mínimo, lotes, validade, FEFO e inventários usando a base operacional do Nexo.',
-      source:'contexto operacional'
     }
   ]);
 
@@ -1969,19 +1946,12 @@ function AdvisorPanel(){
       const data=await response.json().catch(()=>null);
       if(!response.ok) throw new Error(data?.message||'Assistente indisponível');
 
-      const source=data?.source==='openai'
-        ? 'OpenAI · '+String(data?.model||'modelo configurado')
-        : data?.source==='rules'
-          ? 'motor determinístico · MySQL'
-          : 'base operacional indisponível';
-
       setMessages(current=>[
         ...current,
         {
           id:Date.now()+1,
           role:'assistant',
           text:String(data?.answer||'Não foi possível gerar uma resposta.'),
-          source
         }
       ]);
     }catch{
@@ -2009,7 +1979,7 @@ function AdvisorPanel(){
       <div>
         <span className="eyebrow">ASSISTÊNCIA OPERACIONAL</span>
         <h1>Assistente Nexo</h1>
-        <p>Pergunte sobre a operação. As respostas usam o snapshot atual do estoque e não executam movimentações.</p>
+        <p>Pergunte sobre a operação. As respostas usam os dados atuais do estoque e não executam movimentações.</p>
       </div>
       <span className="audit"><ShieldCheck size={16}/> somente leitura</span>
     </header>
@@ -2038,7 +2008,6 @@ function AdvisorPanel(){
               {message.role==='assistant'&&<strong>Nexo</strong>}
             </div>
             <p>{message.text}</p>
-            {message.source&&<small>{message.source}</small>}
           </article>)}
           {loading&&<article className="advisor-message assistant loading">
             <div className="advisor-message-role"><BrainCircuit size={16}/><strong>Nexo</strong></div>
@@ -2677,7 +2646,7 @@ function PurchasingPanel(){
       <div>
         <span className="eyebrow">ABASTECIMENTO</span>
         <h1>Compras</h1>
-        <p>Fornecedores, pedidos e reposição sugerida pelo motor determinístico do Nexo.</p>
+        <p>Acompanhe fornecedores, pedidos e sugestões de reposição.</p>
       </div>
       <div className="purchase-header-actions">
         <button className="ghost" disabled={readOnly} onClick={()=>setShowSupplier(value=>!value)}><Truck size={16}/> Fornecedor</button>
