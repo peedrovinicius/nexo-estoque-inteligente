@@ -8,6 +8,35 @@ O Nexo concentra operação, rastreabilidade e apoio à decisão em uma única a
 **Versão:** 1.0.0  
 **Status:** escopo funcional concluído e publicado
 
+## Interface
+
+<p align="center">
+  <img src="docs/screenshots/home-desktop.png" alt="Home do Nexo em desktop" width="100%">
+</p>
+
+<table>
+  <tr>
+    <td width="58%">
+      <img src="docs/screenshots/dashboard-desktop.png" alt="Dashboard operacional do Nexo">
+    </td>
+    <td width="42%">
+      <img src="docs/screenshots/home-mobile.png" alt="Home responsiva do Nexo em dispositivo móvel">
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Dashboard operacional</sub></td>
+    <td align="center"><sub>Experiência mobile</sub></td>
+  </tr>
+</table>
+
+<details>
+  <summary>Ver tela de acesso</summary>
+  <br>
+  <p align="center">
+    <img src="docs/screenshots/login-desktop.png" alt="Tela de login do Nexo" width="88%">
+  </p>
+</details>
+
 ## Destaques técnicos
 
 - estoque por lote com FEFO transacional, idempotência e proteção contra concorrência
