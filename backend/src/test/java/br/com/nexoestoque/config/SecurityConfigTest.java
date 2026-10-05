@@ -13,7 +13,7 @@ class SecurityConfigTest {
         SecurityConfig config = new SecurityConfig(
                 "admin", "admin-secret",
                 "operador", "operator-secret",
-                "demo", "demo-secret"
+                "demo"
         );
 
         UserDetailsService users = config.userDetailsService(config.passwordEncoder());

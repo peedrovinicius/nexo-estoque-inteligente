@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -15,7 +16,15 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
     private final AuthSessionService sessions;
-    public AuthController(AuthSessionService sessions) { this.sessions = sessions; }
+    private final String demoUser;
+
+    public AuthController(
+            AuthSessionService sessions,
+            @Value("${nexo.auth.demo-user:demo}") String demoUser
+    ) {
+        this.sessions = sessions;
+        this.demoUser = demoUser;
+    }
 
     @PostMapping(value = "/login", consumes = "application/json")
     public ResponseEntity<AuthSessionService.SessionResponse> login(
@@ -26,6 +35,12 @@ public class AuthController {
         } catch (BadCredentialsException exception) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário ou senha inválidos");
         }
+    }
+
+    @PostMapping("/demo")
+    public ResponseEntity<AuthSessionService.SessionResponse> demo(HttpServletRequest request) {
+        return ResponseEntity.ok().header("Cache-Control", "no-store")
+                .body(sessions.demo(demoUser, request.getRemoteAddr()));
     }
 
     @PostMapping("/logout")
