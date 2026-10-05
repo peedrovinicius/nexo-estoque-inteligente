@@ -43,5 +43,7 @@ test('production: home, login, read-only demo, dashboard and logout', async ({ p
   await expect(page.getByRole('heading', { name: 'Estado operacional' })).toBeVisible({ timeout: 20_000 });
 
   await page.getByRole('button', { name: /Sair/i }).click();
-  await expect(page.getByRole('heading', { name: 'Entrar no Nexo' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /O estoque/i })).toBeVisible();
+  await expect(page.locator('.app-shell')).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => sessionStorage.getItem('nexo-auth-v2'))).toBeNull();
 });
