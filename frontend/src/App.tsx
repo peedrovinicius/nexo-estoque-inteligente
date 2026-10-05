@@ -9,9 +9,6 @@ const DemandPlanningPanel=lazy(()=>import('./DemandPlanningPanel'));
 const GovernancePanel=lazy(()=>import('./GovernancePanel'));
 const QualityControlPanel=lazy(()=>import('./QualityControlPanel'));
 
-const DEMO_USER='demo';
-const DEMO_PASSWORD='Nexo@2026';
-
 function productContent(data:any):any[]{
   if(Array.isArray(data)) return data;
   return Array.isArray(data?.content)?data.content:[];
@@ -331,6 +328,21 @@ export function Login({onLogin,onBack}:{onLogin:()=>void;onBack:()=>void;theme:T
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(false);
 
+  function persistSession(data:any,fallbackUsername:string){
+    const role=String(data.role||'VIEWER') as AuthRole;
+    if(typeof data.token!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(data.token)
+      ||!['ADMIN','OPERATOR','VIEWER'].includes(role)
+      ||!Number.isFinite(Date.parse(data.expiresAt))||Date.parse(data.expiresAt)<=Date.now())
+      throw new Error('Não foi possível iniciar uma sessão válida.');
+    saveAuthSession({
+      username:String(data.username||fallbackUsername),
+      role,
+      token:data.token,
+      expiresAt:data.expiresAt
+    } satisfies AuthSession);
+    return role;
+  }
+
   async function submit(e:React.FormEvent){
     e.preventDefault();
     setError('');
@@ -346,16 +358,38 @@ export function Login({onLogin,onBack}:{onLogin:()=>void;onBack:()=>void;theme:T
         throw new Error('O serviço de autenticação está indisponível no momento.');
       }
       const data=await response.json();
-      const role=String(data.role||'VIEWER') as AuthRole;
-      if(typeof data.token!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(data.token)
-        ||!['ADMIN','OPERATOR','VIEWER'].includes(role)
-        ||!Number.isFinite(Date.parse(data.expiresAt))||Date.parse(data.expiresAt)<=Date.now())
-        throw new Error('Não foi possível iniciar uma sessão válida.');
-      saveAuthSession({username:String(data.username||user),role,token:data.token,expiresAt:data.expiresAt} satisfies AuthSession);
+      persistSession(data,user);
       setPassword('');
       onLogin();
     }catch(err){
       setError(err instanceof Error?err.message:'Não foi possível autenticar.');
+    }finally{
+      setLoading(false);
+    }
+  }
+
+  async function startDemo(){
+    setError('');
+    setLoading(true);
+    try{
+      const response=await fetch(API_URL+'/api/v1/auth/demo',{
+        method:'POST',
+        credentials:'omit'
+      });
+      if(!response.ok){
+        if(response.status===429) throw new Error('Muitas sessões de demonstração foram abertas. Aguarde alguns minutos e tente novamente.');
+        throw new Error('A demonstração está indisponível no momento.');
+      }
+      const data=await response.json();
+      const role=persistSession(data,'demo');
+      if(role!=='VIEWER'){
+        clearAuthSession();
+        throw new Error('Não foi possível iniciar a demonstração em modo seguro.');
+      }
+      setPassword('');
+      onLogin();
+    }catch(err){
+      setError(err instanceof Error?err.message:'Não foi possível abrir a demonstração.');
     }finally{
       setLoading(false);
     }
@@ -417,17 +451,16 @@ export function Login({onLogin,onBack}:{onLogin:()=>void;onBack:()=>void;theme:T
 
         <div className="login3-demo">
           <div className="login3-demo-data">
-            <span>Demo</span>
-            <code>{DEMO_USER}</code>
-            <code>{DEMO_PASSWORD}</code>
+            <span>Demonstração pública</span>
+            <span>Somente leitura · sem senha compartilhada</span>
           </div>
           <button
             type="button"
             className="login3-demo-fill"
-            onClick={()=>{setUser(DEMO_USER);setPassword(DEMO_PASSWORD);setError('');}}
+            onClick={()=>void startDemo()}
             disabled={loading}
           >
-            Usar acesso demo
+            {loading?'Abrindo demonstração...':'Entrar na demonstração'}
           </button>
         </div>
       </form>
