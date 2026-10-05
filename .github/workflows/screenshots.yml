@@ -1,0 +1,93 @@
+name: README Screenshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/screenshots.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Capture production screens
+        env:
+          NEXO_URL: https://nexo-estoque-web-production.up.railway.app
+        run: |
+          mkdir -p docs/screenshots
+          node <<'NODE'
+          const { chromium } = require('playwright');
+
+          (async () => {
+            const browser = await chromium.launch();
+
+            const desktop = await browser.newContext({
+              viewport: { width: 1440, height: 1000 },
+              deviceScaleFactor: 1
+            });
+            const page = await desktop.newPage();
+            await page.goto(process.env.NEXO_URL, { waitUntil: 'networkidle' });
+            await page.screenshot({
+              path: 'docs/screenshots/home-desktop.png',
+              fullPage: true
+            });
+
+            await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+            await page.waitForLoadState('networkidle');
+            await page.screenshot({
+              path: 'docs/screenshots/login-desktop.png',
+              fullPage: true
+            });
+
+            await page.getByRole('button', { name: 'Usar acesso demo' }).click();
+            await page.locator('form button[type="submit"]').click();
+            await page.locator('.app-shell').waitFor({ state: 'visible', timeout: 20000 });
+            await page.screenshot({
+              path: 'docs/screenshots/dashboard-desktop.png',
+              fullPage: true
+            });
+            await desktop.close();
+
+            const mobile = await browser.newContext({
+              viewport: { width: 390, height: 844 },
+              deviceScaleFactor: 1
+            });
+            const mobilePage = await mobile.newPage();
+            await mobilePage.goto(process.env.NEXO_URL, { waitUntil: 'networkidle' });
+            await mobilePage.screenshot({
+              path: 'docs/screenshots/home-mobile.png',
+              fullPage: true
+            });
+            await mobile.close();
+
+            await browser.close();
+          })();
+          NODE
+
+      - name: Commit screenshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots/*.png
+          if git diff --cached --quiet; then
+            echo "Screenshots unchanged."
+            exit 0
+          fi
+          git commit -m "docs: refresh product screenshots [skip ci]"
+          git push
