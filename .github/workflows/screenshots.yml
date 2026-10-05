@@ -55,8 +55,7 @@ jobs:
               fullPage: true
             });
 
-            await page.getByRole('button', { name: 'Usar acesso demo' }).click();
-            await page.locator('form button[type="submit"]').click();
+            await page.getByRole('button', { name: 'Entrar na demonstração' }).click();
             await page.locator('.app-shell').waitFor({ state: 'visible', timeout: 20000 });
             await page.screenshot({
               path: 'docs/screenshots/dashboard-desktop.png',
