@@ -44,6 +44,13 @@ class SessionSecurityTest {
     }
     @AfterEach void close() { context.close(); }
 
+    private String demo() throws Exception {
+        String result = mvc.perform(post("/api/v1/auth/demo"))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andReturn().getResponse().getContentAsString();
+        return mapper.readTree(result).get("token").asText();
+    }
+
     private String login(String username, String password) throws Exception {
         String result = mvc.perform(post("/api/v1/auth/login").contentType("application/json")
                 .content(mapper.writeValueAsString(new AuthController.LoginRequest(username, password))))
@@ -54,9 +61,9 @@ class SessionSecurityTest {
     }
 
     @Test void rejectsBasicAndAcceptsBearerWithRoleRestrictions() throws Exception {
-        mvc.perform(get("/api/v1/session-test").header("Authorization", "Basic ZGVtbzpOZXhvQDIwMjY="))
+        mvc.perform(get("/api/v1/session-test").header("Authorization", "Basic ZGVtbzphbnk="))
                 .andExpect(status().isUnauthorized());
-        String viewer = login("demo", "Nexo@2026");
+        String viewer = demo();
         mvc.perform(get("/api/v1/session-test").header("Authorization", "Bearer " + viewer))
                 .andExpect(status().isOk());
         mvc.perform(post("/api/v1/session-test").header("Authorization", "Bearer " + viewer))
@@ -66,7 +73,7 @@ class SessionSecurityTest {
                 .andExpect(status().isOk());
     }
     @Test void logoutRevokesTokenAndMalformedTokensDoNotAuthenticate() throws Exception {
-        String token = login("demo", "Nexo@2026");
+        String token = demo();
         mvc.perform(post("/api/v1/auth/logout").header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
         mvc.perform(get("/api/v1/session-test").header("Authorization", "Bearer " + token))
@@ -74,6 +81,13 @@ class SessionSecurityTest {
         mvc.perform(get("/api/v1/session-test").header("Authorization", "Bearer invalid"))
                 .andExpect(status().isUnauthorized());
     }
+    @Test void publicDemoIsRateLimited() throws Exception {
+        for (int i = 0; i < 5; i++) {
+            mvc.perform(post("/api/v1/auth/demo")).andExpect(status().isOk());
+        }
+        mvc.perform(post("/api/v1/auth/demo")).andExpect(status().isTooManyRequests());
+    }
+
     @Test void rejectsMissingCredentialsAndLimitsFailedLogins() throws Exception {
         mvc.perform(post("/api/v1/auth/login").contentType("application/json").content("{}"))
                 .andExpect(status().isBadRequest());
