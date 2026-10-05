@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths:
       - 'frontend/**'
+      - 'backend/src/main/java/br/com/nexoestoque/config/**'
+      - 'backend/src/main/java/br/com/nexoestoque/controller/AuthController.java'
+      - 'backend/src/main/java/br/com/nexoestoque/service/AuthSessionService.java'
       - '.github/workflows/e2e.yml'
   schedule:
     - cron: '17 7 * * *'
