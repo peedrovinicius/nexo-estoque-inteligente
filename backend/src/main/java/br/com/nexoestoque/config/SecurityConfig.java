@@ -23,6 +23,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Configuration
 public class SecurityConfig {
@@ -31,22 +32,19 @@ public class SecurityConfig {
     private final String operatorUser;
     private final String operatorPassword;
     private final String demoUser;
-    private final String demoPassword;
 
     public SecurityConfig(
             @Value("${nexo.auth.admin-user:admin}") String adminUser,
             @Value("${nexo.auth.admin-password:}") String adminPassword,
             @Value("${nexo.auth.operator-user:operador}") String operatorUser,
             @Value("${nexo.auth.operator-password:}") String operatorPassword,
-            @Value("${nexo.auth.demo-user:demo}") String demoUser,
-            @Value("${nexo.auth.demo-password:Nexo@2026}") String demoPassword
+            @Value("${nexo.auth.demo-user:demo}") String demoUser
     ) {
         this.adminUser = adminUser;
         this.adminPassword = adminPassword;
         this.operatorUser = operatorUser;
         this.operatorPassword = operatorPassword;
         this.demoUser = demoUser;
-        this.demoPassword = demoPassword;
     }
 
     @Bean
@@ -58,7 +56,7 @@ public class SecurityConfig {
     UserDetailsService userDetailsService(PasswordEncoder encoder) {
         List<UserDetails> users = new ArrayList<>();
         users.add(User.withUsername(demoUser)
-                .password(encoder.encode(demoPassword))
+                .password(encoder.encode(UUID.randomUUID().toString()))
                 .roles("VIEWER")
                 .build());
 
@@ -93,7 +91,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health", "/api/v1/system/health", "/api/v1/system/readiness").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/demo").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/audit/**").hasAnyRole("ADMIN", "OPERATOR")
