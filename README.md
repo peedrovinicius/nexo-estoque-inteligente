@@ -229,6 +229,8 @@ A camada de Qualidade & Recall controla lotes retidos sem alterar artificialment
 - travas de banco em saídas FEFO
 - histórico operacional preservado
 - exportações CSV neutralizam células que poderiam ser interpretadas como fórmulas
+- rate limiting global por sessão/endereço, com limites mais estritos no login e na demonstração
+- eventos de autenticação e bloqueio registrados sem senha, token ou endereço em claro
 
 ## Demonstração
 
