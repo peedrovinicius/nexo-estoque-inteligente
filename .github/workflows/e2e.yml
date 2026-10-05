@@ -38,7 +38,22 @@ jobs:
         run: npm install --no-save @playwright/test@1.63.0
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Run production smoke test
+      - name: Build pull request preview
+        if: github.event_name == 'pull_request'
+        run: npm run build
+      - name: Start pull request preview
+        if: github.event_name == 'pull_request'
+        run: |
+          nohup npm run preview -- --host localhost --port 5173 > /tmp/nexo-preview.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl -fsS http://localhost:5173 >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/nexo-preview.log
+          exit 1
+      - name: Run browser smoke test
         env:
-          NEXO_BASE_URL: https://nexo-estoque-web-production.up.railway.app
+          NEXO_BASE_URL: ${{ github.event_name == 'pull_request' && 'http://localhost:5173' || 'https://nexo-estoque-web-production.up.railway.app' }}
         run: npx playwright test e2e/home.spec.ts --reporter=line
