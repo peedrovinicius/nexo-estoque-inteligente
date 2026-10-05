@@ -213,7 +213,8 @@ A camada de Qualidade & Recall controla lotes retidos sem alterar artificialment
 
 ## Segurança e consistência
 
-- CORS restrito em produção
+- CORS restrito por allowlist explícita em produção
+- CSP, proteção contra framing, `nosniff`, Referrer-Policy e Permissions-Policy no frontend
 - credenciais administrativas mantidas fora do repositório
 - operações de escrita bloqueadas para o perfil de consulta
 - configuração de alertas alterável somente por Admin
