@@ -1,6 +1,6 @@
 # Sessões de acesso
 
-O login recebe `POST /api/v1/auth/login`, com JSON `{ "username": "...", "password": "..." }`. Use HTTPS fora do desenvolvimento local. A resposta contém `username`, `role`, `token` e `expiresAt`, com `Cache-Control: no-store`.
+O acesso administrativo e operacional recebe `POST /api/v1/auth/login`, com JSON `{ "username": "...", "password": "..." }`. A demonstração pública usa `POST /api/v1/auth/demo` sem senha compartilhada e sempre emite uma sessão `VIEWER`. Use HTTPS fora do desenvolvimento local. As respostas de sessão contêm `username`, `role`, `token` e `expiresAt`, com `Cache-Control: no-store`.
 
 As chamadas autenticadas usam `Authorization: Bearer <token>`. HTTP Basic não é aceito. O frontend elimina a sessão legada que continha credenciais Basic e exige um novo login.
 
@@ -8,7 +8,7 @@ O token aleatório tem 256 bits. O servidor armazena seu SHA-256, o usuário e a
 
 O navegador guarda apenas o token temporário e metadados em `sessionStorage`. A senha não é persistida. O token ainda é acessível a JavaScript: prevenção de XSS continua necessária. Se o logout não alcançar a API, a cópia local é eliminada, mas o token no servidor permanece válido até expirar.
 
-Após cinco tentativas de login para o mesmo par endereço remoto/usuário em 15 minutos, a API responde 429 até encerrar a janela. O limite é local ao processo e não confia em cabeçalhos de proxy enviados pelo cliente. Um proxy pode compartilhar um endereço entre usuários; esta política deve ser revista antes de aumentar a escala.
+Após cinco tentativas de login para o mesmo par endereço remoto/usuário em 15 minutos, a API responde 429 até encerrar a janela. A emissão da demonstração pública também é limitada a cinco novas sessões por endereço remoto em 15 minutos. O limite é local ao processo e não confia em cabeçalhos de proxy enviados pelo cliente. Um proxy pode compartilhar um endereço entre usuários; esta política deve ser revista antes de aumentar a escala.
 
 ## Limites operacionais
 
@@ -18,4 +18,4 @@ Publique API e frontend da mesma revisão. O contrato de login mudou; consumidor
 
 ## Verificação
 
-Os testes Java cobrem expiração, revogação, usuário removido, falhas de login, rejeição de Basic e permissões VIEWER/ADMIN pela cadeia HTTP. Os testes do frontend cobrem remoção da sessão legada, persistência sem senha, expiração, respostas 401 e logout.
+Os testes Java cobrem expiração, revogação, usuário removido, falhas de login, emissão e limite da demonstração pública, rejeição de Basic e permissões VIEWER/ADMIN pela cadeia HTTP. Os testes do frontend cobrem remoção da sessão legada, persistência sem senha, expiração, respostas 401, logout e abertura da demonstração sem credencial compartilhada.
