@@ -80,6 +80,28 @@ public class AuthSessionService {
         return response;
     }
 
+    public SessionResponse demo(String username, String address) {
+        String key = digest(address + "\n__public_demo__");
+        consumeAttempt(key);
+
+        UserDetails user;
+        try {
+            user = users.loadUserByUsername(username);
+        } catch (UsernameNotFoundException exception) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Demonstração indisponível");
+        }
+
+        boolean viewer = user.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_VIEWER".equals(authority.getAuthority()));
+
+        if (!viewer || !user.isEnabled() || !user.isAccountNonLocked()
+                || !user.isAccountNonExpired() || !user.isCredentialsNonExpired()) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Demonstração indisponível");
+        }
+
+        return issue(user);
+    }
+
     private void consumeAttempt(String key) {
         Instant now = clock.instant();
         synchronized (attempts) {
