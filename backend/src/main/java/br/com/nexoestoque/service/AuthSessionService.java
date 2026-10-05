@@ -1,5 +1,7 @@
 package br.com.nexoestoque.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -26,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /** Single-instance sessions. Only token hashes and usernames are retained server-side. */
 @Service
 public class AuthSessionService {
+    private static final Logger log = LoggerFactory.getLogger(AuthSessionService.class);
     private static final int MAX_ENTRIES = 5_000;
     private static final int MAX_ATTEMPTS = 5;
     private static final long LOGIN_WINDOW_SECONDS = 900;
@@ -57,10 +60,17 @@ public class AuthSessionService {
     }
 
     public SessionResponse login(String username, String password, String address) {
-        String key = digest(address + "\n" + username.toLowerCase(Locale.ROOT));
-        consumeAttempt(key);
+        String key = digest(String.valueOf(address) + "\n" + username.toLowerCase(Locale.ROOT));
+        String fingerprint = shortHash(key);
+        try {
+            consumeAttempt(key);
+        } catch (ResponseStatusException exception) {
+            log.warn("security_event=login_rate_limited identity={}", fingerprint);
+            throw exception;
+        }
         if (password.getBytes(StandardCharsets.UTF_8).length > 72) {
             encoder.matches("invalid", dummyPasswordHash);
+            log.warn("security_event=login_failure identity={} reason=credential_rejected", fingerprint);
             throw new BadCredentialsException("Usuário ou senha inválidos");
         }
         UserDetails user;
@@ -68,21 +78,30 @@ public class AuthSessionService {
             user = users.loadUserByUsername(username);
         } catch (UsernameNotFoundException exception) {
             encoder.matches(password, dummyPasswordHash);
+            log.warn("security_event=login_failure identity={} reason=credential_rejected", fingerprint);
             throw new BadCredentialsException("Usuário ou senha inválidos");
         }
         if (!encoder.matches(password, user.getPassword()) || !user.isEnabled()
                 || !user.isAccountNonLocked() || !user.isAccountNonExpired()
                 || !user.isCredentialsNonExpired()) {
+            log.warn("security_event=login_failure identity={} reason=credential_rejected", fingerprint);
             throw new BadCredentialsException("Usuário ou senha inválidos");
         }
         SessionResponse response = issue(user);
         synchronized (attempts) { attempts.remove(key); }
+        log.info("security_event=login_success identity={} role={}", fingerprint, response.role());
         return response;
     }
 
     public SessionResponse demo(String username, String address) {
-        String key = digest(address + "\n__public_demo__");
-        consumeAttempt(key);
+        String key = digest(String.valueOf(address) + "\n__public_demo__");
+        String fingerprint = shortHash(key);
+        try {
+            consumeAttempt(key);
+        } catch (ResponseStatusException exception) {
+            log.warn("security_event=demo_rate_limited identity={}", fingerprint);
+            throw exception;
+        }
 
         UserDetails user;
         try {
@@ -99,7 +118,9 @@ public class AuthSessionService {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Demonstração indisponível");
         }
 
-        return issue(user);
+        SessionResponse response = issue(user);
+        log.info("security_event=demo_session_issued identity={}", fingerprint);
+        return response;
     }
 
     private void consumeAttempt(String key) {
@@ -155,7 +176,16 @@ public class AuthSessionService {
     }
 
     public void revoke(String token) {
-        if (token != null) sessions.remove(digest(token));
+        if (token != null) {
+            String hash = digest(token);
+            sessions.remove(hash);
+            log.info("security_event=session_revoked token={}", shortHash(hash));
+        }
+    }
+
+    private static String shortHash(String value) {
+        String hash = digest(value);
+        return hash.substring(0, Math.min(12, hash.length()));
     }
 
     private static String digest(String value) {
