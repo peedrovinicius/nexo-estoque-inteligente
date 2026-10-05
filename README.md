@@ -233,12 +233,7 @@ A camada de Qualidade & Recall controla lotes retidos sem alterar artificialment
 
 Aplicação: https://nexo-estoque-web-production.up.railway.app
 
-Acesso público somente leitura:
-
-```text
-usuário: demo
-senha: Nexo@2026
-```
+Acesso público somente leitura: abra a aplicação e use **Entrar na demonstração**. A sessão demo é emitida sem senha compartilhada e não permite operações de escrita.
 
 ## Estado
 
