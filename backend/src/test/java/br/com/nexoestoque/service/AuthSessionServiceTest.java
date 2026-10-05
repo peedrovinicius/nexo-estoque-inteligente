@@ -65,6 +65,19 @@ class AuthSessionServiceTest {
     }
 
     @Test
+    void publicDemoIssuesViewerSessionsWithoutPasswordAndLimitsCreation() {
+        var service = service();
+        for (int i = 0; i < 5; i++) {
+            var session = service.demo("demo", "127.0.0.1");
+            assertThat(session.role()).isEqualTo("VIEWER");
+            assertThat(service.authenticate(session.token())).isPresent();
+        }
+        assertThatThrownBy(() -> service.demo("demo", "127.0.0.1"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(error -> assertThat(((ResponseStatusException) error).getStatusCode().value()).isEqualTo(429));
+    }
+
+    @Test
     void unknownAndKnownUsersReceiveSameCredentialFailure() {
         var service = service();
         assertThatThrownBy(() -> service.login("absent", "wrong", "127.0.0.1"))
