@@ -64,7 +64,7 @@ describe('public navigation',()=>{
 });
 
 describe('login flow',()=>{
-  it('fills the demo account and authenticates',async()=>{
+  it('starts the public demo without exposing shared credentials',async()=>{
     const fetchMock=vi.spyOn(globalThis,'fetch').mockResolvedValue(
       new Response(JSON.stringify({username:'demo',role:'VIEWER',token:'a'.repeat(43),expiresAt:new Date(Date.now()+1800000).toISOString()}),{
         status:200,
@@ -75,15 +75,8 @@ describe('login flow',()=>{
 
     mount(<Login onLogin={onLogin} onBack={()=>{}} theme="light" onToggleTheme={()=>{}}/>);
 
-    act(()=>buttonByText('Usar acesso demo')?.click());
-
-    const username=document.querySelector('input[name="username"]') as HTMLInputElement;
-    const password=document.querySelector('input[name="password"]') as HTMLInputElement;
-    expect(username.value).toBe('demo');
-    expect(password.value.length).toBeGreaterThan(0);
-
     await act(async()=>{
-      buttonByText('Entrar')?.click();
+      buttonByText('Entrar na demonstração')?.click();
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -94,20 +87,18 @@ describe('login flow',()=>{
     expect(readAuthSession()?.role).toBe('VIEWER');
   });
 
-  it('shows a credential error without entering the app',async()=>{
+  it('shows a demo availability error without entering the app',async()=>{
     vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response('',{status:401}));
     const onLogin=vi.fn();
 
     mount(<Login onLogin={onLogin} onBack={()=>{}} theme="light" onToggleTheme={()=>{}}/>);
-    act(()=>buttonByText('Usar acesso demo')?.click());
-
     await act(async()=>{
-      buttonByText('Entrar')?.click();
+      buttonByText('Entrar na demonstração')?.click();
       await Promise.resolve();
       await Promise.resolve();
     });
 
     expect(onLogin).not.toHaveBeenCalled();
-    expect(document.querySelector('[role="alert"]')?.textContent).toContain('Usuário ou senha inválidos');
+    expect(document.querySelector('[role="alert"]')?.textContent).toContain('demonstração');
   });
 });
