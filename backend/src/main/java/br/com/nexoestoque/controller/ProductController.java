@@ -11,6 +11,8 @@ import br.com.nexoestoque.repository.ProductProcedureRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
@@ -41,17 +43,24 @@ public class ProductController {
     public ProductPage list(
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "50") @Min(1) @Max(200) int size,
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) String category,
+            @RequestParam(required = false) @Size(max = 160) String q,
+            @RequestParam(required = false) @Size(max = 100) String category,
             @RequestParam(required = false) Boolean active,
-            @RequestParam(defaultValue = "name") String sort,
-            @RequestParam(defaultValue = "asc") String direction
+            @RequestParam(defaultValue = "name")
+            @Pattern(regexp = "^(name|sku|category|stock|minimumStock|createdAt)$") String sort,
+            @RequestParam(defaultValue = "asc")
+            @Pattern(regexp = "^(?i:asc|desc)$") String direction
     ) throws SQLException {
         return repository.search(page, size, q, category, active, sort, direction);
     }
 
     @GetMapping("/barcode/{barcode}")
-    public Product getByBarcode(@PathVariable String barcode) throws SQLException {
+    public Product getByBarcode(
+            @PathVariable
+            @Size(max = 32)
+            @Pattern(regexp = "^[A-Za-z0-9._-]+$")
+            String barcode
+    ) throws SQLException {
         Product product = repository.findByBarcode(barcode);
         if (product == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado para o código de barras");
