@@ -46,4 +46,6 @@ test('production: home, login, read-only demo, dashboard and logout', async ({ p
   await expect(page.getByRole('heading', { name: /O estoque/i })).toBeVisible();
   await expect(page.locator('.app-shell')).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => sessionStorage.getItem('nexo-auth-v2'))).toBeNull();
+
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
 });
