@@ -120,6 +120,7 @@ public class SecurityConfig {
                 .logout(logout -> logout.disable())
                 .requestCache(cache -> cache.disable())
                 .addFilterBefore(new SessionAuthenticationFilter(sessions), AnonymousAuthenticationFilter.class)
+                .addFilterAfter(new ApiRateLimitFilter(), SessionAuthenticationFilter.class)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
