@@ -92,7 +92,7 @@ jobs:
             echo "Screenshots unchanged."
             exit 0
           fi
-          git commit -m "docs: refresh product screenshots [skip ci]"
+          git commit -m "docs: refresh product screenshots"
           BRANCH="automation/screenshots-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           git push origin "HEAD:${BRANCH}"
           gh pr create \
