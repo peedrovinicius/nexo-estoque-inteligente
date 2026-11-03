@@ -29,7 +29,7 @@ nexo:
     bootstrap: ${NEXO_DB_BOOTSTRAP:true}
     demo-seed: ${NEXO_DEMO_SEED:false}
   cors:
-    allowed-origins: ${NEXO_CORS_ALLOWED_ORIGINS:https://nexo-estoque-web-production.up.railway.app,http://localhost:5173}
+    allowed-origins: ${NEXO_CORS_ALLOWED_ORIGINS:https://nexo-estoque-web.onrender.com,http://localhost:5173}
   auth:
     admin-user: ${NEXO_ADMIN_USER:admin}
     admin-password: ${NEXO_ADMIN_PASSWORD:}
@@ -38,4 +38,4 @@ nexo:
     demo-user: ${NEXO_DEMO_USER:demo}
   ai:
     api-key: ${OPENAI_API_KEY:}
-    model: ${OPENAI_MODEL:gpt-5.6-luna}
+    model: ${OPENAI_MODEL:gpt-6-luna}

@@ -30,7 +30,7 @@ jobs:
 
       - name: Capture production screens
         env:
-          NEXO_URL: https://nexo-estoque-web-production.up.railway.app
+          NEXO_URL: https://nexo-estoque-web.onrender.com
         run: |
           mkdir -p docs/screenshots
           node <<'NODE'

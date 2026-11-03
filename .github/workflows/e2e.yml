@@ -55,5 +55,5 @@ jobs:
           exit 1
       - name: Run browser smoke test
         env:
-          NEXO_BASE_URL: ${{ github.event_name == 'pull_request' && 'http://localhost:5173' || 'https://nexo-estoque-web-production.up.railway.app' }}
+          NEXO_BASE_URL: ${{ github.event_name == 'pull_request' && 'http://localhost:5173' || 'https://nexo-estoque-web.onrender.com' }}
         run: npx playwright test e2e/home.spec.ts --reporter=line

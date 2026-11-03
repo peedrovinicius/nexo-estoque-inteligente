@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const productionApi = 'https://nexo-estoque-api-production.up.railway.app';
+const productionApi = 'https://nexo-estoque-api.onrender.com';
 
 test('production: home, login, read-only demo, dashboard and logout', async ({ page }) => {
   const url = process.env.NEXO_BASE_URL || 'http://127.0.0.1:4173';

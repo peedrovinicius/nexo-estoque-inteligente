@@ -45,7 +45,7 @@ public class AdvisorService {
             StockBatchProcedureRepository batchRepository,
             BlindInventoryProcedureRepository inventoryRepository,
             @Value("${nexo.ai.api-key:}") String apiKey,
-            @Value("${nexo.ai.model:gpt-5.6-luna}") String model
+            @Value("${nexo.ai.model:gpt-6-luna}") String model
     ) {
         this.objectMapper = objectMapper;
         this.productRepository = productRepository;
