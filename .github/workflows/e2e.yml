@@ -53,6 +53,19 @@ jobs:
           done
           cat /tmp/nexo-preview.log
           exit 1
+      - name: Wait for Render Free API to wake up
+        run: |
+          for attempt in {1..18}; do
+            response="$(curl -fsS --max-time 20 https://nexo-estoque-api.onrender.com/actuator/health 2>/dev/null || true)"
+            if [[ "$response" == *'"status":"UP"'* ]]; then
+              echo "Nexo API is healthy."
+              exit 0
+            fi
+            echo "API not ready (attempt $attempt/18)."
+            sleep 10
+          done
+          echo "Nexo API did not become healthy in time."
+          exit 1
       - name: Run browser smoke test
         env:
           NEXO_BASE_URL: ${{ github.event_name == 'pull_request' && 'http://localhost:5173' || 'https://nexo-estoque-web.onrender.com' }}
