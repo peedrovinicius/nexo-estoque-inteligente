@@ -4,7 +4,7 @@ Plataforma web de gestão inteligente e auditável de estoque para farmácias, m
 
 O Nexo concentra operação, rastreabilidade e apoio à decisão em uma única aplicação. Os cálculos críticos permanecem determinísticos e auditáveis. A assistência por IA funciona como camada explicativa e não altera saldo nem executa decisões críticas por conta própria.
 
-**Produção:** https://nexo-estoque-web-production.up.railway.app  
+**Produção:** https://nexo-estoque-web.onrender.com  
 **Versão:** 1.0.0  
 **Status:** escopo funcional concluído e publicado
 
@@ -72,7 +72,8 @@ MySQL + Flyway + Stored Procedures
 - Stored Procedures
 - JUnit e Vitest
 - GitHub Actions
-- Railway
+- Render (frontend e API)
+- Aiven (MySQL)
 
 ## O que já está implementado
 
@@ -234,7 +235,7 @@ A camada de Qualidade & Recall controla lotes retidos sem alterar artificialment
 
 ## Demonstração
 
-Aplicação: https://nexo-estoque-web-production.up.railway.app
+Aplicação: https://nexo-estoque-web.onrender.com
 
 Acesso público somente leitura: abra a aplicação e use **Entrar na demonstração**. A sessão demo é emitida sem senha compartilhada e não permite operações de escrita.
 

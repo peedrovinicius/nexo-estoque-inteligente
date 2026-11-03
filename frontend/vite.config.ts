@@ -8,7 +8,7 @@ const securityHeaders={
   'Cross-Origin-Opener-Policy':'same-origin',
   'Content-Security-Policy':[
     "default-src 'self'",
-    "connect-src 'self' https://*.up.railway.app",
+    "connect-src 'self' https://nexo-estoque-api.onrender.com",
     "img-src 'self' data:",
     "style-src 'self' 'unsafe-inline'",
     "script-src 'self'",

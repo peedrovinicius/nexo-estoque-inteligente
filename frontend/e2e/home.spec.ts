@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-const productionApi = 'https://nexo-estoque-api-production.up.railway.app';
+const productionApi = 'https://nexo-estoque-api.onrender.com';
 
 test('production: home, login, read-only demo, dashboard and logout', async ({ page }) => {
+  test.setTimeout(180_000);
   const url = process.env.NEXO_BASE_URL || 'http://127.0.0.1:4173';
 
   // Pull-request previews run on localhost while the real API keeps a strict
@@ -14,7 +15,7 @@ test('production: home, login, read-only demo, dashboard and logout', async ({ p
       delete requestHeaders.origin;
       delete requestHeaders.referer;
 
-      const upstream = await route.fetch({ headers: requestHeaders });
+      const upstream = await route.fetch({ headers: requestHeaders, timeout: 120_000 });
       await route.fulfill({
         response: upstream,
         headers: {
@@ -38,7 +39,7 @@ test('production: home, login, read-only demo, dashboard and logout', async ({ p
 
   await page.getByRole('button', { name: 'Entrar na demonstração' }).click();
 
-  await expect(page.locator('.app-shell')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('.app-shell')).toBeVisible({ timeout: 90_000 });
   await expect(page.getByRole('note')).toContainText('Modo demonstração');
   await expect(page.getByRole('heading', { name: 'Estado operacional' })).toBeVisible({ timeout: 20_000 });
 

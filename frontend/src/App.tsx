@@ -322,7 +322,7 @@ export function PublicHome({
 }
 
 export function Login({onLogin,onBack}:{onLogin:()=>void;onBack:()=>void;theme:Theme;onToggleTheme:()=>void}) {
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
   const [user,setUser]=useState('');
   const [password,setPassword]=useState('');
   const [error,setError]=useState('');
@@ -469,7 +469,7 @@ export function Login({onLogin,onBack}:{onLogin:()=>void;onBack:()=>void;theme:T
 }
 
 function Simulator(){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
   const [products,setProducts]=useState<Array<{
     id:number;
     sku:string;
@@ -740,7 +740,7 @@ type ProductView={
 };
 
 function ProductsPanel(){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
   const readOnly=isReadOnlySession();
   const [query,setQuery]=useState('');
   const [statusFilter,setStatusFilter]=useState<'all'|'active'|'inactive'>('active');
@@ -1049,7 +1049,7 @@ type MovementView={
 };
 
 function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void}){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
   const [products,setProducts]=useState<ProductView[]>([]);
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState(false);
@@ -1438,7 +1438,7 @@ function StockMovementModal({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void
 }
 
 function RecentMovements({refreshKey}:{refreshKey:number}){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
   const [items,setItems]=useState<MovementView[]>([]);
   const [source,setSource]=useState<'loading'|'api'|'empty'|'offline'>('loading');
 
@@ -1528,7 +1528,7 @@ type InventoryItemView={
 };
 
 function BlindInventoryPanel(){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
   const readOnly=isReadOnlySession();
   const [sessions,setSessions]=useState<InventorySessionView[]>([]);
   const [selectedId,setSelectedId]=useState<number|null>(null);
@@ -1825,7 +1825,7 @@ type BatchView={
 };
 
 function BatchesPanel(){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
   const [items,setItems]=useState<BatchView[]>([]);
   const [query,setQuery]=useState('');
   const [status,setStatus]=useState<'all'|BatchView['expiryStatus']>('all');
@@ -1956,7 +1956,7 @@ type AdvisorMessage={
 };
 
 function AdvisorPanel(){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
   const [question,setQuestion]=useState('');
   const [loading,setLoading]=useState(false);
   const [messages,setMessages]=useState<AdvisorMessage[]>([
@@ -2089,7 +2089,7 @@ function AdvisorPanel(){
 }
 
 function SystemReadiness(){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
   const [state,setState]=useState<'loading'|'ready'|'degraded'|'offline'>('loading');
 
   useEffect(()=>{
@@ -2167,7 +2167,7 @@ type LocationBatchView={
 };
 
 function LogisticsPanel(){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
   const readOnly=isReadOnlySession();
   const [warehouses,setWarehouses]=useState<WarehouseView[]>([]);
   const [locations,setLocations]=useState<StockLocationView[]>([]);
@@ -2421,7 +2421,7 @@ type PurchaseOrderView={
 };
 
 function PurchasingPanel(){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
   const readOnly=isReadOnlySession();
   const [suppliers,setSuppliers]=useState<SupplierView[]>([]);
   const [orders,setOrders]=useState<PurchaseOrderView[]>([]);
@@ -2811,7 +2811,7 @@ function PurchasingPanel(){
 }
 
 function Dashboard({logout,theme,onToggleTheme}:{logout:()=>void;theme:Theme;onToggleTheme:()=>void}){
-  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app';
+  const API_URL=import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com';
   const authSession=readAuthSession();
   const readOnly=authSession?.role==='VIEWER';
   const [page,setPage]=useState<'dashboard'|'products'|'batches'|'locations'|'inventory'|'simulator'|'purchasing'|'intelligence'|'actions'|'planning'|'governance'|'quality'|'traceability'|'assistant'>('dashboard');
@@ -3212,7 +3212,7 @@ export default function App(){
       theme={theme}
       onToggleTheme={toggleTheme}
       logout={()=>{
-        void logoutSession(import.meta.env.VITE_API_URL || 'https://nexo-estoque-api-production.up.railway.app').catch(()=>{});
+        void logoutSession(import.meta.env.VITE_API_URL || 'https://nexo-estoque-api.onrender.com').catch(()=>{});
         clearAuthSession();
         setAuth(false);
         setPublicView('home');
