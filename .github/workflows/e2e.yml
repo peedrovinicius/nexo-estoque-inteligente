@@ -53,18 +53,18 @@ jobs:
           done
           cat /tmp/nexo-preview.log
           exit 1
-      - name: Wait for Render Free API to wake up
+      - name: Wait for Render Free API and MySQL to be ready
         run: |
-          for attempt in {1..18}; do
-            response="$(curl -fsS --max-time 20 https://nexo-estoque-api.onrender.com/actuator/health 2>/dev/null || true)"
-            if [[ "$response" == *'"status":"UP"'* ]]; then
-              echo "Nexo API is healthy."
+          for attempt in {1..24}; do
+            response="$(curl -fsS --max-time 25 https://nexo-estoque-api.onrender.com/api/v1/system/readiness 2>/dev/null || true)"
+            if printf '%s' "$response" | python3 -c 'import json,sys; data=json.load(sys.stdin); sys.exit(0 if data.get("api") == "ready" and data.get("database") == "ready" else 1)' 2>/dev/null; then
+              echo "Nexo API and MySQL are ready."
               exit 0
             fi
-            echo "API not ready (attempt $attempt/18)."
+            echo "API or MySQL not ready (attempt $attempt/24)."
             sleep 10
           done
-          echo "Nexo API did not become healthy in time."
+          echo "Nexo API or MySQL did not become ready in time."
           exit 1
       - name: Run browser smoke test
         env:
